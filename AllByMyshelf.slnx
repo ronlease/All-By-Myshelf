@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AllByMyshelf.Api/AllByMyshelf.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AllByMyshelf.Integration/AllByMyshelf.Integration.csproj" />
+    <Project Path="tests/AllByMyshelf.Unit/AllByMyshelf.Unit.csproj" />
+  </Folder>
+</Solution>
