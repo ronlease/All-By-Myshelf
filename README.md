@@ -1,87 +1,137 @@
 # All By Myshelf
 
-All By Myshelf is a personal cataloging system intended to consolidate collection data sourced from third‑party platforms such as Hardcover and Discogs into a single, user‑owned system.
+A personal collection dashboard that aggregates data from external APIs (Discogs, Hardcover, and others) into a single read-only view.
 
-The project is at an early, pre‑implementation stage. No functional application code exists yet.
+## Tech Stack
 
----
+- **API:** ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 17
+- **Frontend:** Angular 21, standalone components, Angular Material
+- **Auth:** Auth0 (single user)
+- **Testing:** xUnit, FluentAssertions, Moq
+- **Docs:** Swashbuckle (OpenAPI/Swagger), PlantUML (C4 models)
+- **Infrastructure:** Docker, Docker Compose, AWS (planned)
 
-## Problem Statement
+## Prerequisites
 
-Collection data is fragmented across specialized platforms, each optimized for its own domain and workflows. This fragmentation makes cross‑collection analysis, long‑term ownership tracking, and data portability unnecessarily difficult.
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Node.js](https://nodejs.org/) (for Angular CLI)
+- [Docker](https://www.docker.com/) with Docker Compose plugin
+- [Claude Code](https://claude.ai/code) (optional, for AI-assisted development)
 
-All By Myshelf aims to provide a unified catalog backed by a relational data model under the user’s direct control.
+## Getting Started
 
----
+### 1. Clone the repository
 
-## Non‑Goals
+```bash
+git clone https://github.com/<your-username>/AllByMyshelf.git
+cd AllByMyshelf
+```
 
-* Not a replacement for source platforms (e.g. Hardcover, Discogs)
-* Not a social or community platform
-* Not multi‑tenant
-* Not production‑hardened
-* Not designed for large‑scale or distributed deployment
+### 2. Start the database
 
-These constraints are intentional.
+```bash
+docker compose up -d
+```
 
----
+### 3. Configure secrets
 
-## Committed Technology Choices
+```bash
+cd src/AllByMyshelf.Api
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=allbymyshelf;Username=allbymyshelf;Password=localdev"
+dotnet user-secrets set "Auth0:Domain" "<your-auth0-domain>"
+dotnet user-secrets set "Auth0:Audience" "<your-auth0-audience>"
+dotnet user-secrets set "Discogs:ApiKey" "<your-discogs-api-key>"
+```
 
-The following choices are explicitly committed and unlikely to change without strong justification:
+### 4. Run database migrations
 
-### Backend
+```bash
+dotnet ef database update --project src/AllByMyshelf.Api
+```
 
-* **Language:** Python (most recent stable release at time of development)
-* **Database:** PostgreSQL
+### 5. Run the API
 
-### Frontend
+```bash
+dotnet run --project src/AllByMyshelf.Api
+```
 
-* **Framework:** Angular
+API runs at `https://localhost:5001`. Swagger UI available at `https://localhost:5001/swagger`.
 
-The frontend and backend are maintained as **separate repositories**.
+### 6. Run the frontend
 
-All other implementation details remain intentionally undecided.
+```bash
+cd src/AllByMyshelf.Web
+npm install
+ng serve
+```
 
----
+Frontend runs at `http://localhost:4200`.
 
-## Planned Architecture (High‑Level)
+## Running Tests
 
-* Angular frontend providing an administrative UI
-* Python async HTTP API
-* PostgreSQL as the sole persistence layer
-* Data ingestion adapters for external source systems
+```bash
+# All tests
+dotnet test
 
-Specific frameworks, libraries, and deployment mechanisms have not yet been selected.
+# Unit tests only
+dotnet test tests/AllByMyshelf.Unit
 
----
+# Integration tests only
+dotnet test tests/AllByMyshelf.Integration
+```
 
-## Data Model (Conceptual)
+## Project Structure
 
-Initial domain concepts are expected to include:
+```
+AllByMyshelf/
+  src/
+    AllByMyshelf.Api/         # ASP.NET Core 10 Web API
+    AllByMyshelf.Web/         # Angular 21 frontend
+  tests/
+    AllByMyshelf.Unit/        # xUnit unit tests
+    AllByMyshelf.Integration/ # xUnit integration tests
+  docs/
+    backlog.md                # Product backlog
+    c4/                       # PlantUML C4 architecture diagrams
+  .claude/
+    CLAUDE.md                 # Claude Code orchestration config
+    agents/                   # Claude Code agent definitions
+  docker-compose.yml
+```
 
-* **Collection** – a logical grouping (e.g. books, records)
-* **Item** – an individual owned object
-* **Source** – an external system of record
-* **External Reference** – source‑specific identifiers and metadata
-* **Tag / Attribute** – user‑defined classification
+## AI-Assisted Development
 
-The schema is intentionally unspecified at this stage and will evolve through experimentation.
+This project uses [Claude Code](https://claude.ai/code) with a multi-agent setup. Agents are defined in `.claude/agents/` and orchestrated via `.claude/CLAUDE.md`.
 
----
+| Agent | Responsibility |
+|---|---|
+| Product Owner | Backlog and acceptance criteria |
+| Architect | OpenAPI spec and C4 diagrams |
+| Backend Engineer | API implementation |
+| Frontend Engineer | Angular implementation |
+| QA Engineer | Gherkin scenarios and xUnit tests |
 
-## Project Status
+## External APIs
 
-**Pre-alpha / design phase**
+| API | Status | Docs |
+|---|---|---|
+| Discogs | Planned | [discogs.com/developers](https://www.discogs.com/developers/) |
+| Hardcover | Planned | [hardcover.app](https://hardcover.app/) |
 
-This project exists solely as a learning exercise to regain hands-on proficiency in Python and Angular.
+## Secrets Reference
 
-The repository is intentionally structured for critique and experimentation rather than longevity or production use. Friends and peers may contribute for feedback and review.
+Never commit secrets. All secrets are managed via `dotnet user-secrets` locally.
 
-Current focus areas:
+| Key | Description |
+|---|---|
+| `ConnectionStrings:Default` | PostgreSQL connection string |
+| `Auth0:Domain` | Auth0 tenant domain |
+| `Auth0:Audience` | Auth0 API audience |
+| `Discogs:ApiKey` | Discogs API key |
 
-* Repository structure
-* Tooling and environment decisions
-* Data modeling exploration
+See `.env.example` for a full list of required secrets.
 
-No guarantees regarding long-term maintenance.
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
