@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: allbymyshelf-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: allbymyshelf
+      POSTGRES_USER: allbymyshelf
+      POSTGRES_PASSWORD: localdev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    shm_size: 128mb
+
+volumes:
+  postgres-data:
