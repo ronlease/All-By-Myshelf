@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Container Diagram — All By Myshelf
+
+Person(user, "Owner", "Single authenticated user")
+
+System_Ext(auth0, "Auth0", "Identity provider. Issues and validates JWT tokens.")
+System_Ext(discogs, "Discogs API", "External vinyl record collection API. Rate-limited; returns collection data in paginated responses.")
+
+System_Boundary(app, "All By Myshelf") {
+    Container(web, "Web App", "Angular 21, standalone components, Angular Material", "Collection dashboard. Displays paginated release list and provides a sync trigger button.")
+
+    Container(api, "API", "ASP.NET Core 10 Web API", "Serves the local collection via GET /api/v1/releases. Accepts POST /api/v1/sync to start a non-blocking background sync. Validates Auth0 JWTs on all requests.")
+
+    Container(sync, "Background Sync Worker", "Hosted Service inside AllByMyshelf.Api", "Fetches all releases from the Discogs API, respects rate limits (retries on HTTP 429), and upserts results into the database. Prevents concurrent runs.")
+
+    ContainerDb(db, "Collection Database", "PostgreSQL 17", "Stores local copies of Discogs releases. Each record holds artist, title, year, and format.")
+}
+
+Rel(user, web, "Uses", "HTTPS")
+Rel(web, auth0, "Redirects for login, receives JWT", "HTTPS/OIDC")
+Rel(web, api, "GET /api/v1/releases, POST /api/v1/sync", "HTTPS/JSON, Bearer JWT")
+Rel(api, auth0, "Validates JWT on each request", "HTTPS/OIDC")
+Rel(api, sync, "Enqueues sync job on POST /api/v1/sync", "In-process")
+Rel(sync, discogs, "Fetches paginated collection using personal access token", "HTTPS/JSON")
+Rel(sync, db, "Upserts releases", "EF Core / Npgsql")
+Rel(api, db, "Queries releases for GET /api/v1/releases", "EF Core / Npgsql")
+
+@enduml

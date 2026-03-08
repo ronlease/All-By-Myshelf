@@ -288,6 +288,9 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Secrets
 appsettings.Development.json
 appsettings.Local.json
