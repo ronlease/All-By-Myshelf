@@ -3,6 +3,10 @@ import { authGuardFn } from '@auth0/auth0-angular';
 
 export const routes: Routes = [
   {
+    path: 'callback',
+    redirectTo: '',
+  },
+  {
     path: '',
     canActivate: [authGuardFn],
     loadComponent: () =>
