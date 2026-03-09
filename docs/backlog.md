@@ -178,3 +178,71 @@ Feature: Manual sync trigger endpoint
     Then the response is HTTP 503 Service Unavailable
     And the response body explains that the Discogs token is not configured
 ```
+
+---
+
+## [ABM-006] MVP Collection Dashboard (Angular Frontend)
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+I need a browser-based interface to actually see and use the collection data the API provides. Without a frontend, the application has no practical value day-to-day. The dashboard must require me to be logged in, show my records in a paginated list, and let me kick off a fresh sync without opening a separate HTTP client.
+
+### Acceptance Criteria
+```gherkin
+Feature: MVP collection dashboard
+
+  Scenario: Unauthenticated user is redirected to login
+    Given I am not logged in
+    When I navigate to the dashboard
+    Then I am redirected to the Auth0 login page
+    And I cannot see any collection data
+
+  Scenario: Authenticated user sees the collection list
+    Given I am logged in
+    And the API returns a non-empty page of releases
+    When the dashboard loads
+    Then I see a list of releases
+    And each row displays the artist, title, year, and format
+    And pagination controls are visible
+
+  Scenario: Navigating to another page of results
+    Given I am logged in
+    And the collection contains more releases than fit on one page
+    When I click to go to the next page
+    Then the list updates to show the next page of releases
+    And the pagination controls reflect the new current page
+
+  Scenario: Collection is empty
+    Given I am logged in
+    And the API returns zero releases
+    When the dashboard loads
+    Then I see a message indicating the collection is empty
+    And no list rows are rendered
+
+  Scenario: Dashboard shows a loading indicator while fetching data
+    Given I am logged in
+    When the dashboard is waiting for the API to respond
+    Then a loading indicator is visible
+    And the list area is not shown until data has loaded
+
+  Scenario: Triggering a manual sync successfully
+    Given I am logged in
+    When I click the Sync button
+    And the API responds with HTTP 202 Accepted
+    Then the Sync button is disabled for the duration of the operation
+    And I see a success notification confirming the sync has started
+
+  Scenario: Triggering a sync while one is already running
+    Given I am logged in
+    When I click the Sync button
+    And the API responds with HTTP 409 Conflict
+    Then I see a notification informing me a sync is already in progress
+
+  Scenario: Triggering a sync when the token is not configured
+    Given I am logged in
+    When I click the Sync button
+    And the API responds with HTTP 503 Service Unavailable
+    Then I see a notification informing me the Discogs token is not configured
+```
