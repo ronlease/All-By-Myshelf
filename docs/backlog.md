@@ -246,3 +246,97 @@ Feature: MVP collection dashboard
     And the API responds with HTTP 503 Service Unavailable
     Then I see a notification informing me the Discogs token is not configured
 ```
+
+---
+
+## [ABM-007] GitHub Actions — CI Pipeline
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+Without automated checks on every pull request and push to main, broken builds and failing tests can silently land in the codebase. I also have no systematic guardrail against accidentally committing credentials or pulling in packages with known vulnerabilities. A CI pipeline catches these problems before they reach production.
+
+### Acceptance Criteria
+```gherkin
+Feature: GitHub Actions CI pipeline
+
+  Scenario: .NET build and tests pass on a pull request
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then the .NET solution builds without errors
+    And all xUnit unit and integration tests pass
+    And a failing test causes the pipeline to fail and block the PR
+
+  Scenario: Angular build passes on a pull request
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then the Angular application compiles without errors
+    And a compilation error causes the pipeline to fail and block the PR
+
+  Scenario: .NET dependency vulnerability scan runs on a pull request
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then `dotnet list package --vulnerable` is executed
+    And if any vulnerable packages are detected the pipeline fails and reports them
+
+  Scenario: npm dependency vulnerability scan runs on a pull request
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then `npm audit --audit-level=high` is executed against the Angular project
+    And if high or critical vulnerabilities are found the pipeline fails and reports them
+
+  Scenario: Secret scanning prevents credential commits
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then GitHub secret scanning or an equivalent step checks the diff for committed secrets
+    And if a secret pattern is detected the pipeline fails and reports the finding
+
+  Scenario: CI pipeline also runs on direct push to main
+    Given a commit is pushed directly to main
+    When the CI pipeline runs
+    Then all of the same build, test, and scanning steps execute
+    And any failure is reported on the commit
+```
+
+---
+
+## [ABM-008] Auto-Refresh Collection After Sync Completes
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+After I trigger a sync, the collection list on the dashboard still shows stale data until I manually reload the page. Because the sync runs in the background and returns 202 immediately, I have no easy way to know when it is done. The dashboard should update itself so I can see my refreshed collection without any extra effort.
+
+### Acceptance Criteria
+```gherkin
+Feature: Auto-refresh collection after sync completes
+
+  Scenario: Collection list refreshes after sync starts
+    Given I am logged in
+    And the dashboard is showing my current collection
+    When I click the Sync button
+    And the API responds with HTTP 202 Accepted
+    Then the dashboard automatically re-fetches the collection list within 10 seconds of the sync starting
+    And the updated list is displayed without a manual page reload
+
+  Scenario: Sync button remains disabled during the auto-refresh window
+    Given I have triggered a sync
+    And the dashboard is waiting before re-fetching the collection
+    When I view the Sync button
+    Then it remains disabled until the collection re-fetch has completed
+
+  Scenario: Collection list shows updated data after re-fetch
+    Given the dashboard has re-fetched the collection after a sync
+    When the new data arrives from the API
+    Then the list is updated to reflect the latest releases
+    And the pagination controls reflect the new total if the count changed
+
+  Scenario: API error during auto-refresh is handled gracefully
+    Given the dashboard has triggered an auto-refresh after a sync
+    When the API returns an error response during the re-fetch
+    Then I see an error notification indicating the refresh failed
+    And the previously displayed collection data remains visible
+    And the Sync button is re-enabled so I can try again
+```
