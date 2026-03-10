@@ -1,0 +1,26 @@
+version: 2
+
+updates:
+  # NuGet packages for the API project
+  - package-ecosystem: nuget
+    directory: /src/AllByMyshelf.Api
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 5
+
+  # npm packages for the Angular frontend
+  - package-ecosystem: npm
+    directory: /src/AllByMyshelf.Web
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 5
