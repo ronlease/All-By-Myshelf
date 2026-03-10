@@ -340,3 +340,71 @@ Feature: Auto-refresh collection after sync completes
     And the previously displayed collection data remains visible
     And the Sync button is re-enabled so I can try again
 ```
+
+---
+
+## [ABM-009] Respect OS Light/Dark Mode Preference
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I switch between light and dark mode at the OS level depending on the time of day and environment. The dashboard should follow that preference automatically so I never have to configure appearance inside the app itself.
+
+### Acceptance Criteria
+```gherkin
+Feature: OS light/dark mode preference
+
+  Scenario: Dashboard renders in dark mode when OS preference is dark
+    Given my operating system is set to dark mode
+    When I open the dashboard
+    Then the application renders using the dark color scheme
+    And no manual theme toggle is required
+
+  Scenario: Dashboard renders in light mode when OS preference is light
+    Given my operating system is set to light mode
+    When I open the dashboard
+    Then the application renders using the light color scheme
+    And no manual theme toggle is required
+
+  Scenario: Dashboard updates when OS preference changes while the app is open
+    Given I have the dashboard open
+    When I change my operating system color scheme preference
+    Then the dashboard switches to the new color scheme without a page reload
+```
+
+---
+
+## [ABM-010] Purple Brand Theme Using Material 3 Seed Color
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The application uses a generic default color palette that does not feel personal. I want the dashboard to use my favourite color, DarkOrchid purple (#9932cc), as the brand identity. The full accessible palette — including all tones for both light and dark schemes — should be derived automatically from that seed so I do not have to hand-pick individual colors.
+
+### Acceptance Criteria
+```gherkin
+Feature: Purple Material 3 seed color theme
+
+  Scenario: Primary brand color is derived from the DarkOrchid seed
+    Given the Angular Material 3 theme is configured with seed color #9932cc
+    When I open the dashboard in light mode
+    Then primary interactive elements (buttons, links, active states) use a purple tone derived from the seed
+    And no element uses the Angular Material default blue or teal palette
+
+  Scenario: Light scheme meets WCAG AA contrast for normal text
+    Given the dashboard is rendered in light mode
+    When I inspect the contrast ratio of body text against its background
+    Then all normal-weight text at 16px or below meets a minimum contrast ratio of 4.5:1
+
+  Scenario: Dark scheme meets WCAG AA contrast for normal text
+    Given the dashboard is rendered in dark mode
+    When I inspect the contrast ratio of body text against its background
+    Then all normal-weight text at 16px or below meets a minimum contrast ratio of 4.5:1
+
+  Scenario: Theme is consistent across all dashboard views
+    Given the seed color theme is applied
+    When I navigate between the collection list and any other page in the app
+    Then the purple-derived color scheme is applied consistently on every view
+```
