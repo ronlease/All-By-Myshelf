@@ -63,11 +63,13 @@ export class CollectionComponent implements OnInit {
 
     this.discogsService.triggerSync().subscribe({
       next: (response) => {
-        this.syncing.set(false);
         if (response.status === 202) {
           this.snackBar.open('Sync started. This may take a few minutes.', 'Dismiss', {
             duration: 5000,
           });
+          setTimeout(() => this.loadPage(this.currentPage()), 10000);
+        } else {
+          this.syncing.set(false);
         }
       },
       error: (err: HttpErrorResponse) => {
@@ -91,9 +93,11 @@ export class CollectionComponent implements OnInit {
       next: (result) => {
         this.pagedResult.set(result);
         this.loading.set(false);
+        this.syncing.set(false);
       },
       error: () => {
         this.loading.set(false);
+        this.syncing.set(false);
         this.snackBar.open('Failed to load collection.', 'Dismiss', { duration: 5000 });
       },
     });
