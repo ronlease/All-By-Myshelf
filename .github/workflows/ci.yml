@@ -79,6 +79,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create environment files
+        run: cp src/environments/environment.template.ts src/environments/environment.prod.ts
+
       - name: Build (production)
         run: npx ng build --configuration production
 
