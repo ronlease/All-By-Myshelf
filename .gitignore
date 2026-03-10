@@ -291,6 +291,10 @@ __pycache__/
 # Claude Code worktrees
 .claude/worktrees/
 
+# Code coverage
+coverage-report/
+**/TestResults/
+
 # Secrets
 appsettings.Development.json
 appsettings.Local.json
