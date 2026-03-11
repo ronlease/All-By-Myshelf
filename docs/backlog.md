@@ -408,3 +408,79 @@ Feature: Purple Material 3 seed color theme
     When I navigate between the collection list and any other page in the app
     Then the purple-derived color scheme is applied consistently on every view
 ```
+
+---
+
+## [ABM-011] Album Art Thumbnails on the Collection List
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The collection list currently shows only text — artist, title, year, and format. My records have cover art on Discogs and seeing those images at a glance makes the list much more recognisable and enjoyable to browse. The Discogs collection endpoint already returns image URLs, so no additional API calls are needed to support this.
+
+### Acceptance Criteria
+```gherkin
+Feature: Album art thumbnails on the collection list
+
+  Scenario: Release with a cover image displays a thumbnail
+    Given I am logged in
+    And the API returns a release that includes a cover image URL
+    When the collection list renders
+    Then a thumbnail image is displayed alongside the artist, title, year, and format for that release
+    And the image is loaded directly from the Discogs CDN URL
+
+  Scenario: Release with no cover image displays a placeholder
+    Given I am logged in
+    And the API returns a release that has no cover image URL
+    When the collection list renders
+    Then a placeholder graphic or empty image area is shown in place of the thumbnail
+    And no broken image icon is visible
+
+  Scenario: Thumbnail does not disrupt the list layout
+    Given I am logged in
+    And the collection list contains a mix of releases with and without cover images
+    When the collection list renders
+    Then all rows are consistently sized and aligned regardless of whether a thumbnail is present
+```
+
+---
+
+## [ABM-012] Release Detail View
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The collection list shows only a summary of each record. When I want to recall specifics — label, country, genres, styles, or personal notes — I have to leave the app and look it up on Discogs. A detail view surfaces that information in context and links directly to the full Discogs page so I can get deeper when needed, all without leaving my dashboard as the starting point.
+
+### Acceptance Criteria
+```gherkin
+Feature: Release detail view
+
+  Scenario: Opening the detail view for a release
+    Given I am logged in
+    And the collection list is showing at least one release
+    When I click or tap a release in the list
+    Then a detail view opens for that release
+    And the detail view displays artist, title, year, format, label, country, genres, styles, and notes where those fields are available from the API
+    And fields with no data are not shown
+
+  Scenario: "View on Discogs" link opens the release page in a new tab
+    Given I am viewing the detail view for a release with a known Discogs ID
+    When I click the "View on Discogs" link
+    Then a new browser tab opens at https://www.discogs.com/release/{discogsId} for that release
+    And the current dashboard view remains open in the original tab
+
+  Scenario: Closing the detail view returns to the collection list
+    Given I have opened the detail view for a release
+    When I close or dismiss the detail view
+    Then I am returned to the collection list
+    And the list is in the same state (same page, same scroll position) as before I opened the detail view
+
+  Scenario: Detail view handles missing optional fields gracefully
+    Given I am viewing the detail view for a release where label, country, genres, styles, and notes are all absent
+    When the detail view renders
+    Then only the fields that have data are displayed
+    And no empty rows, blank labels, or placeholder text such as "N/A" are shown
+```
