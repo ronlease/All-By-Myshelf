@@ -15,6 +15,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'releases/:id',
+    canActivate: [authGuardFn],
+    loadComponent: () =>
+      import('./features/discogs/release-detail/release-detail.component').then(
+        (m) => m.ReleaseDetailComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

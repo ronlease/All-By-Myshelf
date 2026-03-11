@@ -3,6 +3,20 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface ReleaseDetailDto {
+  artist: string;
+  country: string | null;
+  discogsId: number;
+  format: string;
+  genre: string | null;
+  id: string;
+  label: string | null;
+  notes: string | null;
+  styles: string | null;
+  title: string;
+  year: number | null;
+}
+
 export interface ReleaseDto {
   id: number;
   artist: string;
@@ -30,6 +44,10 @@ export class DiscogsService {
       .set('pageSize', pageSize.toString());
 
     return this.http.get<PagedResult<ReleaseDto>>(`${this.baseUrl}/api/v1/releases`, { params });
+  }
+
+  getRelease(id: string): Observable<ReleaseDetailDto> {
+    return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/${id}`);
   }
 
   triggerSync(): Observable<HttpResponse<unknown>> {
