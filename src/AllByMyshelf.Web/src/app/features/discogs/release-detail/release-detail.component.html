@@ -44,34 +44,10 @@
                 <span matListItemTitle>Format</span>
                 <span matListItemLine>{{ release()!.format }}</span>
               </mat-list-item>
-              @if (release()!.label !== null) {
-                <mat-list-item>
-                  <span matListItemTitle>Label</span>
-                  <span matListItemLine>{{ release()!.label }}</span>
-                </mat-list-item>
-              }
-              @if (release()!.country !== null) {
-                <mat-list-item>
-                  <span matListItemTitle>Country</span>
-                  <span matListItemLine>{{ release()!.country }}</span>
-                </mat-list-item>
-              }
               @if (release()!.genre !== null) {
                 <mat-list-item>
                   <span matListItemTitle>Genre</span>
                   <span matListItemLine>{{ release()!.genre }}</span>
-                </mat-list-item>
-              }
-              @if (release()!.styles !== null) {
-                <mat-list-item>
-                  <span matListItemTitle>Styles</span>
-                  <span matListItemLine>{{ release()!.styles }}</span>
-                </mat-list-item>
-              }
-              @if (release()!.notes !== null) {
-                <mat-list-item>
-                  <span matListItemTitle>Notes</span>
-                  <span matListItemLine>{{ release()!.notes }}</span>
                 </mat-list-item>
               }
             </mat-list>

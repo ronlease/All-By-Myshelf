@@ -8,9 +8,6 @@ public class ReleaseDetailDto
     /// <summary>Artist name.</summary>
     public string Artist { get; init; } = string.Empty;
 
-    /// <summary>Country of release; null when not populated by sync.</summary>
-    public string? Country { get; init; }
-
     /// <summary>Discogs release ID.</summary>
     public int DiscogsId { get; init; }
 
@@ -22,15 +19,6 @@ public class ReleaseDetailDto
 
     /// <summary>Application-generated identifier.</summary>
     public Guid Id { get; init; }
-
-    /// <summary>Record label; null when not populated by sync.</summary>
-    public string? Label { get; init; }
-
-    /// <summary>Personal notes from Discogs; null when not populated by sync.</summary>
-    public string? Notes { get; init; }
-
-    /// <summary>Comma-separated list of styles; null when not populated by sync.</summary>
-    public string? Styles { get; init; }
 
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;

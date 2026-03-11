@@ -11,6 +11,9 @@ public class ReleaseDto
     /// <summary>Primary format description.</summary>
     public string Format { get; init; } = string.Empty;
 
+    /// <summary>Database identifier.</summary>
+    public Guid Id { get; init; }
+
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;
 

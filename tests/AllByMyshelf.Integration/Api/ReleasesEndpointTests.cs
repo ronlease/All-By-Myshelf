@@ -34,7 +34,7 @@
 //   Given the database contains a release with all detail fields populated
 //   When I request GET /api/v1/releases/{id}
 //   Then the response is HTTP 200 OK
-//   And the body contains all fields: artist, title, year, format, label, country, genre, notes, styles
+//   And the body contains all fields: artist, title, year, format, genre
 //
 // Scenario: GET /api/v1/releases/{id} returns 404 when the release does not exist
 //   Given the database does not contain a release with the requested id
@@ -42,9 +42,9 @@
 //   Then the response is HTTP 404 Not Found
 //
 // Scenario: Detail view fields are present in the response after a resync
-//   Given a release was synced with label, country, genre, notes, and styles populated
+//   Given a release was synced with genre populated
 //   When I request GET /api/v1/releases/{id}
-//   Then the response body includes all those detail fields with their stored values
+//   Then the response body includes the detail field with its stored value
 
 using System.Net;
 using System.Net.Http.Json;
@@ -103,11 +103,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 
         // Assert
         body.Should().NotBeNull();
-        body!.Label.Should().Be("Impulse!");
-        body.Country.Should().Be("US");
-        body.Genre.Should().Be("Jazz");
-        body.Notes.Should().Be("A landmark recording");
-        body.Styles.Should().Be("Hard Bop, Post Bop");
+        body!.Genre.Should().Be("Jazz");
     }
 
     [Fact]
@@ -168,11 +164,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
             Title = "Kind of Blue",
             Year = 1959,
             Format = "Vinyl",
-            Label = null,
-            Country = null,
             Genre = null,
-            Notes = null,
-            Styles = null,
             LastSyncedAt = DateTimeOffset.UtcNow
         };
         var client = CreateClientWithSeededData(new[] { release });
@@ -184,11 +176,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         body.Should().NotBeNull();
-        body!.Label.Should().BeNull();
-        body.Country.Should().BeNull();
-        body.Genre.Should().BeNull();
-        body.Notes.Should().BeNull();
-        body.Styles.Should().BeNull();
+        body!.Genre.Should().BeNull();
     }
 
     [Fact]
@@ -345,11 +333,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",
-            Label = "Impulse!",
-            Country = "US",
             Genre = "Jazz",
-            Notes = "A landmark recording",
-            Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 

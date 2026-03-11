@@ -39,15 +39,15 @@
 //   When GetCollectionAsync is called
 //   Then each HTTP request carries the correct Discogs token authorization header
 //
-// Scenario: GetReleaseDetailAsync returns label, country, genre, notes, and styles correctly mapped
+// Scenario: GetReleaseDetailAsync returns genre correctly mapped
 //   Given the Discogs release detail API returns a full response
 //   When GetReleaseDetailAsync is called
-//   Then the returned detail contains label, country, genre, notes, and styles
+//   Then the returned detail contains genre
 //
 // Scenario: GetReleaseDetailAsync handles missing optional fields gracefully
-//   Given the Discogs release detail API returns a response with no labels, genres, or styles
+//   Given the Discogs release detail API returns a response with no genres
 //   When GetReleaseDetailAsync is called
-//   Then the returned detail has empty collections for those fields and nulls for nullable fields
+//   Then the returned detail has an empty collection for genres
 //
 // Scenario: GetReleaseDetailAsync returns null on a non-success HTTP response
 //   Given the Discogs release detail API returns a 404 response
@@ -376,11 +376,7 @@ public class DiscogsClientTests
         // Arrange
         var payload = new
         {
-            labels = new[] { new { name = "Blue Note" } },
-            country = "US",
-            genres = new[] { "Jazz" },
-            notes = "A personal note",
-            styles = new[] { "Hard Bop", "Post Bop" }
+            genres = new[] { "Jazz" }
         };
         var content = new StringContent(
             JsonSerializer.Serialize(payload),
@@ -394,54 +390,18 @@ public class DiscogsClientTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Labels.Should().ContainSingle(l => l.Name == "Blue Note");
-        result.Country.Should().Be("US");
-        result.Genres.Should().ContainSingle(g => g == "Jazz");
-        result.Notes.Should().Be("A personal note");
-        result.Styles.Should().BeEquivalentTo("Hard Bop", "Post Bop");
-    }
-
-    [Fact]
-    public async Task GetReleaseDetailAsync_MultipleLabels_MapsFirstLabel()
-    {
-        // Arrange — verify list is fully deserialized so caller can take FirstOrDefault
-        var payload = new
-        {
-            labels = new[] { new { name = "Label A" }, new { name = "Label B" } },
-            country = "UK",
-            genres = new[] { "Rock" },
-            notes = (string?)null,
-            styles = new[] { "Psychedelic Rock" }
-        };
-        var content = new StringContent(
-            JsonSerializer.Serialize(payload),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
-
-        // Act
-        var result = await sut.GetReleaseDetailAsync(99, CancellationToken.None);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Labels.Should().HaveCount(2);
-        result.Labels.First().Name.Should().Be("Label A");
+        result!.Genres.Should().ContainSingle(g => g == "Jazz");
     }
 
     // ── GetReleaseDetailAsync — missing optional fields ───────────────────────
 
     [Fact]
-    public async Task GetReleaseDetailAsync_NoLabels_ReturnsEmptyLabelsCollection()
+    public async Task GetReleaseDetailAsync_NoGenres_ReturnsEmptyGenresCollection()
     {
         // Arrange
         var payload = new
         {
-            labels = Array.Empty<object>(),
-            country = (string?)null,
-            genres = Array.Empty<string>(),
-            notes = (string?)null,
-            styles = Array.Empty<string>()
+            genres = Array.Empty<string>()
         };
         var content = new StringContent(
             JsonSerializer.Serialize(payload),
@@ -455,37 +415,7 @@ public class DiscogsClientTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Labels.Should().BeEmpty();
-        result.Country.Should().BeNull();
-        result.Genres.Should().BeEmpty();
-        result.Notes.Should().BeNull();
-        result.Styles.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task GetReleaseDetailAsync_NullableFieldsAbsent_ReturnsNullsGracefully()
-    {
-        // Arrange — omit country and notes entirely from the JSON
-        var payload = new
-        {
-            labels = Array.Empty<object>(),
-            genres = Array.Empty<string>(),
-            styles = Array.Empty<string>()
-        };
-        var content = new StringContent(
-            JsonSerializer.Serialize(payload),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
-
-        // Act
-        var result = await sut.GetReleaseDetailAsync(43, CancellationToken.None);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Country.Should().BeNull();
-        result.Notes.Should().BeNull();
+        result!.Genres.Should().BeEmpty();
     }
 
     // ── GetReleaseDetailAsync — non-success response ──────────────────────────
@@ -532,11 +462,7 @@ public class DiscogsClientTests
 
         var detailPayload = new
         {
-            labels = new[] { new { name = "ECM" } },
-            country = "DE",
-            genres = new[] { "Jazz" },
-            notes = (string?)null,
-            styles = new[] { "Contemporary Jazz" }
+            genres = new[] { "Jazz" }
         };
         var successResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -555,7 +481,7 @@ public class DiscogsClientTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Labels.Should().ContainSingle(l => l.Name == "ECM");
+        result!.Genres.Should().ContainSingle(g => g == "Jazz");
         handler.CallCount.Should().Be(2); // one 429 + one success
     }
 }

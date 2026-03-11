@@ -33,7 +33,7 @@
 // Scenario: GetByIdAsync returns a fully mapped ReleaseDetailDto when the release exists
 //   Given the repository returns a release with all fields populated
 //   When GetByIdAsync is called with its Guid
-//   Then the returned dto maps all fields including label, country, genre, notes, and styles
+//   Then the returned dto maps all fields including genre
 //
 // Scenario: GetByIdAsync returns null when the release is not found
 //   Given the repository returns null for an unknown Guid
@@ -43,7 +43,7 @@
 // Scenario: GetByIdAsync maps nullable detail fields as null when they are null on the entity
 //   Given the repository returns a release whose detail fields are all null
 //   When GetByIdAsync is called
-//   Then the returned dto has null for label, country, genre, notes, and styles
+//   Then the returned dto has null for genre
 
 using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
@@ -76,11 +76,7 @@ public class ReleasesServiceTests
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",
-            Label = "Impulse!",
-            Country = "US",
             Genre = "Jazz",
-            Notes = "A landmark recording",
-            Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -120,11 +116,7 @@ public class ReleasesServiceTests
         result.Title.Should().Be("A Love Supreme");
         result.Year.Should().Be(1964);
         result.Format.Should().Be("Vinyl");
-        result.Label.Should().Be("Impulse!");
-        result.Country.Should().Be("US");
         result.Genre.Should().Be("Jazz");
-        result.Notes.Should().Be("A landmark recording");
-        result.Styles.Should().Be("Hard Bop, Post Bop");
     }
 
     // ── GetByIdAsync — nullable detail fields map correctly when null ─────────
@@ -142,11 +134,7 @@ public class ReleasesServiceTests
             Title = "Untitled",
             Year = null,
             Format = "Vinyl",
-            Label = null,
-            Country = null,
             Genre = null,
-            Notes = null,
-            Styles = null,
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -160,11 +148,7 @@ public class ReleasesServiceTests
         // Assert
         result.Should().NotBeNull();
         result!.Year.Should().BeNull();
-        result.Label.Should().BeNull();
-        result.Country.Should().BeNull();
         result.Genre.Should().BeNull();
-        result.Notes.Should().BeNull();
-        result.Styles.Should().BeNull();
     }
 
     // ── GetByIdAsync — not found ──────────────────────────────────────────────

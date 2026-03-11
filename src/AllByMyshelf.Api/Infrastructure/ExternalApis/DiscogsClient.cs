@@ -81,7 +81,7 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
     /// </summary>
     /// <param name="discogsId">The Discogs release ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A <see cref="DiscogsReleaseDetail"/> containing label, country, genre, notes, and styles, or null on failure.</returns>
+    /// <returns>A <see cref="DiscogsReleaseDetail"/> containing genre, or null on failure.</returns>
     public async Task<DiscogsReleaseDetail?> GetReleaseDetailAsync(int discogsId, CancellationToken cancellationToken)
     {
         var url = $"/releases/{discogsId}";
@@ -171,25 +171,6 @@ public class DiscogsFormat
 /// <summary>Extended detail for a single Discogs release (GET /releases/{id}).</summary>
 public class DiscogsReleaseDetail
 {
-    [JsonPropertyName("country")]
-    public string? Country { get; init; }
-
     [JsonPropertyName("genres")]
     public List<string> Genres { get; init; } = [];
-
-    [JsonPropertyName("labels")]
-    public List<DiscogsLabel> Labels { get; init; } = [];
-
-    [JsonPropertyName("notes")]
-    public string? Notes { get; init; }
-
-    [JsonPropertyName("styles")]
-    public List<string> Styles { get; init; } = [];
-}
-
-/// <summary>A label reference within a Discogs release detail response.</summary>
-public class DiscogsLabel
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
 }

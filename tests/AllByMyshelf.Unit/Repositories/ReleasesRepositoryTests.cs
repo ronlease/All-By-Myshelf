@@ -41,9 +41,9 @@
 //   Then null is returned
 //
 // Scenario: Detail fields are persisted and retrieved correctly through upsert
-//   Given a release with label, country, genre, notes, and styles
+//   Given a release with genre populated
 //   When UpsertCollectionAsync is called
-//   Then all detail fields are stored and retrievable via GetByIdAsync
+//   Then the detail field is stored and retrievable via GetByIdAsync
 
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
@@ -242,11 +242,7 @@ public class ReleasesRepositoryTests : IDisposable
             Title = "Bitches Brew",
             Year = 1970,
             Format = "Vinyl",
-            Label = null,
-            Country = null,
             Genre = null,
-            Notes = null,
-            Styles = null,
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -256,11 +252,7 @@ public class ReleasesRepositoryTests : IDisposable
         // Assert
         var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
         stored.Should().NotBeNull();
-        stored!.Label.Should().BeNull();
-        stored.Country.Should().BeNull();
-        stored.Genre.Should().BeNull();
-        stored.Notes.Should().BeNull();
-        stored.Styles.Should().BeNull();
+        stored!.Genre.Should().BeNull();
     }
 
     [Fact]
@@ -403,11 +395,7 @@ public class ReleasesRepositoryTests : IDisposable
             Title = "The Shape of Jazz to Come",
             Year = 1959,
             Format = "Vinyl",
-            Label = null,
-            Country = null,
             Genre = null,
-            Notes = null,
-            Styles = null,
             LastSyncedAt = DateTimeOffset.UtcNow
         };
         _db.Releases.Add(original);
@@ -421,11 +409,7 @@ public class ReleasesRepositoryTests : IDisposable
             Title = "The Shape of Jazz to Come",
             Year = 1959,
             Format = "Vinyl",
-            Label = "Atlantic",
-            Country = "US",
             Genre = "Jazz",
-            Notes = "Free jazz pioneer",
-            Styles = "Free Jazz, Avant-garde Jazz",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -435,11 +419,7 @@ public class ReleasesRepositoryTests : IDisposable
         // Assert — should still be one record, now populated with detail fields
         var stored = await _sut.GetByIdAsync(original.Id, CancellationToken.None);
         stored.Should().NotBeNull();
-        stored!.Label.Should().Be("Atlantic");
-        stored.Country.Should().Be("US");
-        stored.Genre.Should().Be("Jazz");
-        stored.Notes.Should().Be("Free jazz pioneer");
-        stored.Styles.Should().Be("Free Jazz, Avant-garde Jazz");
+        stored!.Genre.Should().Be("Jazz");
     }
 
     // ── UpsertCollectionAsync — removal of stale records ─────────────────────
@@ -474,11 +454,7 @@ public class ReleasesRepositoryTests : IDisposable
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",
-            Label = "Impulse!",
-            Country = "US",
             Genre = "Jazz",
-            Notes = "A landmark recording",
-            Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -488,10 +464,6 @@ public class ReleasesRepositoryTests : IDisposable
         // Assert
         var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
         stored.Should().NotBeNull();
-        stored!.Label.Should().Be("Impulse!");
-        stored.Country.Should().Be("US");
-        stored.Genre.Should().Be("Jazz");
-        stored.Notes.Should().Be("A landmark recording");
-        stored.Styles.Should().Be("Hard Bop, Post Bop");
+        stored!.Genre.Should().Be("Jazz");
     }
 }

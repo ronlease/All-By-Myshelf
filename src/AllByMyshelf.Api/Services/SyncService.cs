@@ -92,13 +92,7 @@ public class SyncService(
             var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
             if (detail is not null)
             {
-                release.Label = detail.Labels.FirstOrDefault()?.Name;
-                release.Country = detail.Country;
                 release.Genre = detail.Genres.FirstOrDefault();
-                release.Notes = detail.Notes;
-                release.Styles = detail.Styles.Count > 0
-                    ? string.Join(", ", detail.Styles)
-                    : null;
 
                 logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
             }

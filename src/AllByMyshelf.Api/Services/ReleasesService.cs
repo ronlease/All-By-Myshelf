@@ -25,11 +25,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Title = release.Title,
             Year = release.Year,
             Format = release.Format,
-            Label = release.Label,
-            Country = release.Country,
             Genre = release.Genre,
-            Notes = release.Notes,
-            Styles = release.Styles
         };
     }
 
@@ -44,9 +40,10 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         var dtos = items.Select(r => new ReleaseDto
         {
             Artist = r.Artist,
+            Format = r.Format,
+            Id = r.Id,
             Title = r.Title,
-            Year = r.Year,
-            Format = r.Format
+            Year = r.Year
         }).ToList();
 
         return new PagedResult<ReleaseDto>

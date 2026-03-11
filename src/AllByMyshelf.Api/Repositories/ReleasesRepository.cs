@@ -61,11 +61,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 existingRelease.Title = release.Title;
                 existingRelease.Year = release.Year;
                 existingRelease.Format = release.Format;
-                existingRelease.Label = release.Label;
-                existingRelease.Country = release.Country;
                 existingRelease.Genre = release.Genre;
-                existingRelease.Notes = release.Notes;
-                existingRelease.Styles = release.Styles;
                 existingRelease.LastSyncedAt = release.LastSyncedAt;
             }
             else

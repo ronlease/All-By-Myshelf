@@ -5,24 +5,20 @@ import { environment } from '../../../environments/environment';
 
 export interface ReleaseDetailDto {
   artist: string;
-  country: string | null;
   discogsId: number;
   format: string;
   genre: string | null;
   id: string;
-  label: string | null;
-  notes: string | null;
-  styles: string | null;
   title: string;
   year: number | null;
 }
 
 export interface ReleaseDto {
-  id: number;
   artist: string;
+  format: string;
+  id: string;
   title: string;
   year: number | null;
-  format: string;
 }
 
 export interface PagedResult<T> {
