@@ -14,7 +14,7 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js](https://nodejs.org/) (for Angular CLI)
+- [Node.js 22](https://nodejs.org/)
 - [Docker](https://www.docker.com/) with Docker Compose plugin
 - [Claude Code](https://claude.ai/code) (optional, for AI-assisted development)
 
@@ -23,8 +23,8 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/AllByMyshelf.git
-cd AllByMyshelf
+git clone https://github.com/ronlease/All-By-Myshelf.git
+cd All-By-Myshelf
 ```
 
 ### 2. Start the database
@@ -33,15 +33,15 @@ cd AllByMyshelf
 docker compose up -d
 ```
 
-### 3. Configure secrets
+### 3. Configure API secrets
 
 ```bash
 cd src/AllByMyshelf.Api
-dotnet user-secrets init
 dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=allbymyshelf;Username=allbymyshelf;Password=localdev"
 dotnet user-secrets set "Auth0:Domain" "<your-auth0-domain>"
 dotnet user-secrets set "Auth0:Audience" "<your-auth0-audience>"
-dotnet user-secrets set "Discogs:ApiKey" "<your-discogs-api-key>"
+dotnet user-secrets set "Discogs:PersonalAccessToken" "<your-discogs-personal-access-token>"
+dotnet user-secrets set "Discogs:Username" "<your-discogs-username>"
 ```
 
 ### 4. Run database migrations
@@ -53,20 +53,30 @@ dotnet ef database update --project src/AllByMyshelf.Api
 ### 5. Run the API
 
 ```bash
-dotnet run --project src/AllByMyshelf.Api
+dotnet run --launch-profile https --project src/AllByMyshelf.Api
 ```
 
-API runs at `https://localhost:5001`. Swagger UI available at `https://localhost:5001/swagger`.
+API runs at `https://localhost:7208`. Swagger UI available at `https://localhost:7208/swagger`.
 
-### 6. Run the frontend
+### 6. Configure the frontend
 
 ```bash
 cd src/AllByMyshelf.Web
-npm install
-ng serve
+cp src/environments/environment.template.ts src/environments/environment.ts
 ```
 
-Frontend runs at `http://localhost:4200`.
+Edit `src/environments/environment.ts` and fill in your Auth0 credentials.
+
+### 7. Run the frontend
+
+```bash
+npm install
+npx ng serve --ssl
+```
+
+Frontend runs at `https://localhost:4200`.
+
+> **Auth0 setup:** Add `https://localhost:4200` to Allowed Web Origins and Allowed Logout URLs, and `https://localhost:4200/callback` to Allowed Callback URLs in your Auth0 application settings.
 
 ## Running Tests
 
@@ -84,7 +94,7 @@ dotnet test tests/AllByMyshelf.Integration
 ## Project Structure
 
 ```
-AllByMyshelf/
+All-By-Myshelf/
   src/
     AllByMyshelf.Api/         # ASP.NET Core 10 Web API
     AllByMyshelf.Web/         # Angular 21 frontend
@@ -116,7 +126,7 @@ This project uses [Claude Code](https://claude.ai/code) with a multi-agent setup
 
 | API | Status | Docs |
 |---|---|---|
-| Discogs | Planned | [discogs.com/developers](https://www.discogs.com/developers/) |
+| Discogs | Live | [discogs.com/developers](https://www.discogs.com/developers/) |
 | Hardcover | Planned | [hardcover.app](https://hardcover.app/) |
 
 ## Secrets Reference
@@ -126,11 +136,10 @@ Never commit secrets. All secrets are managed via `dotnet user-secrets` locally.
 | Key | Description |
 |---|---|
 | `ConnectionStrings:Default` | PostgreSQL connection string |
-| `Auth0:Domain` | Auth0 tenant domain |
-| `Auth0:Audience` | Auth0 API audience |
-| `Discogs:ApiKey` | Discogs API key |
-
-See `.env.example` for a full list of required secrets.
+| `Auth0:Domain` | Auth0 tenant domain (e.g. `dev-xxxx.us.auth0.com`) |
+| `Auth0:Audience` | Auth0 API identifier (e.g. `https://localhost/api`) |
+| `Discogs:PersonalAccessToken` | Discogs personal access token |
+| `Discogs:Username` | Discogs username |
 
 ## License
 

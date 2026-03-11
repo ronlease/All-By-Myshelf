@@ -8,6 +8,14 @@ updates:
       interval: weekly
     target-branch: main
     open-pull-requests-limit: 5
+    groups:
+      efcore:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+          - "Npgsql.EntityFrameworkCore*"
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore*"
 
   # npm packages for the Angular frontend
   - package-ecosystem: npm
@@ -16,6 +24,14 @@ updates:
       interval: weekly
     target-branch: main
     open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+      angular-material:
+        patterns:
+          - "@angular/material"
+          - "@angular/cdk"
 
   # GitHub Actions
   - package-ecosystem: github-actions
@@ -24,3 +40,7 @@ updates:
       interval: weekly
     target-branch: main
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
