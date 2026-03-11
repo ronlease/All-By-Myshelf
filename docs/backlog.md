@@ -452,37 +452,52 @@ Feature: Album art thumbnails on the collection list
 **Priority:** Medium
 
 ### Business Problem
-The collection list shows only a summary of each record. When I want to recall specifics — label, country, genres, styles, or personal notes — I have to leave the app and look it up on Discogs. A detail view surfaces that information in context and links directly to the full Discogs page so I can get deeper when needed, all without leaving my dashboard as the starting point.
+The collection list shows only a summary of each record. When I want to recall specifics — label, country, genre, styles, or personal notes — I have to leave the app and look it up on Discogs. A detail view surfaces that information in context and links directly to the full Discogs page so I can get deeper when needed, all without leaving my dashboard as the starting point.
+
+### Data Notes
+- The sync (ABM-002/ABM-003) is extended to call `GET https://api.discogs.com/releases/{discogsId}` for each release and store: label, country, genre (primary genre only), notes, and styles (stored as a comma-separated list). These fields are populated by a manual resync — no on-demand per-release API calls are made.
+- Album art on this view is a placeholder image only. Real cover art is handled by ABM-011.
 
 ### Acceptance Criteria
 ```gherkin
 Feature: Release detail view
 
-  Scenario: Opening the detail view for a release
+  Scenario: Navigating to the detail view for a release
     Given I am logged in
     And the collection list is showing at least one release
-    When I click or tap a release in the list
-    Then a detail view opens for that release
-    And the detail view displays artist, title, year, format, label, country, genres, styles, and notes where those fields are available from the API
-    And fields with no data are not shown
+    When I click a release in the list
+    Then the application navigates to /releases/{id}
+    And the detail view displays artist, title, year, and format
+    And any of the following fields that are present in the stored data are also displayed: label, country, genre, styles, notes
+    And a placeholder image is shown in the album art area
+
+  Scenario: Fields absent from the stored release data are omitted
+    Given I am logged in
+    And I navigate to /releases/{id} for a release where label, country, genre, styles, and notes are all absent
+    When the detail view renders
+    Then only the fields that have stored data are displayed
+    And no empty rows, blank labels, or placeholder text such as "N/A" are shown
 
   Scenario: "View on Discogs" link opens the release page in a new tab
-    Given I am viewing the detail view for a release with a known Discogs ID
+    Given I am logged in
+    And I am viewing the detail view for a release with a known Discogs ID
     When I click the "View on Discogs" link
-    Then a new browser tab opens at https://www.discogs.com/release/{discogsId} for that release
-    And the current dashboard view remains open in the original tab
+    Then a new browser tab opens at https://www.discogs.com/release/{discogsId}
+    And the detail view remains open in the original tab
 
-  Scenario: Closing the detail view returns to the collection list
-    Given I have opened the detail view for a release
-    When I close or dismiss the detail view
+  Scenario: Navigating back returns to the collection list
+    Given I am logged in
+    And I have navigated to /releases/{id}
+    When I navigate back
     Then I am returned to the collection list
     And the list is in the same state (same page, same scroll position) as before I opened the detail view
 
-  Scenario: Detail view handles missing optional fields gracefully
-    Given I am viewing the detail view for a release where label, country, genres, styles, and notes are all absent
-    When the detail view renders
-    Then only the fields that have data are displayed
-    And no empty rows, blank labels, or placeholder text such as "N/A" are shown
+  Scenario: Detail view fields are populated after a resync
+    Given a release was previously synced without the extended detail fields
+    When I trigger a manual resync
+    And the sync calls the Discogs release detail endpoint for that release
+    Then label, country, genre, notes, and styles (where present in the Discogs response) are stored in the database
+    And the detail view at /releases/{id} displays the newly stored fields
 ```
 
 ---
