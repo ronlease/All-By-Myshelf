@@ -484,3 +484,63 @@ Feature: Release detail view
     Then only the fields that have data are displayed
     And no empty rows, blank labels, or placeholder text such as "N/A" are shown
 ```
+
+---
+
+## [ABM-013] Local Independent Record Store Finder
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+When I am looking to buy records locally, I have no quick way to find independent record stores near me. I want to enter a US zip code or city and state and get back a list of nearby music shops so I know where to go without relying on a general-purpose search engine that buries independent stores under big-box retail results.
+
+### Acceptance Criteria
+```gherkin
+Feature: Local independent record store finder
+
+  Scenario: Search by zip code returns nearby music shops
+    Given I am on the store finder page
+    When I enter a valid US zip code and submit the search
+    Then the application queries OpenStreetMap via the Overpass API for nodes and ways tagged shop=music within a reasonable radius of that zip code
+    And the results list displays each store's name and address
+    And stores whose names match known big-box retailers (Target, Walmart, Best Buy, Amazon, FYE) are excluded from the results
+
+  Scenario: Search by city and state returns nearby music shops
+    Given I am on the store finder page
+    When I enter a US city name and a two-letter state abbreviation and submit the search
+    Then the application queries OpenStreetMap via the Overpass API for nodes and ways tagged shop=music in that city
+    And the results list displays each store's name and address
+    And stores whose names match known big-box retailers (Target, Walmart, Best Buy, Amazon, FYE) are excluded from the results
+
+  Scenario: Search returns no results
+    Given I am on the store finder page
+    When I submit a search for a location that has no shop=music nodes or ways in OpenStreetMap
+    Then the results area displays a message indicating no stores were found
+    And no list rows are rendered
+
+  Scenario: Search input is empty
+    Given I am on the store finder page
+    When I submit the search form without entering a zip code or city and state
+    Then the form displays a validation message indicating that a location is required
+    And no API call is made to the Overpass API
+
+  Scenario: Non-US location is entered
+    Given I am on the store finder page
+    When I enter a location that does not correspond to a US zip code or US city and state format
+    Then the form displays a validation message indicating that only US locations are supported
+    And no API call is made to the Overpass API
+
+  Scenario: Overpass API request fails
+    Given I am on the store finder page
+    And the Overpass API is unavailable or returns an error
+    When I submit a valid US location search
+    Then the results area displays an error message indicating the store data could not be retrieved
+    And no partial or empty results list is shown
+
+  Scenario: Store detail does not include hours, phone, or website
+    Given the search has returned one or more results
+    When I view the results list
+    Then each result shows only the store name and address
+    And no hours, phone number, or website link is displayed for any store
+```
