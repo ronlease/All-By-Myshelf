@@ -45,6 +45,7 @@ src/AllByMyshelf.Web/
 - Follow Angular style guide naming: `feature-name.component.ts`, `feature-name.service.ts`
 - Use typed forms (`FormControl<T>`) for any form inputs
 - Use `HttpClient` with typed responses: `http.get<MyType>(url)`
+- All fields, properties, and methods within a class must be declared in alphabetical order
 
 ## Auth0 Integration
 - Use `@auth0/auth0-angular` SDK
