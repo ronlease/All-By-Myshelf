@@ -67,18 +67,6 @@ public class ReleasesServiceTests
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static Release MakeRelease(int discogsId, string artist = "Artist", string title = "Title") =>
-        new()
-        {
-            Id = Guid.NewGuid(),
-            DiscogsId = discogsId,
-            Artist = artist,
-            Title = title,
-            Year = 2000 + discogsId,
-            Format = "Vinyl",
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
     private static Release MakeDetailedRelease(Guid id, int discogsId) =>
         new()
         {
@@ -95,6 +83,216 @@ public class ReleasesServiceTests
             Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
+
+    private static Release MakeRelease(int discogsId, string artist = "Artist", string title = "Title") =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = discogsId,
+            Artist = artist,
+            Title = title,
+            Year = 2000 + discogsId,
+            Format = "Vinyl",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+    // ── GetByIdAsync — found: all fields mapped ───────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_ExistingRelease_ReturnsMappedReleaseDetailDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 555);
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(id);
+        result.DiscogsId.Should().Be(555);
+        result.Artist.Should().Be("John Coltrane");
+        result.Title.Should().Be("A Love Supreme");
+        result.Year.Should().Be(1964);
+        result.Format.Should().Be("Vinyl");
+        result.Label.Should().Be("Impulse!");
+        result.Country.Should().Be("US");
+        result.Genre.Should().Be("Jazz");
+        result.Notes.Should().Be("A landmark recording");
+        result.Styles.Should().Be("Hard Bop, Post Bop");
+    }
+
+    // ── GetByIdAsync — nullable detail fields map correctly when null ─────────
+
+    [Fact]
+    public async Task GetByIdAsync_NullDetailFields_MapsNullsToDto()
+    {
+        // Arrange — a release where detail fields were never populated by sync
+        var id = Guid.NewGuid();
+        var release = new Release
+        {
+            Id = id,
+            DiscogsId = 666,
+            Artist = "Unknown Artist",
+            Title = "Untitled",
+            Year = null,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Year.Should().BeNull();
+        result.Label.Should().BeNull();
+        result.Country.Should().BeNull();
+        result.Genre.Should().BeNull();
+        result.Notes.Should().BeNull();
+        result.Styles.Should().BeNull();
+    }
+
+    // ── GetByIdAsync — not found ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Release?)null);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── GetReleasesAsync — pagination metadata ────────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_BeyondAvailableData_ReturnsEmptyItemsWithCorrectTotalCount()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(5, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release>(), 30));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(5, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().BeEmpty();
+        result.TotalCount.Should().Be(30);
+    }
+
+    // ── GetReleasesAsync — empty database ────────────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_EmptyDatabase_ReturnsEmptyItemsAndZeroTotalCount()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().BeEmpty();
+        result.TotalCount.Should().Be(0);
+    }
+
+    // ── GetReleasesAsync — multiple items on page ─────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_MultipleReleases_ReturnsMappedDtosForEach()
+    {
+        // Arrange
+        var releases = Enumerable.Range(1, 3)
+            .Select(i => MakeRelease(i, $"Artist {i}", $"Album {i}"))
+            .ToList();
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((releases, 3));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(3);
+        result.Items.Select(d => d.Artist).Should().BeEquivalentTo("Artist 1", "Artist 2", "Artist 3");
+    }
+
+    // ── GetReleasesAsync — page size cap ─────────────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_PageSizeExactly100_IsNotCapped()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 100, CancellationToken.None);
+
+        // Assert
+        result.PageSize.Should().Be(100);
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_PageSizeOver100_CapsAt100()
+    {
+        // Arrange — repository must be called with exactly 100, not 200
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 200, CancellationToken.None);
+
+        // Assert
+        result.PageSize.Should().Be(100);
+        _repositoryMock.Verify(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_ReturnsCorrectPageAndPageSizeInResult()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(2, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release>(), 60));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(2, 25, CancellationToken.None);
+
+        // Assert
+        result.Page.Should().Be(2);
+        result.PageSize.Should().Be(25);
+        result.TotalCount.Should().Be(60);
+    }
 
     // ── GetReleasesAsync — mapping ────────────────────────────────────────────
 
@@ -138,203 +336,5 @@ public class ReleasesServiceTests
 
         // Assert
         result.Items.Single().Year.Should().BeNull();
-    }
-
-    // ── GetReleasesAsync — pagination metadata ────────────────────────────────
-
-    [Fact]
-    public async Task GetReleasesAsync_ReturnsCorrectPageAndPageSizeInResult()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(2, 25, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<Release>(), 60));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(2, 25, CancellationToken.None);
-
-        // Assert
-        result.Page.Should().Be(2);
-        result.PageSize.Should().Be(25);
-        result.TotalCount.Should().Be(60);
-    }
-
-    [Fact]
-    public async Task GetReleasesAsync_BeyondAvailableData_ReturnsEmptyItemsWithCorrectTotalCount()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(5, 25, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<Release>(), 30));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(5, 25, CancellationToken.None);
-
-        // Assert
-        result.Items.Should().BeEmpty();
-        result.TotalCount.Should().Be(30);
-    }
-
-    // ── GetReleasesAsync — empty database ────────────────────────────────────
-
-    [Fact]
-    public async Task GetReleasesAsync_EmptyDatabase_ReturnsEmptyItemsAndZeroTotalCount()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<Release>(), 0));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
-
-        // Assert
-        result.Items.Should().BeEmpty();
-        result.TotalCount.Should().Be(0);
-    }
-
-    // ── GetReleasesAsync — page size cap ─────────────────────────────────────
-
-    [Fact]
-    public async Task GetReleasesAsync_PageSizeOver100_CapsAt100()
-    {
-        // Arrange — repository must be called with exactly 100, not 200
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<Release>(), 0));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(1, 200, CancellationToken.None);
-
-        // Assert
-        result.PageSize.Should().Be(100);
-        _repositoryMock.Verify(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetReleasesAsync_PageSizeExactly100_IsNotCapped()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<Release>(), 0));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(1, 100, CancellationToken.None);
-
-        // Assert
-        result.PageSize.Should().Be(100);
-    }
-
-    // ── GetReleasesAsync — multiple items on page ─────────────────────────────
-
-    [Fact]
-    public async Task GetReleasesAsync_MultipleReleases_ReturnsMappedDtosForEach()
-    {
-        // Arrange
-        var releases = Enumerable.Range(1, 3)
-            .Select(i => MakeRelease(i, $"Artist {i}", $"Album {i}"))
-            .ToList();
-
-        _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((releases, 3));
-
-        // Act
-        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
-
-        // Assert
-        result.Items.Should().HaveCount(3);
-        result.Items.Select(d => d.Artist).Should().BeEquivalentTo("Artist 1", "Artist 2", "Artist 3");
-    }
-
-    // ── GetByIdAsync — found: all fields mapped ───────────────────────────────
-
-    [Fact]
-    public async Task GetByIdAsync_ExistingRelease_ReturnsMappedReleaseDetailDto()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var release = MakeDetailedRelease(id, discogsId: 555);
-
-        _repositoryMock
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(release);
-
-        // Act
-        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(id);
-        result.DiscogsId.Should().Be(555);
-        result.Artist.Should().Be("John Coltrane");
-        result.Title.Should().Be("A Love Supreme");
-        result.Year.Should().Be(1964);
-        result.Format.Should().Be("Vinyl");
-        result.Label.Should().Be("Impulse!");
-        result.Country.Should().Be("US");
-        result.Genre.Should().Be("Jazz");
-        result.Notes.Should().Be("A landmark recording");
-        result.Styles.Should().Be("Hard Bop, Post Bop");
-    }
-
-    // ── GetByIdAsync — not found ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetByIdAsync_UnknownId_ReturnsNull()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-
-        _repositoryMock
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Release?)null);
-
-        // Act
-        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    // ── GetByIdAsync — nullable detail fields map correctly when null ─────────
-
-    [Fact]
-    public async Task GetByIdAsync_NullDetailFields_MapsNullsToDto()
-    {
-        // Arrange — a release where detail fields were never populated by sync
-        var id = Guid.NewGuid();
-        var release = new Release
-        {
-            Id = id,
-            DiscogsId = 666,
-            Artist = "Unknown Artist",
-            Title = "Untitled",
-            Year = null,
-            Format = "Vinyl",
-            Label = null,
-            Country = null,
-            Genre = null,
-            Notes = null,
-            Styles = null,
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
-        _repositoryMock
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(release);
-
-        // Act
-        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Year.Should().BeNull();
-        result.Label.Should().BeNull();
-        result.Country.Should().BeNull();
-        result.Genre.Should().BeNull();
-        result.Notes.Should().BeNull();
-        result.Styles.Should().BeNull();
     }
 }

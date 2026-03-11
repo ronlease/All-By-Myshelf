@@ -21,8 +21,8 @@ export interface PagedResult<T> {
 
 @Injectable({ providedIn: 'root' })
 export class DiscogsService {
-  private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
+  private readonly http = inject(HttpClient);
 
   getCollection(page: number, pageSize: number): Observable<PagedResult<ReleaseDto>> {
     const params = new HttpParams()

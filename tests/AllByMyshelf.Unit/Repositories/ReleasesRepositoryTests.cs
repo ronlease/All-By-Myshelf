@@ -85,7 +85,183 @@ public class ReleasesRepositoryTests : IDisposable
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
+    // ── GetByIdAsync — found ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_KnownId_ReturnsCorrectRelease()
+    {
+        // Arrange
+        var target = MakeRelease(901, artist: "Charles Mingus", title: "The Black Saint");
+        _db.Releases.AddRange(target, MakeRelease(902, artist: "Other", title: "Other Album"));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetByIdAsync(target.Id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(target.Id);
+        result.DiscogsId.Should().Be(901);
+        result.Artist.Should().Be("Charles Mingus");
+        result.Title.Should().Be("The Black Saint");
+    }
+
+    // ── GetByIdAsync — not found ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_EmptyDatabase_ReturnsNull()
+    {
+        // Act
+        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        // Arrange
+        _db.Releases.Add(MakeRelease(1000));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── GetPagedAsync — ordering ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_EmptyDatabase_ReturnsEmptyItemsAndZeroCount()
+    {
+        // Act
+        var (items, totalCount) = await _sut.GetPagedAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        items.Should().BeEmpty();
+        totalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_PageBeyondData_ReturnsEmptyItems()
+    {
+        // Arrange
+        _db.Releases.AddRange(Enumerable.Range(1, 3).Select(i => MakeRelease(i)));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var (items, totalCount) = await _sut.GetPagedAsync(5, 25, CancellationToken.None);
+
+        // Assert
+        items.Should().BeEmpty();
+        totalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_ReleasesExist_ReturnsResultsOrderedByArtistThenTitle()
+    {
+        // Arrange
+        _db.Releases.AddRange(
+            MakeRelease(1, artist: "Coltrane", title: "Ballads"),
+            MakeRelease(2, artist: "Coltrane", title: "A Love Supreme"),
+            MakeRelease(3, artist: "Davis",    title: "Kind of Blue")
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var (items, _) = await _sut.GetPagedAsync(1, 10, CancellationToken.None);
+
+        // Assert
+        items.Select(r => r.Title).Should().ContainInOrder("A Love Supreme", "Ballads", "Kind of Blue");
+    }
+
+    // ── GetPagedAsync — total count ───────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_ReturnsCorrectTotalCount()
+    {
+        // Arrange
+        _db.Releases.AddRange(Enumerable.Range(1, 5).Select(i => MakeRelease(i)));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var (_, totalCount) = await _sut.GetPagedAsync(1, 2, CancellationToken.None);
+
+        // Assert
+        totalCount.Should().Be(5);
+    }
+
+    // ── GetPagedAsync — pagination ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_SecondPage_ReturnsCorrectSlice()
+    {
+        // Arrange — 5 releases ordered alphabetically by artist: A1..A5
+        _db.Releases.AddRange(Enumerable.Range(1, 5)
+            .Select(i => MakeRelease(i, artist: $"Artist {i:D2}")));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var (page1Items, _) = await _sut.GetPagedAsync(1, 3, CancellationToken.None);
+        var (page2Items, _) = await _sut.GetPagedAsync(2, 3, CancellationToken.None);
+
+        // Assert — no overlap between pages
+        var page1Ids = page1Items.Select(r => r.DiscogsId).ToHashSet();
+        page2Items.Select(r => r.DiscogsId).Should().NotIntersectWith(page1Ids);
+    }
+
     // ── UpsertCollectionAsync — insert on first sync ──────────────────────────
+
+    [Fact]
+    public async Task UpsertCollectionAsync_AllReleasesRemoved_EmptiesDatabase()
+    {
+        // Arrange
+        _db.Releases.AddRange(MakeRelease(801), MakeRelease(802));
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _sut.UpsertCollectionAsync(Array.Empty<Release>(), CancellationToken.None);
+
+        // Assert
+        var count = await _db.Releases.CountAsync();
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task UpsertCollectionAsync_DetailFieldsNull_PersistsNullsCorrectly()
+    {
+        // Arrange — detail fields explicitly null (no detail sync occurred)
+        var release = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 1200,
+            Artist = "Miles Davis",
+            Title = "Bitches Brew",
+            Year = 1970,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
+
+        // Assert
+        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
+        stored.Should().NotBeNull();
+        stored!.Label.Should().BeNull();
+        stored.Country.Should().BeNull();
+        stored.Genre.Should().BeNull();
+        stored.Notes.Should().BeNull();
+        stored.Styles.Should().BeNull();
+    }
 
     [Fact]
     public async Task UpsertCollectionAsync_EmptyDatabase_InsertsAllReleases()
@@ -150,6 +326,21 @@ public class ReleasesRepositoryTests : IDisposable
     // ── UpsertCollectionAsync — update on subsequent sync ────────────────────
 
     [Fact]
+    public async Task UpsertCollectionAsync_ExistingRelease_DoesNotCreateDuplicate()
+    {
+        // Arrange
+        _db.Releases.Add(MakeRelease(600));
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { MakeRelease(600, artist: "Updated") }, CancellationToken.None);
+
+        // Assert
+        var count = await _db.Releases.CountAsync();
+        count.Should().Be(1);
+    }
+
+    [Fact]
     public async Task UpsertCollectionAsync_ExistingRelease_UpdatesFieldsInPlace()
     {
         // Arrange — seed with old data
@@ -201,250 +392,6 @@ public class ReleasesRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpsertCollectionAsync_ExistingRelease_DoesNotCreateDuplicate()
-    {
-        // Arrange
-        _db.Releases.Add(MakeRelease(600));
-        await _db.SaveChangesAsync();
-
-        // Act
-        await _sut.UpsertCollectionAsync(new[] { MakeRelease(600, artist: "Updated") }, CancellationToken.None);
-
-        // Assert
-        var count = await _db.Releases.CountAsync();
-        count.Should().Be(1);
-    }
-
-    // ── UpsertCollectionAsync — removal of stale records ─────────────────────
-
-    [Fact]
-    public async Task UpsertCollectionAsync_ReleaseAbsentFromIncoming_RemovesItFromDatabase()
-    {
-        // Arrange — two releases in DB, only one comes back from Discogs
-        _db.Releases.AddRange(MakeRelease(701), MakeRelease(702));
-        await _db.SaveChangesAsync();
-
-        // Act
-        await _sut.UpsertCollectionAsync(new[] { MakeRelease(701) }, CancellationToken.None);
-
-        // Assert
-        var stored = await _db.Releases.ToListAsync();
-        stored.Should().HaveCount(1);
-        stored.Single().DiscogsId.Should().Be(701);
-    }
-
-    [Fact]
-    public async Task UpsertCollectionAsync_AllReleasesRemoved_EmptiesDatabase()
-    {
-        // Arrange
-        _db.Releases.AddRange(MakeRelease(801), MakeRelease(802));
-        await _db.SaveChangesAsync();
-
-        // Act
-        await _sut.UpsertCollectionAsync(Array.Empty<Release>(), CancellationToken.None);
-
-        // Assert
-        var count = await _db.Releases.CountAsync();
-        count.Should().Be(0);
-    }
-
-    // ── GetPagedAsync — ordering ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetPagedAsync_ReleasesExist_ReturnsResultsOrderedByArtistThenTitle()
-    {
-        // Arrange
-        _db.Releases.AddRange(
-            MakeRelease(1, artist: "Coltrane", title: "Ballads"),
-            MakeRelease(2, artist: "Coltrane", title: "A Love Supreme"),
-            MakeRelease(3, artist: "Davis",    title: "Kind of Blue")
-        );
-        await _db.SaveChangesAsync();
-
-        // Act
-        var (items, _) = await _sut.GetPagedAsync(1, 10, CancellationToken.None);
-
-        // Assert
-        items.Select(r => r.Title).Should().ContainInOrder("A Love Supreme", "Ballads", "Kind of Blue");
-    }
-
-    // ── GetPagedAsync — total count ───────────────────────────────────────────
-
-    [Fact]
-    public async Task GetPagedAsync_ReturnsCorrectTotalCount()
-    {
-        // Arrange
-        _db.Releases.AddRange(Enumerable.Range(1, 5).Select(i => MakeRelease(i)));
-        await _db.SaveChangesAsync();
-
-        // Act
-        var (_, totalCount) = await _sut.GetPagedAsync(1, 2, CancellationToken.None);
-
-        // Assert
-        totalCount.Should().Be(5);
-    }
-
-    // ── GetPagedAsync — pagination ────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetPagedAsync_SecondPage_ReturnsCorrectSlice()
-    {
-        // Arrange — 5 releases ordered alphabetically by artist: A1..A5
-        _db.Releases.AddRange(Enumerable.Range(1, 5)
-            .Select(i => MakeRelease(i, artist: $"Artist {i:D2}")));
-        await _db.SaveChangesAsync();
-
-        // Act
-        var (page1Items, _) = await _sut.GetPagedAsync(1, 3, CancellationToken.None);
-        var (page2Items, _) = await _sut.GetPagedAsync(2, 3, CancellationToken.None);
-
-        // Assert — no overlap between pages
-        var page1Ids = page1Items.Select(r => r.DiscogsId).ToHashSet();
-        page2Items.Select(r => r.DiscogsId).Should().NotIntersectWith(page1Ids);
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_PageBeyondData_ReturnsEmptyItems()
-    {
-        // Arrange
-        _db.Releases.AddRange(Enumerable.Range(1, 3).Select(i => MakeRelease(i)));
-        await _db.SaveChangesAsync();
-
-        // Act
-        var (items, totalCount) = await _sut.GetPagedAsync(5, 25, CancellationToken.None);
-
-        // Assert
-        items.Should().BeEmpty();
-        totalCount.Should().Be(3);
-    }
-
-    [Fact]
-    public async Task GetPagedAsync_EmptyDatabase_ReturnsEmptyItemsAndZeroCount()
-    {
-        // Act
-        var (items, totalCount) = await _sut.GetPagedAsync(1, 25, CancellationToken.None);
-
-        // Assert
-        items.Should().BeEmpty();
-        totalCount.Should().Be(0);
-    }
-
-    // ── GetByIdAsync — found ──────────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetByIdAsync_KnownId_ReturnsCorrectRelease()
-    {
-        // Arrange
-        var target = MakeRelease(901, artist: "Charles Mingus", title: "The Black Saint");
-        _db.Releases.AddRange(target, MakeRelease(902, artist: "Other", title: "Other Album"));
-        await _db.SaveChangesAsync();
-
-        // Act
-        var result = await _sut.GetByIdAsync(target.Id, CancellationToken.None);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(target.Id);
-        result.DiscogsId.Should().Be(901);
-        result.Artist.Should().Be("Charles Mingus");
-        result.Title.Should().Be("The Black Saint");
-    }
-
-    // ── GetByIdAsync — not found ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetByIdAsync_UnknownId_ReturnsNull()
-    {
-        // Arrange
-        _db.Releases.Add(MakeRelease(1000));
-        await _db.SaveChangesAsync();
-
-        // Act
-        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_EmptyDatabase_ReturnsNull()
-    {
-        // Act
-        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    // ── UpsertCollectionAsync — detail fields persisted and retrieved ──────────
-
-    [Fact]
-    public async Task UpsertCollectionAsync_WithDetailFields_PersistsAllDetailFieldsCorrectly()
-    {
-        // Arrange
-        var release = new Release
-        {
-            Id = Guid.NewGuid(),
-            DiscogsId = 1100,
-            Artist = "John Coltrane",
-            Title = "A Love Supreme",
-            Year = 1964,
-            Format = "Vinyl",
-            Label = "Impulse!",
-            Country = "US",
-            Genre = "Jazz",
-            Notes = "A landmark recording",
-            Styles = "Hard Bop, Post Bop",
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
-        // Act
-        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
-
-        // Assert
-        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
-        stored.Should().NotBeNull();
-        stored!.Label.Should().Be("Impulse!");
-        stored.Country.Should().Be("US");
-        stored.Genre.Should().Be("Jazz");
-        stored.Notes.Should().Be("A landmark recording");
-        stored.Styles.Should().Be("Hard Bop, Post Bop");
-    }
-
-    [Fact]
-    public async Task UpsertCollectionAsync_DetailFieldsNull_PersistsNullsCorrectly()
-    {
-        // Arrange — detail fields explicitly null (no detail sync occurred)
-        var release = new Release
-        {
-            Id = Guid.NewGuid(),
-            DiscogsId = 1200,
-            Artist = "Miles Davis",
-            Title = "Bitches Brew",
-            Year = 1970,
-            Format = "Vinyl",
-            Label = null,
-            Country = null,
-            Genre = null,
-            Notes = null,
-            Styles = null,
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
-        // Act
-        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
-
-        // Assert
-        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
-        stored.Should().NotBeNull();
-        stored!.Label.Should().BeNull();
-        stored.Country.Should().BeNull();
-        stored.Genre.Should().BeNull();
-        stored.Notes.Should().BeNull();
-        stored.Styles.Should().BeNull();
-    }
-
-    [Fact]
     public async Task UpsertCollectionAsync_ExistingReleaseUpdatedWithDetailFields_OverwritesPreviousNulls()
     {
         // Arrange — seed a release without detail fields, then upsert with them populated
@@ -493,5 +440,58 @@ public class ReleasesRepositoryTests : IDisposable
         stored.Genre.Should().Be("Jazz");
         stored.Notes.Should().Be("Free jazz pioneer");
         stored.Styles.Should().Be("Free Jazz, Avant-garde Jazz");
+    }
+
+    // ── UpsertCollectionAsync — removal of stale records ─────────────────────
+
+    [Fact]
+    public async Task UpsertCollectionAsync_ReleaseAbsentFromIncoming_RemovesItFromDatabase()
+    {
+        // Arrange — two releases in DB, only one comes back from Discogs
+        _db.Releases.AddRange(MakeRelease(701), MakeRelease(702));
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { MakeRelease(701) }, CancellationToken.None);
+
+        // Assert
+        var stored = await _db.Releases.ToListAsync();
+        stored.Should().HaveCount(1);
+        stored.Single().DiscogsId.Should().Be(701);
+    }
+
+    // ── UpsertCollectionAsync — detail fields persisted and retrieved ──────────
+
+    [Fact]
+    public async Task UpsertCollectionAsync_WithDetailFields_PersistsAllDetailFieldsCorrectly()
+    {
+        // Arrange
+        var release = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 1100,
+            Artist = "John Coltrane",
+            Title = "A Love Supreme",
+            Year = 1964,
+            Format = "Vinyl",
+            Label = "Impulse!",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "A landmark recording",
+            Styles = "Hard Bop, Post Bop",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
+
+        // Assert
+        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
+        stored.Should().NotBeNull();
+        stored!.Label.Should().Be("Impulse!");
+        stored.Country.Should().Be("US");
+        stored.Genre.Should().Be("Jazz");
+        stored.Notes.Should().Be("A landmark recording");
+        stored.Styles.Should().Be("Hard Bop, Post Bop");
     }
 }

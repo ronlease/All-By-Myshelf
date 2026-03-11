@@ -10,6 +10,14 @@ namespace AllByMyshelf.Api.Repositories;
 public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
 {
     /// <inheritdoc/>
+    public async Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await db.Releases
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<(IReadOnlyList<Release> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -26,14 +34,6 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
-    }
-
-    /// <inheritdoc/>
-    public async Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-    {
-        return await db.Releases
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
     /// <inheritdoc/>

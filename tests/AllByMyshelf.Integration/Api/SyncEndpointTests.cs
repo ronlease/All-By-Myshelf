@@ -42,21 +42,15 @@ namespace AllByMyshelf.Integration.Api;
 /// </summary>
 public class SyncEndpointTests
 {
-    // ── POST /api/v1/sync — 202 Accepted ─────────────────────────────────────
+    // ── Factory helper ────────────────────────────────────────────────────────
 
-    [Fact]
-    public async Task TriggerSync_NoSyncRunning_Returns202Accepted()
+    private static HttpClient CreateClient(ISyncService syncService)
     {
-        // Arrange
-        var syncService = new StubSyncService(SyncStartResult.Started);
-        var client = CreateClient(syncService);
-
-        // Act
-        var response = await client.PostAsync("/api/v1/sync", null);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var factory = new SyncFactory(syncService);
+        return factory.CreateClient();
     }
+
+    // ── POST /api/v1/sync — 202 Accepted ─────────────────────────────────────
 
     [Fact]
     public async Task TriggerSync_NoSyncRunning_ResponseBodyContainsStartedMessage()
@@ -73,20 +67,34 @@ public class SyncEndpointTests
         body.Should().ContainEquivalentOf("sync started");
     }
 
-    // ── POST /api/v1/sync — 409 Conflict ─────────────────────────────────────
-
     [Fact]
-    public async Task TriggerSync_SyncAlreadyRunning_Returns409Conflict()
+    public async Task TriggerSync_NoSyncRunning_Returns202Accepted()
     {
         // Arrange
-        var syncService = new StubSyncService(SyncStartResult.AlreadyRunning);
+        var syncService = new StubSyncService(SyncStartResult.Started);
         var client = CreateClient(syncService);
 
         // Act
         var response = await client.PostAsync("/api/v1/sync", null);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+    }
+
+    // ── POST /api/v1/sync — 409 Conflict ─────────────────────────────────────
+
+    [Fact]
+    public async Task TriggerSync_SyncAlreadyRunning_IsSyncRunningRemainsTrue()
+    {
+        // Arrange
+        var syncService = new StubSyncService(SyncStartResult.AlreadyRunning, isSyncRunning: true);
+        var client = CreateClient(syncService);
+
+        // Act
+        await client.PostAsync("/api/v1/sync", null);
+
+        // Assert — the stub was not reset; it still reports running
+        syncService.IsSyncRunning.Should().BeTrue();
     }
 
     [Fact]
@@ -105,34 +113,20 @@ public class SyncEndpointTests
     }
 
     [Fact]
-    public async Task TriggerSync_SyncAlreadyRunning_IsSyncRunningRemainsTrue()
+    public async Task TriggerSync_SyncAlreadyRunning_Returns409Conflict()
     {
         // Arrange
-        var syncService = new StubSyncService(SyncStartResult.AlreadyRunning, isSyncRunning: true);
-        var client = CreateClient(syncService);
-
-        // Act
-        await client.PostAsync("/api/v1/sync", null);
-
-        // Assert — the stub was not reset; it still reports running
-        syncService.IsSyncRunning.Should().BeTrue();
-    }
-
-    // ── POST /api/v1/sync — 503 Service Unavailable ───────────────────────────
-
-    [Fact]
-    public async Task TriggerSync_TokenNotConfigured_Returns503ServiceUnavailable()
-    {
-        // Arrange
-        var syncService = new StubSyncService(SyncStartResult.TokenNotConfigured);
+        var syncService = new StubSyncService(SyncStartResult.AlreadyRunning);
         var client = CreateClient(syncService);
 
         // Act
         var response = await client.PostAsync("/api/v1/sync", null);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
+
+    // ── POST /api/v1/sync — 503 Service Unavailable ───────────────────────────
 
     [Fact]
     public async Task TriggerSync_TokenNotConfigured_ResponseBodyExplainsMissingToken()
@@ -149,12 +143,18 @@ public class SyncEndpointTests
         body.Should().ContainEquivalentOf("token");
     }
 
-    // ── Factory helper ────────────────────────────────────────────────────────
-
-    private static HttpClient CreateClient(ISyncService syncService)
+    [Fact]
+    public async Task TriggerSync_TokenNotConfigured_Returns503ServiceUnavailable()
     {
-        var factory = new SyncFactory(syncService);
-        return factory.CreateClient();
+        // Arrange
+        var syncService = new StubSyncService(SyncStartResult.TokenNotConfigured);
+        var client = CreateClient(syncService);
+
+        // Act
+        var response = await client.PostAsync("/api/v1/sync", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
     }
 
     // ── WebApplicationFactory ─────────────────────────────────────────────────

@@ -11,6 +11,29 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
     private const int MaxPageSize = 100;
 
     /// <inheritdoc/>
+    public async Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var release = await repository.GetByIdAsync(id, cancellationToken);
+        if (release is null)
+            return null;
+
+        return new ReleaseDetailDto
+        {
+            Id = release.Id,
+            DiscogsId = release.DiscogsId,
+            Artist = release.Artist,
+            Title = release.Title,
+            Year = release.Year,
+            Format = release.Format,
+            Label = release.Label,
+            Country = release.Country,
+            Genre = release.Genre,
+            Notes = release.Notes,
+            Styles = release.Styles
+        };
+    }
+
+    /// <inheritdoc/>
     public async Task<PagedResult<ReleaseDto>> GetReleasesAsync(
         int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -32,29 +55,6 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount
-        };
-    }
-
-    /// <inheritdoc/>
-    public async Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var release = await repository.GetByIdAsync(id, cancellationToken);
-        if (release is null)
-            return null;
-
-        return new ReleaseDetailDto
-        {
-            Id = release.Id,
-            DiscogsId = release.DiscogsId,
-            Artist = release.Artist,
-            Title = release.Title,
-            Year = release.Year,
-            Format = release.Format,
-            Label = release.Label,
-            Country = release.Country,
-            Genre = release.Genre,
-            Notes = release.Notes,
-            Styles = release.Styles
         };
     }
 }

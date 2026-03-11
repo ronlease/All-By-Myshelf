@@ -72,38 +72,6 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 {
     private readonly ReleasesFactory _factory = factory;
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static Release MakeRelease(int discogsId, string artist, string title, int? year = 2000,
-        string format = "Vinyl") =>
-        new()
-        {
-            Id = Guid.NewGuid(),
-            DiscogsId = discogsId,
-            Artist = artist,
-            Title = title,
-            Year = year,
-            Format = format,
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
-    private static Release MakeDetailedRelease(Guid id, int discogsId) =>
-        new()
-        {
-            Id = id,
-            DiscogsId = discogsId,
-            Artist = "John Coltrane",
-            Title = "A Love Supreme",
-            Year = 1964,
-            Format = "Vinyl",
-            Label = "Impulse!",
-            Country = "US",
-            Genre = "Jazz",
-            Notes = "A landmark recording",
-            Styles = "Hard Bop, Post Bop",
-            LastSyncedAt = DateTimeOffset.UtcNow
-        };
-
     /// <summary>Seeds the in-memory database with the given releases, returns a fresh client.</summary>
     private HttpClient CreateClientWithSeededData(IEnumerable<Release> releases)
     {
@@ -119,136 +87,28 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         return client;
     }
 
-    // ── GET /api/v1/releases — empty database ─────────────────────────────────
-
-    [Fact]
-    public async Task GetReleases_EmptyDatabase_Returns200WithEmptyArrayAndZeroCount()
-    {
-        // Arrange
-        var client = CreateClientWithSeededData(Array.Empty<Release>());
-
-        // Act
-        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-        body.Should().NotBeNull();
-        body!.Items.Should().BeEmpty();
-        body.TotalCount.Should().Be(0);
-    }
-
-    // ── GET /api/v1/releases — first page ────────────────────────────────────
-
-    [Fact]
-    public async Task GetReleases_FirstPage_Returns200WithReleasesAndCorrectTotalCount()
-    {
-        // Arrange
-        var releases = Enumerable.Range(1, 30)
-            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
-            .ToList();
-        var client = CreateClientWithSeededData(releases);
-
-        // Act
-        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-        body!.Items.Should().HaveCount(25);
-        body.TotalCount.Should().Be(30);
-        body.Page.Should().Be(1);
-        body.PageSize.Should().Be(25);
-    }
-
-    [Fact]
-    public async Task GetReleases_FirstPage_EachReleaseContainsArtistTitleYearFormat()
-    {
-        // Arrange
-        var client = CreateClientWithSeededData(new[]
-        {
-            MakeRelease(1, "John Coltrane", "A Love Supreme", 1964, "Vinyl")
-        });
-
-        // Act
-        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
-        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-
-        // Assert
-        var item = body!.Items.Single();
-        item.Artist.Should().Be("John Coltrane");
-        item.Title.Should().Be("A Love Supreme");
-        item.Year.Should().Be(1964);
-        item.Format.Should().Be("Vinyl");
-    }
-
-    // ── GET /api/v1/releases — second page ───────────────────────────────────
-
-    [Fact]
-    public async Task GetReleases_SecondPage_Returns200WithNonOverlappingItems()
-    {
-        // Arrange — 30 releases, alphabetical artists A01..A30
-        var releases = Enumerable.Range(1, 30)
-            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
-            .ToList();
-        var client = CreateClientWithSeededData(releases);
-
-        // Act
-        var page1Response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
-        var page2Response = await client.GetAsync("/api/v1/releases?page=2&pageSize=25");
-
-        // Assert
-        page1Response.StatusCode.Should().Be(HttpStatusCode.OK);
-        page2Response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var page1 = await page1Response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-        var page2 = await page2Response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-
-        page2!.Items.Should().NotBeEmpty();
-        var page1Titles = page1!.Items.Select(i => i.Title).ToHashSet();
-        page2.Items.Select(i => i.Title).Should().NotIntersectWith(page1Titles);
-    }
-
-    // ── GET /api/v1/releases — page beyond data ───────────────────────────────
-
-    [Fact]
-    public async Task GetReleases_PageBeyondAvailableData_Returns200WithEmptyItemsAndCorrectCount()
-    {
-        // Arrange — 30 releases, request page 5 of pageSize 25
-        var releases = Enumerable.Range(1, 30)
-            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
-            .ToList();
-        var client = CreateClientWithSeededData(releases);
-
-        // Act
-        var response = await client.GetAsync("/api/v1/releases?page=5&pageSize=25");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
-        body!.Items.Should().BeEmpty();
-        body.TotalCount.Should().Be(30);
-    }
-
-    // ── GET /api/v1/releases — default parameters ─────────────────────────────
-
-    [Fact]
-    public async Task GetReleases_NoQueryParameters_Returns200UsingDefaults()
-    {
-        // Arrange
-        var client = CreateClientWithSeededData(new[] { MakeRelease(1, "Artist", "Album") });
-
-        // Act
-        var response = await client.GetAsync("/api/v1/releases");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
     // ── GET /api/v1/releases/{id} — 200 with full detail ─────────────────────
+
+    [Fact]
+    public async Task GetRelease_ExistingId_ResponseIncludesAllDetailFields()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 5002);
+        var client = CreateClientWithSeededData(new[] { release });
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{id}");
+        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+
+        // Assert
+        body.Should().NotBeNull();
+        body!.Label.Should().Be("Impulse!");
+        body.Country.Should().Be("US");
+        body.Genre.Should().Be("Jazz");
+        body.Notes.Should().Be("A landmark recording");
+        body.Styles.Should().Be("Hard Bop, Post Bop");
+    }
 
     [Fact]
     public async Task GetRelease_ExistingId_Returns200WithFullReleaseDetailDto()
@@ -274,42 +134,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body.Format.Should().Be("Vinyl");
     }
 
-    [Fact]
-    public async Task GetRelease_ExistingId_ResponseIncludesAllDetailFields()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var release = MakeDetailedRelease(id, discogsId: 5002);
-        var client = CreateClientWithSeededData(new[] { release });
-
-        // Act
-        var response = await client.GetAsync($"/api/v1/releases/{id}");
-        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
-
-        // Assert
-        body.Should().NotBeNull();
-        body!.Label.Should().Be("Impulse!");
-        body.Country.Should().Be("US");
-        body.Genre.Should().Be("Jazz");
-        body.Notes.Should().Be("A landmark recording");
-        body.Styles.Should().Be("Hard Bop, Post Bop");
-    }
-
     // ── GET /api/v1/releases/{id} — 404 when not found ───────────────────────
-
-    [Fact]
-    public async Task GetRelease_UnknownId_Returns404()
-    {
-        // Arrange — database is empty; any Guid will be unknown
-        var client = CreateClientWithSeededData(Array.Empty<Release>());
-        var unknownId = Guid.NewGuid();
-
-        // Act
-        var response = await client.GetAsync($"/api/v1/releases/{unknownId}");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
 
     [Fact]
     public async Task GetRelease_IdNotInDatabase_Returns404EvenWhenOtherReleasesExist()
@@ -366,6 +191,202 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body.Styles.Should().BeNull();
     }
 
+    [Fact]
+    public async Task GetRelease_UnknownId_Returns404()
+    {
+        // Arrange — database is empty; any Guid will be unknown
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{unknownId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── GET /api/v1/releases — empty database ─────────────────────────────────
+
+    [Fact]
+    public async Task GetReleases_EmptyDatabase_Returns200WithEmptyArrayAndZeroCount()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+        body.Should().NotBeNull();
+        body!.Items.Should().BeEmpty();
+        body.TotalCount.Should().Be(0);
+    }
+
+    // ── GET /api/v1/releases — first page ────────────────────────────────────
+
+    [Fact]
+    public async Task GetReleases_FirstPage_EachReleaseContainsArtistTitleYearFormat()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(new[]
+        {
+            MakeRelease(1, "John Coltrane", "A Love Supreme", 1964, "Vinyl")
+        });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+
+        // Assert
+        var item = body!.Items.Single();
+        item.Artist.Should().Be("John Coltrane");
+        item.Title.Should().Be("A Love Supreme");
+        item.Year.Should().Be(1964);
+        item.Format.Should().Be("Vinyl");
+    }
+
+    [Fact]
+    public async Task GetReleases_FirstPage_Returns200WithReleasesAndCorrectTotalCount()
+    {
+        // Arrange
+        var releases = Enumerable.Range(1, 30)
+            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
+            .ToList();
+        var client = CreateClientWithSeededData(releases);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+        body!.Items.Should().HaveCount(25);
+        body.TotalCount.Should().Be(30);
+        body.Page.Should().Be(1);
+        body.PageSize.Should().Be(25);
+    }
+
+    // ── GET /api/v1/releases — default parameters ─────────────────────────────
+
+    [Fact]
+    public async Task GetReleases_NoQueryParameters_Returns200UsingDefaults()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(new[] { MakeRelease(1, "Artist", "Album") });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── GET /api/v1/releases — page beyond data ───────────────────────────────
+
+    [Fact]
+    public async Task GetReleases_PageBeyondAvailableData_Returns200WithEmptyItemsAndCorrectCount()
+    {
+        // Arrange — 30 releases, request page 5 of pageSize 25
+        var releases = Enumerable.Range(1, 30)
+            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
+            .ToList();
+        var client = CreateClientWithSeededData(releases);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases?page=5&pageSize=25");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+        body!.Items.Should().BeEmpty();
+        body.TotalCount.Should().Be(30);
+    }
+
+    // ── GET /api/v1/releases — second page ───────────────────────────────────
+
+    [Fact]
+    public async Task GetReleases_SecondPage_Returns200WithNonOverlappingItems()
+    {
+        // Arrange — 30 releases, alphabetical artists A01..A30
+        var releases = Enumerable.Range(1, 30)
+            .Select(i => MakeRelease(i, $"Artist {i:D2}", $"Album {i}"))
+            .ToList();
+        var client = CreateClientWithSeededData(releases);
+
+        // Act
+        var page1Response = await client.GetAsync("/api/v1/releases?page=1&pageSize=25");
+        var page2Response = await client.GetAsync("/api/v1/releases?page=2&pageSize=25");
+
+        // Assert
+        page1Response.StatusCode.Should().Be(HttpStatusCode.OK);
+        page2Response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var page1 = await page1Response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+        var page2 = await page2Response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+
+        page2!.Items.Should().NotBeEmpty();
+        var page1Titles = page1!.Items.Select(i => i.Title).ToHashSet();
+        page2.Items.Select(i => i.Title).Should().NotIntersectWith(page1Titles);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Release MakeDetailedRelease(Guid id, int discogsId) =>
+        new()
+        {
+            Id = id,
+            DiscogsId = discogsId,
+            Artist = "John Coltrane",
+            Title = "A Love Supreme",
+            Year = 1964,
+            Format = "Vinyl",
+            Label = "Impulse!",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "A landmark recording",
+            Styles = "Hard Bop, Post Bop",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+    private static Release MakeRelease(int discogsId, string artist, string title, int? year = 2000,
+        string format = "Vinyl") =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = discogsId,
+            Artist = artist,
+            Title = title,
+            Year = year,
+            Format = format,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+    /// <summary>
+    /// Removes the three service registrations that Program.cs creates for SyncService.
+    /// Uses a two-pass approach: first remove all typed registrations, then remove the
+    /// IHostedService factory lambda that closes over SyncService.
+    /// </summary>
+    internal static void RemoveSyncServiceDescriptors(IServiceCollection services)
+    {
+        // Remove concrete SyncService singleton and ISyncService forwarding lambda
+        services.RemoveAll<SyncService>();
+        services.RemoveAll<ISyncService>();
+
+        // Remove the IHostedService factory lambda: it has no ImplementationType (it's a
+        // factory delegate) — but it is the only IHostedService registered by the app, so
+        // removing all factory-backed IHostedService descriptors is safe here.
+        var hostedServiceDescriptors = services
+            .Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == null)
+            .ToList();
+        foreach (var d in hostedServiceDescriptors)
+            services.Remove(d);
+    }
+
     // ── WebApplicationFactory ─────────────────────────────────────────────────
 
     /// <summary>
@@ -420,15 +441,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
                         .UseInternalServiceProvider(inMemoryServiceProvider)
                         .UseInMemoryDatabase(_dbName));
 
-                // Remove SyncService and all registrations that reference it.
-                // Program.cs registers three descriptors:
-                //   AddSingleton<SyncService>()
-                //   AddSingleton<ISyncService>(sp => sp.GetRequiredService<SyncService>())
-                //   AddHostedService(sp => sp.GetRequiredService<SyncService>())
-                // The lambda descriptors have ImplementationType == null, so we remove them
-                // by service type. The IHostedService lambda must be removed by inspecting
-                // the factory delegate — easiest approach is to remove all IHostedService
-                // descriptors that have a null implementation type (i.e. factory-registered).
+                // Remove all SyncService registrations, then register the per-scenario stub
                 RemoveSyncServiceDescriptors(services);
                 services.AddSingleton<ISyncService>(new NoOpSyncService());
 
@@ -440,27 +453,6 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 
             builder.UseEnvironment("Testing");
         }
-    }
-
-    /// <summary>
-    /// Removes the three service registrations that Program.cs creates for SyncService.
-    /// Uses a two-pass approach: first remove all typed registrations, then remove the
-    /// IHostedService factory lambda that closes over SyncService.
-    /// </summary>
-    internal static void RemoveSyncServiceDescriptors(IServiceCollection services)
-    {
-        // Remove concrete SyncService singleton and ISyncService forwarding lambda
-        services.RemoveAll<SyncService>();
-        services.RemoveAll<ISyncService>();
-
-        // Remove the IHostedService factory lambda: it has no ImplementationType (it's a
-        // factory delegate) — but it is the only IHostedService registered by the app, so
-        // removing all factory-backed IHostedService descriptors is safe here.
-        var hostedServiceDescriptors = services
-            .Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == null)
-            .ToList();
-        foreach (var d in hostedServiceDescriptors)
-            services.Remove(d);
     }
 
     private sealed class NoOpSyncService : ISyncService

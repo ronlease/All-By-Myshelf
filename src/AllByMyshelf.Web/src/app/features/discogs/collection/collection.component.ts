@@ -26,25 +26,10 @@ import { DiscogsService, ReleaseDto, PagedResult } from '../discogs.service';
   templateUrl: './collection.component.html',
 })
 export class CollectionComponent implements OnInit {
-  private readonly discogsService = inject(DiscogsService);
-  private readonly snackBar = inject(MatSnackBar);
-
-  readonly displayedColumns = ['artist', 'title', 'year', 'format'];
-  readonly pageSize = 20;
-
-  loading = signal(true);
-  syncing = signal(false);
   currentPage = signal(1);
-  pagedResult = signal<PagedResult<ReleaseDto> | null>(null);
-
-  get releases(): ReleaseDto[] {
-    return this.pagedResult()?.items ?? [];
-  }
-
-  get totalCount(): number {
-    return this.pagedResult()?.totalCount ?? 0;
-  }
-
+  private readonly discogsService = inject(DiscogsService);
+  readonly displayedColumns = ['artist', 'title', 'year', 'format'];
+  loading = signal(true);
   ngOnInit(): void {
     this.loadPage(1);
   }
@@ -83,6 +68,20 @@ export class CollectionComponent implements OnInit {
         }
       },
     });
+  }
+
+  pagedResult = signal<PagedResult<ReleaseDto> | null>(null);
+  readonly pageSize = 20;
+
+  get releases(): ReleaseDto[] {
+    return this.pagedResult()?.items ?? [];
+  }
+
+  private readonly snackBar = inject(MatSnackBar);
+  syncing = signal(false);
+
+  get totalCount(): number {
+    return this.pagedResult()?.totalCount ?? 0;
   }
 
   private loadPage(page: number): void {

@@ -13,6 +13,29 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
 {
     private readonly DiscogsOptions _options = options.Value;
 
+    private async Task<HttpResponseMessage> FetchWithRetryAsync(string url, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Authorization", $"Discogs token={_options.PersonalAccessToken}");
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(60);
+                logger.LogWarning("Discogs rate limit hit. Backing off for {Seconds}s before retrying {Url}.",
+                    retryAfter.TotalSeconds, url);
+                await Task.Delay(retryAfter, cancellationToken);
+                continue;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return response;
+        }
+    }
+
     /// <summary>
     /// Fetches every release from the user's flat Discogs collection (all pages).
     /// </summary>
@@ -73,29 +96,6 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
             return null;
         }
     }
-
-    private async Task<HttpResponseMessage> FetchWithRetryAsync(string url, CancellationToken cancellationToken)
-    {
-        while (true)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("Authorization", $"Discogs token={_options.PersonalAccessToken}");
-
-            var response = await httpClient.SendAsync(request, cancellationToken);
-
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
-            {
-                var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(60);
-                logger.LogWarning("Discogs rate limit hit. Backing off for {Seconds}s before retrying {Url}.",
-                    retryAfter.TotalSeconds, url);
-                await Task.Delay(retryAfter, cancellationToken);
-                continue;
-            }
-
-            response.EnsureSuccessStatusCode();
-            return response;
-        }
-    }
 }
 
 // ── Response model types ──────────────────────────────────────────────────────
@@ -113,6 +113,9 @@ public class DiscogsCollectionPage
 /// <summary>Pagination metadata from a Discogs collection response.</summary>
 public class DiscogsPagination
 {
+    [JsonPropertyName("items")]
+    public int Items { get; init; }
+
     [JsonPropertyName("page")]
     public int Page { get; init; }
 
@@ -121,35 +124,32 @@ public class DiscogsPagination
 
     [JsonPropertyName("per_page")]
     public int PerPage { get; init; }
-
-    [JsonPropertyName("items")]
-    public int Items { get; init; }
 }
 
 /// <summary>A single release entry within a Discogs collection page.</summary>
 public class DiscogsRelease
 {
-    [JsonPropertyName("id")]
-    public int Id { get; init; }
-
     [JsonPropertyName("basic_information")]
     public DiscogsBasicInformation BasicInformation { get; init; } = new();
+
+    [JsonPropertyName("id")]
+    public int Id { get; init; }
 }
 
 /// <summary>Basic metadata for a Discogs release.</summary>
 public class DiscogsBasicInformation
 {
-    [JsonPropertyName("title")]
-    public string Title { get; init; } = string.Empty;
-
-    [JsonPropertyName("year")]
-    public int Year { get; init; }
-
     [JsonPropertyName("artists")]
     public List<DiscogsArtist> Artists { get; init; } = [];
 
     [JsonPropertyName("formats")]
     public List<DiscogsFormat> Formats { get; init; } = [];
+
+    [JsonPropertyName("title")]
+    public string Title { get; init; } = string.Empty;
+
+    [JsonPropertyName("year")]
+    public int Year { get; init; }
 }
 
 /// <summary>An artist reference within a Discogs release.</summary>
@@ -171,14 +171,14 @@ public class DiscogsFormat
 /// <summary>Extended detail for a single Discogs release (GET /releases/{id}).</summary>
 public class DiscogsReleaseDetail
 {
-    [JsonPropertyName("labels")]
-    public List<DiscogsLabel> Labels { get; init; } = [];
-
     [JsonPropertyName("country")]
     public string? Country { get; init; }
 
     [JsonPropertyName("genres")]
     public List<string> Genres { get; init; } = [];
+
+    [JsonPropertyName("labels")]
+    public List<DiscogsLabel> Labels { get; init; } = [];
 
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }

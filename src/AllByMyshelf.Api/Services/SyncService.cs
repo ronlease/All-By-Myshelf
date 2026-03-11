@@ -19,31 +19,15 @@ public class SyncService(
 {
     private readonly DiscogsOptions _options = options.Value;
 
-    // 0 = idle, 1 = running
-    private int _syncRunning;
-
     // Channel used to signal the background loop that a sync was requested.
     private readonly System.Threading.Channels.Channel<bool> _syncChannel =
         System.Threading.Channels.Channel.CreateBounded<bool>(1);
 
+    // 0 = idle, 1 = running
+    private int _syncRunning;
+
     /// <inheritdoc/>
     public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
-
-    /// <inheritdoc/>
-    public SyncStartResult TryStartSync()
-    {
-        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
-            return SyncStartResult.TokenNotConfigured;
-
-        // Try to acquire the running flag atomically.
-        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
-            return SyncStartResult.AlreadyRunning;
-
-        // Signal the background loop. If the channel is already full the write
-        // will fail, but that's fine — a sync is about to run anyway.
-        _syncChannel.Writer.TryWrite(true);
-        return SyncStartResult.Started;
-    }
 
     /// <summary>
     /// Background loop: waits for sync signals and executes them one at a time.
@@ -124,5 +108,21 @@ public class SyncService(
 
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Discogs sync completed successfully.");
+    }
+
+    /// <inheritdoc/>
+    public SyncStartResult TryStartSync()
+    {
+        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
+            return SyncStartResult.TokenNotConfigured;
+
+        // Try to acquire the running flag atomically.
+        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
+            return SyncStartResult.AlreadyRunning;
+
+        // Signal the background loop. If the channel is already full the write
+        // will fail, but that's fine — a sync is about to run anyway.
+        _syncChannel.Writer.TryWrite(true);
+        return SyncStartResult.Started;
     }
 }
