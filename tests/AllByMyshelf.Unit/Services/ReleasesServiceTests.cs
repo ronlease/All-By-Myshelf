@@ -1,4 +1,5 @@
 // Feature: Paginated collection endpoint  (ABM-004)
+// Feature: Release detail view             (ABM-012)
 //
 // Scenario: Retrieve the first page of releases
 //   Given the database contains releases
@@ -28,6 +29,21 @@
 //   Given the caller requests pageSize=200
 //   When GetReleasesAsync is called
 //   Then the repository is queried with pageSize=100
+//
+// Scenario: GetByIdAsync returns a fully mapped ReleaseDetailDto when the release exists
+//   Given the repository returns a release with all fields populated
+//   When GetByIdAsync is called with its Guid
+//   Then the returned dto maps all fields including label, country, genre, notes, and styles
+//
+// Scenario: GetByIdAsync returns null when the release is not found
+//   Given the repository returns null for an unknown Guid
+//   When GetByIdAsync is called
+//   Then null is returned
+//
+// Scenario: GetByIdAsync maps nullable detail fields as null when they are null on the entity
+//   Given the repository returns a release whose detail fields are all null
+//   When GetByIdAsync is called
+//   Then the returned dto has null for label, country, genre, notes, and styles
 
 using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
@@ -60,6 +76,23 @@ public class ReleasesServiceTests
             Title = title,
             Year = 2000 + discogsId,
             Format = "Vinyl",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+    private static Release MakeDetailedRelease(Guid id, int discogsId) =>
+        new()
+        {
+            Id = id,
+            DiscogsId = discogsId,
+            Artist = "John Coltrane",
+            Title = "A Love Supreme",
+            Year = 1964,
+            Format = "Vinyl",
+            Label = "Impulse!",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "A landmark recording",
+            Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -213,5 +246,95 @@ public class ReleasesServiceTests
         // Assert
         result.Items.Should().HaveCount(3);
         result.Items.Select(d => d.Artist).Should().BeEquivalentTo("Artist 1", "Artist 2", "Artist 3");
+    }
+
+    // ── GetByIdAsync — found: all fields mapped ───────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_ExistingRelease_ReturnsMappedReleaseDetailDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 555);
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(id);
+        result.DiscogsId.Should().Be(555);
+        result.Artist.Should().Be("John Coltrane");
+        result.Title.Should().Be("A Love Supreme");
+        result.Year.Should().Be(1964);
+        result.Format.Should().Be("Vinyl");
+        result.Label.Should().Be("Impulse!");
+        result.Country.Should().Be("US");
+        result.Genre.Should().Be("Jazz");
+        result.Notes.Should().Be("A landmark recording");
+        result.Styles.Should().Be("Hard Bop, Post Bop");
+    }
+
+    // ── GetByIdAsync — not found ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Release?)null);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── GetByIdAsync — nullable detail fields map correctly when null ─────────
+
+    [Fact]
+    public async Task GetByIdAsync_NullDetailFields_MapsNullsToDto()
+    {
+        // Arrange — a release where detail fields were never populated by sync
+        var id = Guid.NewGuid();
+        var release = new Release
+        {
+            Id = id,
+            DiscogsId = 666,
+            Artist = "Unknown Artist",
+            Title = "Untitled",
+            Year = null,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Year.Should().BeNull();
+        result.Label.Should().BeNull();
+        result.Country.Should().BeNull();
+        result.Genre.Should().BeNull();
+        result.Notes.Should().BeNull();
+        result.Styles.Should().BeNull();
     }
 }

@@ -1,4 +1,5 @@
 // Feature: Paginated collection endpoint  (ABM-004)
+// Feature: Release detail view             (ABM-012)
 //
 // Scenario: Retrieve the first page of releases
 //   Given the database contains releases
@@ -28,6 +29,22 @@
 //   Then the response is HTTP 200 OK
 //   And the response body contains an empty releases array
 //   And the total record count is 0
+//
+// Scenario: GET /api/v1/releases/{id} returns 200 with full ReleaseDetailDto when the release exists
+//   Given the database contains a release with all detail fields populated
+//   When I request GET /api/v1/releases/{id}
+//   Then the response is HTTP 200 OK
+//   And the body contains all fields: artist, title, year, format, label, country, genre, notes, styles
+//
+// Scenario: GET /api/v1/releases/{id} returns 404 when the release does not exist
+//   Given the database does not contain a release with the requested id
+//   When I request GET /api/v1/releases/{id}
+//   Then the response is HTTP 404 Not Found
+//
+// Scenario: Detail view fields are present in the response after a resync
+//   Given a release was synced with label, country, genre, notes, and styles populated
+//   When I request GET /api/v1/releases/{id}
+//   Then the response body includes all those detail fields with their stored values
 
 using System.Net;
 using System.Net.Http.Json;
@@ -67,6 +84,23 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
             Title = title,
             Year = year,
             Format = format,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+    private static Release MakeDetailedRelease(Guid id, int discogsId) =>
+        new()
+        {
+            Id = id,
+            DiscogsId = discogsId,
+            Artist = "John Coltrane",
+            Title = "A Love Supreme",
+            Year = 1964,
+            Format = "Vinyl",
+            Label = "Impulse!",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "A landmark recording",
+            Styles = "Hard Bop, Post Bop",
             LastSyncedAt = DateTimeOffset.UtcNow
         };
 
@@ -212,6 +246,124 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── GET /api/v1/releases/{id} — 200 with full detail ─────────────────────
+
+    [Fact]
+    public async Task GetRelease_ExistingId_Returns200WithFullReleaseDetailDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 5001);
+        var client = CreateClientWithSeededData(new[] { release });
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+        body.Should().NotBeNull();
+        body!.Id.Should().Be(id);
+        body.DiscogsId.Should().Be(5001);
+        body.Artist.Should().Be("John Coltrane");
+        body.Title.Should().Be("A Love Supreme");
+        body.Year.Should().Be(1964);
+        body.Format.Should().Be("Vinyl");
+    }
+
+    [Fact]
+    public async Task GetRelease_ExistingId_ResponseIncludesAllDetailFields()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 5002);
+        var client = CreateClientWithSeededData(new[] { release });
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{id}");
+        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+
+        // Assert
+        body.Should().NotBeNull();
+        body!.Label.Should().Be("Impulse!");
+        body.Country.Should().Be("US");
+        body.Genre.Should().Be("Jazz");
+        body.Notes.Should().Be("A landmark recording");
+        body.Styles.Should().Be("Hard Bop, Post Bop");
+    }
+
+    // ── GET /api/v1/releases/{id} — 404 when not found ───────────────────────
+
+    [Fact]
+    public async Task GetRelease_UnknownId_Returns404()
+    {
+        // Arrange — database is empty; any Guid will be unknown
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{unknownId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetRelease_IdNotInDatabase_Returns404EvenWhenOtherReleasesExist()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(new[]
+        {
+            MakeRelease(1, "Artist", "Album")
+        });
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{unknownId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── GET /api/v1/releases/{id} — nullable detail fields ───────────────────
+
+    [Fact]
+    public async Task GetRelease_ReleaseWithNoDetailFields_Returns200WithNullDetailFields()
+    {
+        // Arrange — release without detail fields (e.g. synced before ABM-012)
+        var id = Guid.NewGuid();
+        var release = new Release
+        {
+            Id = id,
+            DiscogsId = 5003,
+            Artist = "Miles Davis",
+            Title = "Kind of Blue",
+            Year = 1959,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+        var client = CreateClientWithSeededData(new[] { release });
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/releases/{id}");
+        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.Should().NotBeNull();
+        body!.Label.Should().BeNull();
+        body.Country.Should().BeNull();
+        body.Genre.Should().BeNull();
+        body.Notes.Should().BeNull();
+        body.Styles.Should().BeNull();
     }
 
     // ── WebApplicationFactory ─────────────────────────────────────────────────

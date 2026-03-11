@@ -38,4 +38,26 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
         var result = await releasesService.GetReleasesAsync(page, pageSize, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Returns the full detail for a single release.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Full release detail including label, country, genre, styles, and notes.</returns>
+    /// <response code="200">Returns the release detail.</response>
+    /// <response code="404">No release with the specified ID was found.</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReleaseDetailDto>> GetRelease(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await releasesService.GetByIdAsync(id, cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
 }

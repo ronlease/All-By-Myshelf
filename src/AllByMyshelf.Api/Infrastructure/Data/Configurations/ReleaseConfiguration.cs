@@ -45,6 +45,26 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(r => r.Label)
+            .HasColumnName("label")
+            .HasMaxLength(500);
+
+        builder.Property(r => r.Country)
+            .HasColumnName("country")
+            .HasMaxLength(100);
+
+        builder.Property(r => r.Genre)
+            .HasColumnName("genre")
+            .HasMaxLength(200);
+
+        builder.Property(r => r.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(5000);
+
+        builder.Property(r => r.Styles)
+            .HasColumnName("styles")
+            .HasMaxLength(1000);
+
         builder.Property(r => r.LastSyncedAt)
             .HasColumnName("last_synced_at")
             .IsRequired();

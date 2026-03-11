@@ -1,4 +1,5 @@
 // Feature: Persisting synced releases to the database  (ABM-003)
+// Feature: Release detail view                          (ABM-012)
 //
 // Scenario: New releases are inserted on first sync
 //   Given the local database contains no releases
@@ -28,6 +29,21 @@
 //   Given the database contains more records than pageSize
 //   When GetPagedAsync is called with page=2
 //   Then the items are distinct from page 1
+//
+// Scenario: GetByIdAsync returns the correct release when found
+//   Given the database contains a release with a known Guid
+//   When GetByIdAsync is called with that Guid
+//   Then the matching release is returned
+//
+// Scenario: GetByIdAsync returns null when not found
+//   Given the database does not contain a release with the requested Guid
+//   When GetByIdAsync is called
+//   Then null is returned
+//
+// Scenario: Detail fields are persisted and retrieved correctly through upsert
+//   Given a release with label, country, genre, notes, and styles
+//   When UpsertCollectionAsync is called
+//   Then all detail fields are stored and retrievable via GetByIdAsync
 
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
@@ -311,5 +327,171 @@ public class ReleasesRepositoryTests : IDisposable
         // Assert
         items.Should().BeEmpty();
         totalCount.Should().Be(0);
+    }
+
+    // ── GetByIdAsync — found ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_KnownId_ReturnsCorrectRelease()
+    {
+        // Arrange
+        var target = MakeRelease(901, artist: "Charles Mingus", title: "The Black Saint");
+        _db.Releases.AddRange(target, MakeRelease(902, artist: "Other", title: "Other Album"));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetByIdAsync(target.Id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(target.Id);
+        result.DiscogsId.Should().Be(901);
+        result.Artist.Should().Be("Charles Mingus");
+        result.Title.Should().Be("The Black Saint");
+    }
+
+    // ── GetByIdAsync — not found ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        // Arrange
+        _db.Releases.Add(MakeRelease(1000));
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_EmptyDatabase_ReturnsNull()
+    {
+        // Act
+        var result = await _sut.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── UpsertCollectionAsync — detail fields persisted and retrieved ──────────
+
+    [Fact]
+    public async Task UpsertCollectionAsync_WithDetailFields_PersistsAllDetailFieldsCorrectly()
+    {
+        // Arrange
+        var release = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 1100,
+            Artist = "John Coltrane",
+            Title = "A Love Supreme",
+            Year = 1964,
+            Format = "Vinyl",
+            Label = "Impulse!",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "A landmark recording",
+            Styles = "Hard Bop, Post Bop",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
+
+        // Assert
+        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
+        stored.Should().NotBeNull();
+        stored!.Label.Should().Be("Impulse!");
+        stored.Country.Should().Be("US");
+        stored.Genre.Should().Be("Jazz");
+        stored.Notes.Should().Be("A landmark recording");
+        stored.Styles.Should().Be("Hard Bop, Post Bop");
+    }
+
+    [Fact]
+    public async Task UpsertCollectionAsync_DetailFieldsNull_PersistsNullsCorrectly()
+    {
+        // Arrange — detail fields explicitly null (no detail sync occurred)
+        var release = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 1200,
+            Artist = "Miles Davis",
+            Title = "Bitches Brew",
+            Year = 1970,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { release }, CancellationToken.None);
+
+        // Assert
+        var stored = await _sut.GetByIdAsync(release.Id, CancellationToken.None);
+        stored.Should().NotBeNull();
+        stored!.Label.Should().BeNull();
+        stored.Country.Should().BeNull();
+        stored.Genre.Should().BeNull();
+        stored.Notes.Should().BeNull();
+        stored.Styles.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpsertCollectionAsync_ExistingReleaseUpdatedWithDetailFields_OverwritesPreviousNulls()
+    {
+        // Arrange — seed a release without detail fields, then upsert with them populated
+        var original = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 1300,
+            Artist = "Ornette Coleman",
+            Title = "The Shape of Jazz to Come",
+            Year = 1959,
+            Format = "Vinyl",
+            Label = null,
+            Country = null,
+            Genre = null,
+            Notes = null,
+            Styles = null,
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+        _db.Releases.Add(original);
+        await _db.SaveChangesAsync();
+
+        var updated = new Release
+        {
+            Id = Guid.NewGuid(), // different Guid — upsert matches on DiscogsId
+            DiscogsId = 1300,
+            Artist = "Ornette Coleman",
+            Title = "The Shape of Jazz to Come",
+            Year = 1959,
+            Format = "Vinyl",
+            Label = "Atlantic",
+            Country = "US",
+            Genre = "Jazz",
+            Notes = "Free jazz pioneer",
+            Styles = "Free Jazz, Avant-garde Jazz",
+            LastSyncedAt = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        await _sut.UpsertCollectionAsync(new[] { updated }, CancellationToken.None);
+
+        // Assert — should still be one record, now populated with detail fields
+        var stored = await _sut.GetByIdAsync(original.Id, CancellationToken.None);
+        stored.Should().NotBeNull();
+        stored!.Label.Should().Be("Atlantic");
+        stored.Country.Should().Be("US");
+        stored.Genre.Should().Be("Jazz");
+        stored.Notes.Should().Be("Free jazz pioneer");
+        stored.Styles.Should().Be("Free Jazz, Avant-garde Jazz");
     }
 }

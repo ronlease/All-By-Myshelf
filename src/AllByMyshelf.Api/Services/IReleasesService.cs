@@ -15,4 +15,11 @@ public interface IReleasesService
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<PagedResult<ReleaseDto>> GetReleasesAsync(
         int page, int pageSize, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the full detail for a single release, or null if no release with that ID exists.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 }

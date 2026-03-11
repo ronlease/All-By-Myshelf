@@ -84,13 +84,15 @@ public class SyncService(
         logger.LogInformation("Fetched {Count} releases from Discogs.", apiReleases.Count);
 
         var now = DateTimeOffset.UtcNow;
-        var entities = apiReleases.Select(r =>
+        var entities = new List<Release>(apiReleases.Count);
+
+        foreach (var r in apiReleases)
         {
             var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
             var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
             var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
 
-            return new Release
+            var release = new Release
             {
                 Id = Guid.NewGuid(),
                 DiscogsId = r.Id,
@@ -100,7 +102,25 @@ public class SyncService(
                 Format = format,
                 LastSyncedAt = now
             };
-        });
+
+            // Fetch extended detail fields for each release. Rate-limit back-off
+            // is handled inside FetchWithRetryAsync; failures are logged and skipped.
+            var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
+            if (detail is not null)
+            {
+                release.Label = detail.Labels.FirstOrDefault()?.Name;
+                release.Country = detail.Country;
+                release.Genre = detail.Genres.FirstOrDefault();
+                release.Notes = detail.Notes;
+                release.Styles = detail.Styles.Count > 0
+                    ? string.Join(", ", detail.Styles)
+                    : null;
+
+                logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
+            }
+
+            entities.Add(release);
+        }
 
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Discogs sync completed successfully.");

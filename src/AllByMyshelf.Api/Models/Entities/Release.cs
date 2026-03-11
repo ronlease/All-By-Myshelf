@@ -23,6 +23,21 @@ public class Release
     /// <summary>Primary format description (e.g. "Vinyl", "CD").</summary>
     public string Format { get; set; } = string.Empty;
 
+    /// <summary>Record label; null when not populated by sync.</summary>
+    public string? Label { get; set; }
+
+    /// <summary>Country of release; null when not populated by sync.</summary>
+    public string? Country { get; set; }
+
+    /// <summary>Primary genre; null when not populated by sync.</summary>
+    public string? Genre { get; set; }
+
+    /// <summary>Personal notes from Discogs; null when not populated by sync.</summary>
+    public string? Notes { get; set; }
+
+    /// <summary>Comma-separated list of styles; null when not populated by sync.</summary>
+    public string? Styles { get; set; }
+
     /// <summary>UTC timestamp of the last sync that touched this record.</summary>
     public DateTimeOffset LastSyncedAt { get; set; }
 }

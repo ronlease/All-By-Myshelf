@@ -29,6 +29,14 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
+    public async Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await db.Releases
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<Release> releases, CancellationToken cancellationToken)
     {
         var incoming = releases.ToList();
@@ -53,6 +61,11 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 existingRelease.Title = release.Title;
                 existingRelease.Year = release.Year;
                 existingRelease.Format = release.Format;
+                existingRelease.Label = release.Label;
+                existingRelease.Country = release.Country;
+                existingRelease.Genre = release.Genre;
+                existingRelease.Notes = release.Notes;
+                existingRelease.Styles = release.Styles;
                 existingRelease.LastSyncedAt = release.LastSyncedAt;
             }
             else

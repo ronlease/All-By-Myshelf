@@ -52,6 +52,28 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
         return releases;
     }
 
+    /// <summary>
+    /// Fetches extended detail for a single Discogs release.
+    /// Returns null gracefully when the release is not found or the response cannot be parsed.
+    /// </summary>
+    /// <param name="discogsId">The Discogs release ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="DiscogsReleaseDetail"/> containing label, country, genre, notes, and styles, or null on failure.</returns>
+    public async Task<DiscogsReleaseDetail?> GetReleaseDetailAsync(int discogsId, CancellationToken cancellationToken)
+    {
+        var url = $"/releases/{discogsId}";
+        try
+        {
+            var response = await FetchWithRetryAsync(url, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<DiscogsReleaseDetail>(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Failed to fetch release detail for Discogs ID {DiscogsId}. Skipping detail fields.", discogsId);
+            return null;
+        }
+    }
+
     private async Task<HttpResponseMessage> FetchWithRetryAsync(string url, CancellationToken cancellationToken)
     {
         while (true)
@@ -139,6 +161,34 @@ public class DiscogsArtist
 
 /// <summary>A format descriptor within a Discogs release.</summary>
 public class DiscogsFormat
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+}
+
+// ── Release detail response models ────────────────────────────────────────────
+
+/// <summary>Extended detail for a single Discogs release (GET /releases/{id}).</summary>
+public class DiscogsReleaseDetail
+{
+    [JsonPropertyName("labels")]
+    public List<DiscogsLabel> Labels { get; init; } = [];
+
+    [JsonPropertyName("country")]
+    public string? Country { get; init; }
+
+    [JsonPropertyName("genres")]
+    public List<string> Genres { get; init; } = [];
+
+    [JsonPropertyName("notes")]
+    public string? Notes { get; init; }
+
+    [JsonPropertyName("styles")]
+    public List<string> Styles { get; init; } = [];
+}
+
+/// <summary>A label reference within a Discogs release detail response.</summary>
+public class DiscogsLabel
 {
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;

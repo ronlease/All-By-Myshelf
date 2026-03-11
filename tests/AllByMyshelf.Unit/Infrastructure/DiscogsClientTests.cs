@@ -1,5 +1,6 @@
 // Feature: Discogs personal access token configuration  (ABM-001)
 // Feature: Background sync of Discogs collection        (ABM-002)
+// Feature: Release detail view                          (ABM-012)
 //
 // Scenario: Application starts with a valid token and GetCollectionAsync succeeds
 //   Given a valid personal access token and username are configured
@@ -37,6 +38,26 @@
 //   Given a valid token is configured
 //   When GetCollectionAsync is called
 //   Then each HTTP request carries the correct Discogs token authorization header
+//
+// Scenario: GetReleaseDetailAsync returns label, country, genre, notes, and styles correctly mapped
+//   Given the Discogs release detail API returns a full response
+//   When GetReleaseDetailAsync is called
+//   Then the returned detail contains label, country, genre, notes, and styles
+//
+// Scenario: GetReleaseDetailAsync handles missing optional fields gracefully
+//   Given the Discogs release detail API returns a response with no labels, genres, or styles
+//   When GetReleaseDetailAsync is called
+//   Then the returned detail has empty collections for those fields and nulls for nullable fields
+//
+// Scenario: GetReleaseDetailAsync returns null on a non-success HTTP response
+//   Given the Discogs release detail API returns a 404 response
+//   When GetReleaseDetailAsync is called
+//   Then null is returned and no exception is thrown
+//
+// Scenario: GetReleaseDetailAsync retries on 429 rate limit before succeeding
+//   Given the Discogs release detail API returns 429 on the first attempt
+//   When GetReleaseDetailAsync is called
+//   Then the client retries and returns the detail on the subsequent success response
 
 using System.Net;
 using System.Net.Http.Json;
@@ -345,6 +366,197 @@ public class DiscogsClientTests
         authHeader.Should().NotBeNull();
         authHeader!.Scheme.Should().Be("Discogs");
         authHeader.Parameter.Should().Be("token=super-secret-token");
+    }
+
+    // ── GetReleaseDetailAsync — happy path ────────────────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_FullResponse_MapsAllFieldsCorrectly()
+    {
+        // Arrange
+        var payload = new
+        {
+            labels = new[] { new { name = "Blue Note" } },
+            country = "US",
+            genres = new[] { "Jazz" },
+            notes = "A personal note",
+            styles = new[] { "Hard Bop", "Post Bop" }
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(12345, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Labels.Should().ContainSingle(l => l.Name == "Blue Note");
+        result.Country.Should().Be("US");
+        result.Genres.Should().ContainSingle(g => g == "Jazz");
+        result.Notes.Should().Be("A personal note");
+        result.Styles.Should().BeEquivalentTo("Hard Bop", "Post Bop");
+    }
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_MultipleLabels_MapsFirstLabel()
+    {
+        // Arrange — verify list is fully deserialized so caller can take FirstOrDefault
+        var payload = new
+        {
+            labels = new[] { new { name = "Label A" }, new { name = "Label B" } },
+            country = "UK",
+            genres = new[] { "Rock" },
+            notes = (string?)null,
+            styles = new[] { "Psychedelic Rock" }
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(99, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Labels.Should().HaveCount(2);
+        result.Labels.First().Name.Should().Be("Label A");
+    }
+
+    // ── GetReleaseDetailAsync — missing optional fields ───────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_NoLabels_ReturnsEmptyLabelsCollection()
+    {
+        // Arrange
+        var payload = new
+        {
+            labels = Array.Empty<object>(),
+            country = (string?)null,
+            genres = Array.Empty<string>(),
+            notes = (string?)null,
+            styles = Array.Empty<string>()
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(42, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Labels.Should().BeEmpty();
+        result.Country.Should().BeNull();
+        result.Genres.Should().BeEmpty();
+        result.Notes.Should().BeNull();
+        result.Styles.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_NullableFieldsAbsent_ReturnsNullsGracefully()
+    {
+        // Arrange — omit country and notes entirely from the JSON
+        var payload = new
+        {
+            labels = Array.Empty<object>(),
+            genres = Array.Empty<string>(),
+            styles = Array.Empty<string>()
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(43, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Country.Should().BeNull();
+        result.Notes.Should().BeNull();
+    }
+
+    // ── GetReleaseDetailAsync — non-success response ──────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_NotFoundResponse_ReturnsNull()
+    {
+        // Arrange
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.NotFound,
+            new StringContent(string.Empty)));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(99999, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_ServerError_ReturnsNullWithoutThrowing()
+    {
+        // Arrange
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.InternalServerError,
+            new StringContent(string.Empty)));
+
+        // Act
+        Func<Task> act = () => sut.GetReleaseDetailAsync(1, CancellationToken.None);
+
+        // Assert — must not throw; must return null
+        await act.Should().NotThrowAsync();
+        var result = await sut.GetReleaseDetailAsync(1, CancellationToken.None);
+        result.Should().BeNull();
+    }
+
+    // ── GetReleaseDetailAsync — rate-limit retry ──────────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_RateLimited_RetriesAndReturnsDetail()
+    {
+        // Arrange — first response is 429, second is success
+        var rateLimitResponse = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        rateLimitResponse.Headers.RetryAfter =
+            new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(0));
+
+        var detailPayload = new
+        {
+            labels = new[] { new { name = "ECM" } },
+            country = "DE",
+            genres = new[] { "Jazz" },
+            notes = (string?)null,
+            styles = new[] { "Contemporary Jazz" }
+        };
+        var successResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(detailPayload),
+                System.Text.Encoding.UTF8,
+                "application/json")
+        };
+
+        var responses = new Queue<HttpResponseMessage>(new[] { rateLimitResponse, successResponse });
+        var handler = new QueuedResponseHandler(responses);
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(77, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Labels.Should().ContainSingle(l => l.Name == "ECM");
+        handler.CallCount.Should().Be(2); // one 429 + one success
     }
 }
 
