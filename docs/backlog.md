@@ -408,3 +408,154 @@ Feature: Purple Material 3 seed color theme
     When I navigate between the collection list and any other page in the app
     Then the purple-derived color scheme is applied consistently on every view
 ```
+
+---
+
+## [ABM-011] Album Art Thumbnails on the Collection List
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The collection list currently shows only text — artist, title, year, and format. My records have cover art on Discogs and seeing those images at a glance makes the list much more recognisable and enjoyable to browse. The Discogs collection endpoint already returns image URLs, so no additional API calls are needed to support this.
+
+### Acceptance Criteria
+```gherkin
+Feature: Album art thumbnails on the collection list
+
+  Scenario: Release with a cover image displays a thumbnail
+    Given I am logged in
+    And the API returns a release that includes a cover image URL
+    When the collection list renders
+    Then a thumbnail image is displayed alongside the artist, title, year, and format for that release
+    And the image is loaded directly from the Discogs CDN URL
+
+  Scenario: Release with no cover image displays a placeholder
+    Given I am logged in
+    And the API returns a release that has no cover image URL
+    When the collection list renders
+    Then a placeholder graphic or empty image area is shown in place of the thumbnail
+    And no broken image icon is visible
+
+  Scenario: Thumbnail does not disrupt the list layout
+    Given I am logged in
+    And the collection list contains a mix of releases with and without cover images
+    When the collection list renders
+    Then all rows are consistently sized and aligned regardless of whether a thumbnail is present
+```
+
+---
+
+## [ABM-012] Release Detail View
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The collection list shows only a summary of each record. When I want to recall specifics — label, country, genre, styles, or personal notes — I have to leave the app and look it up on Discogs. A detail view surfaces that information in context and links directly to the full Discogs page so I can get deeper when needed, all without leaving my dashboard as the starting point.
+
+### Data Notes
+- The sync (ABM-002/ABM-003) is extended to call `GET https://api.discogs.com/releases/{discogsId}` for each release and store: label, country, genre (primary genre only), notes, and styles (stored as a comma-separated list). These fields are populated by a manual resync — no on-demand per-release API calls are made.
+- Album art on this view is a placeholder image only. Real cover art is handled by ABM-011.
+
+### Acceptance Criteria
+```gherkin
+Feature: Release detail view
+
+  Scenario: Navigating to the detail view for a release
+    Given I am logged in
+    And the collection list is showing at least one release
+    When I click a release in the list
+    Then the application navigates to /releases/{id}
+    And the detail view displays artist, title, year, and format
+    And any of the following fields that are present in the stored data are also displayed: label, country, genre, styles, notes
+    And a placeholder image is shown in the album art area
+
+  Scenario: Fields absent from the stored release data are omitted
+    Given I am logged in
+    And I navigate to /releases/{id} for a release where label, country, genre, styles, and notes are all absent
+    When the detail view renders
+    Then only the fields that have stored data are displayed
+    And no empty rows, blank labels, or placeholder text such as "N/A" are shown
+
+  Scenario: "View on Discogs" link opens the release page in a new tab
+    Given I am logged in
+    And I am viewing the detail view for a release with a known Discogs ID
+    When I click the "View on Discogs" link
+    Then a new browser tab opens at https://www.discogs.com/release/{discogsId}
+    And the detail view remains open in the original tab
+
+  Scenario: Navigating back returns to the collection list
+    Given I am logged in
+    And I have navigated to /releases/{id}
+    When I navigate back
+    Then I am returned to the collection list
+    And the list is in the same state (same page, same scroll position) as before I opened the detail view
+
+  Scenario: Detail view fields are populated after a resync
+    Given a release was previously synced without the extended detail fields
+    When I trigger a manual resync
+    And the sync calls the Discogs release detail endpoint for that release
+    Then label, country, genre, notes, and styles (where present in the Discogs response) are stored in the database
+    And the detail view at /releases/{id} displays the newly stored fields
+```
+
+---
+
+## [ABM-013] Local Independent Record Store Finder
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+When I am looking to buy records locally, I have no quick way to find independent record stores near me. I want to enter a US zip code or city and state and get back a list of nearby music shops so I know where to go without relying on a general-purpose search engine that buries independent stores under big-box retail results.
+
+### Acceptance Criteria
+```gherkin
+Feature: Local independent record store finder
+
+  Scenario: Search by zip code returns nearby music shops
+    Given I am on the store finder page
+    When I enter a valid US zip code and submit the search
+    Then the application queries OpenStreetMap via the Overpass API for nodes and ways tagged shop=music within a reasonable radius of that zip code
+    And the results list displays each store's name and address
+    And stores whose names match known big-box retailers (Target, Walmart, Best Buy, Amazon, FYE) are excluded from the results
+
+  Scenario: Search by city and state returns nearby music shops
+    Given I am on the store finder page
+    When I enter a US city name and a two-letter state abbreviation and submit the search
+    Then the application queries OpenStreetMap via the Overpass API for nodes and ways tagged shop=music in that city
+    And the results list displays each store's name and address
+    And stores whose names match known big-box retailers (Target, Walmart, Best Buy, Amazon, FYE) are excluded from the results
+
+  Scenario: Search returns no results
+    Given I am on the store finder page
+    When I submit a search for a location that has no shop=music nodes or ways in OpenStreetMap
+    Then the results area displays a message indicating no stores were found
+    And no list rows are rendered
+
+  Scenario: Search input is empty
+    Given I am on the store finder page
+    When I submit the search form without entering a zip code or city and state
+    Then the form displays a validation message indicating that a location is required
+    And no API call is made to the Overpass API
+
+  Scenario: Non-US location is entered
+    Given I am on the store finder page
+    When I enter a location that does not correspond to a US zip code or US city and state format
+    Then the form displays a validation message indicating that only US locations are supported
+    And no API call is made to the Overpass API
+
+  Scenario: Overpass API request fails
+    Given I am on the store finder page
+    And the Overpass API is unavailable or returns an error
+    When I submit a valid US location search
+    Then the results area displays an error message indicating the store data could not be retrieved
+    And no partial or empty results list is shown
+
+  Scenario: Store detail does not include hours, phone, or website
+    Given the search has returned one or more results
+    When I view the results list
+    Then each result shows only the store name and address
+    And no hours, phone number, or website link is displayed for any store
+```

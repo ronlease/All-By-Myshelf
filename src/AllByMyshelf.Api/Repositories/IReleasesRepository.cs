@@ -8,6 +8,13 @@ namespace AllByMyshelf.Api.Repositories;
 public interface IReleasesRepository
 {
     /// <summary>
+    /// Returns the release with the specified application ID, or null if not found.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns a paginated slice of all releases ordered by artist then title.
     /// </summary>
     Task<(IReadOnlyList<Release> Items, int TotalCount)> GetPagedAsync(

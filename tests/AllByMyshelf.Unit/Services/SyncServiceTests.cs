@@ -52,6 +52,64 @@ public class SyncServiceTests
         return new SyncService(options, scopeFactory.Object, logger);
     }
 
+    // ── IsSyncRunning — initial state ────────────────────────────────────────
+
+    [Fact]
+    public void IsSyncRunning_BeforeAnySync_IsFalse()
+    {
+        // Arrange
+        var sut = CreateService();
+
+        // Act / Assert
+        sut.IsSyncRunning.Should().BeFalse();
+    }
+
+    // ── TryStartSync — already running ───────────────────────────────────────
+
+    [Fact]
+    public void TryStartSync_AlreadyRunning_DoesNotStartSecondSync()
+    {
+        // Arrange
+        var sut = CreateService();
+        sut.TryStartSync();
+
+        // Act
+        var secondResult = sut.TryStartSync();
+
+        // Assert — only one sync slot should be occupied
+        secondResult.Should().Be(SyncStartResult.AlreadyRunning);
+        sut.IsSyncRunning.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TryStartSync_AlreadyRunning_ReturnsAlreadyRunning()
+    {
+        // Arrange
+        var sut = CreateService();
+        sut.TryStartSync(); // first call acquires the lock
+
+        // Act
+        var result = sut.TryStartSync();
+
+        // Assert
+        result.Should().Be(SyncStartResult.AlreadyRunning);
+    }
+
+    // ── Token check takes precedence over running flag ────────────────────────
+
+    [Fact]
+    public void TryStartSync_TokenNotConfigured_DoesNotSetRunningFlag()
+    {
+        // Arrange
+        var sut = CreateService(token: string.Empty);
+
+        // Act
+        sut.TryStartSync();
+
+        // Assert
+        sut.IsSyncRunning.Should().BeFalse();
+    }
+
     // ── TryStartSync — token not configured ──────────────────────────────────
 
     [Fact]
@@ -106,63 +164,5 @@ public class SyncServiceTests
 
         // Assert
         sut.IsSyncRunning.Should().BeTrue();
-    }
-
-    // ── TryStartSync — already running ───────────────────────────────────────
-
-    [Fact]
-    public void TryStartSync_AlreadyRunning_ReturnsAlreadyRunning()
-    {
-        // Arrange
-        var sut = CreateService();
-        sut.TryStartSync(); // first call acquires the lock
-
-        // Act
-        var result = sut.TryStartSync();
-
-        // Assert
-        result.Should().Be(SyncStartResult.AlreadyRunning);
-    }
-
-    [Fact]
-    public void TryStartSync_AlreadyRunning_DoesNotStartSecondSync()
-    {
-        // Arrange
-        var sut = CreateService();
-        sut.TryStartSync();
-
-        // Act
-        var secondResult = sut.TryStartSync();
-
-        // Assert — only one sync slot should be occupied
-        secondResult.Should().Be(SyncStartResult.AlreadyRunning);
-        sut.IsSyncRunning.Should().BeTrue();
-    }
-
-    // ── IsSyncRunning — initial state ────────────────────────────────────────
-
-    [Fact]
-    public void IsSyncRunning_BeforeAnySync_IsFalse()
-    {
-        // Arrange
-        var sut = CreateService();
-
-        // Act / Assert
-        sut.IsSyncRunning.Should().BeFalse();
-    }
-
-    // ── Token check takes precedence over running flag ────────────────────────
-
-    [Fact]
-    public void TryStartSync_TokenNotConfigured_DoesNotSetRunningFlag()
-    {
-        // Arrange
-        var sut = CreateService(token: string.Empty);
-
-        // Act
-        sut.TryStartSync();
-
-        // Assert
-        sut.IsSyncRunning.Should().BeFalse();
     }
 }

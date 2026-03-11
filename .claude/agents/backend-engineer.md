@@ -43,6 +43,7 @@ src/AllByMyshelf.Api/
 - All controllers must have `[ApiController]`, `[Route("api/v1/[controller]")]`, and XML doc comments
 - Return `IActionResult` or `ActionResult<T>` from controllers
 - Use `ProblemDetails` for error responses
+- All fields, properties, and methods within a class must be declared in alphabetical order
 
 ## EF Core Rules
 - Never auto-migrate on startup

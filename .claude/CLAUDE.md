@@ -61,3 +61,4 @@ AllByMyshelf/
 - EF Core migrations are explicit — never auto-migrate on startup.
 - Angular uses standalone components. No NgModules.
 - All new features require a backlog entry before implementation.
+- **All fields, properties, methods, and variables within a class must be declared in alphabetical order.** This applies to both C# and TypeScript. Enforced to ease diffs and code review.

@@ -1,17 +1,23 @@
 namespace AllByMyshelf.Api.Models.DTOs;
 
 /// <summary>
-/// Represents a single release in an API response.
+/// Full detail representation of a single release, returned by the GET /api/v1/releases/{id} endpoint.
 /// </summary>
-public class ReleaseDto
+public class ReleaseDetailDto
 {
     /// <summary>Artist name.</summary>
     public string Artist { get; init; } = string.Empty;
 
+    /// <summary>Discogs release ID.</summary>
+    public int DiscogsId { get; init; }
+
     /// <summary>Primary format description.</summary>
     public string Format { get; init; } = string.Empty;
 
-    /// <summary>Database identifier.</summary>
+    /// <summary>Primary genre; null when not populated by sync.</summary>
+    public string? Genre { get; init; }
+
+    /// <summary>Application-generated identifier.</summary>
     public Guid Id { get; init; }
 
     /// <summary>Release title.</summary>

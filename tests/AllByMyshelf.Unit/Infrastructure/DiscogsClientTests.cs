@@ -1,5 +1,6 @@
 // Feature: Discogs personal access token configuration  (ABM-001)
 // Feature: Background sync of Discogs collection        (ABM-002)
+// Feature: Release detail view                          (ABM-012)
 //
 // Scenario: Application starts with a valid token and GetCollectionAsync succeeds
 //   Given a valid personal access token and username are configured
@@ -37,6 +38,26 @@
 //   Given a valid token is configured
 //   When GetCollectionAsync is called
 //   Then each HTTP request carries the correct Discogs token authorization header
+//
+// Scenario: GetReleaseDetailAsync returns genre correctly mapped
+//   Given the Discogs release detail API returns a full response
+//   When GetReleaseDetailAsync is called
+//   Then the returned detail contains genre
+//
+// Scenario: GetReleaseDetailAsync handles missing optional fields gracefully
+//   Given the Discogs release detail API returns a response with no genres
+//   When GetReleaseDetailAsync is called
+//   Then the returned detail has an empty collection for genres
+//
+// Scenario: GetReleaseDetailAsync returns null on a non-success HTTP response
+//   Given the Discogs release detail API returns a 404 response
+//   When GetReleaseDetailAsync is called
+//   Then null is returned and no exception is thrown
+//
+// Scenario: GetReleaseDetailAsync retries on 429 rate limit before succeeding
+//   Given the Discogs release detail API returns 429 on the first attempt
+//   When GetReleaseDetailAsync is called
+//   Then the client retries and returns the detail on the subsequent success response
 
 using System.Net;
 using System.Net.Http.Json;
@@ -72,6 +93,16 @@ public class DiscogsClientTests
         return new DiscogsClient(httpClient, options, NullLogger<DiscogsClient>.Instance);
     }
 
+    private static StringContent EmptyPage() =>
+        new StringContent(
+            JsonSerializer.Serialize(new
+            {
+                pagination = new { page = 1, pages = 1, per_page = 100, items = 0 },
+                releases = Array.Empty<object>()
+            }),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
     private static StringContent JsonPage(int page, int totalPages, int releaseCount)
     {
         var releases = Enumerable.Range(1, releaseCount).Select(i => new
@@ -97,16 +128,6 @@ public class DiscogsClientTests
             System.Text.Encoding.UTF8,
             "application/json");
     }
-
-    private static StringContent EmptyPage() =>
-        new StringContent(
-            JsonSerializer.Serialize(new
-            {
-                pagination = new { page = 1, pages = 1, per_page = 100, items = 0 },
-                releases = Array.Empty<object>()
-            }),
-            System.Text.Encoding.UTF8,
-            "application/json");
 
     // ── Configuration guard — missing token ───────────────────────────────────
 
@@ -153,64 +174,6 @@ public class DiscogsClientTests
             .WithMessage("*username*");
     }
 
-    // ── Single page — happy path ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetCollectionAsync_SinglePage_ReturnsAllReleasesFromPage()
-    {
-        // Arrange
-        var handler = new StaticResponseHandler(HttpStatusCode.OK, JsonPage(page: 1, totalPages: 1, releaseCount: 5));
-        var sut = CreateClient(handler);
-
-        // Act
-        var result = await sut.GetCollectionAsync(CancellationToken.None);
-
-        // Assert
-        result.Should().HaveCount(5);
-    }
-
-    [Fact]
-    public async Task GetCollectionAsync_SinglePage_MapsReleaseFieldsCorrectly()
-    {
-        // Arrange — one release with known values
-        var payload = new
-        {
-            pagination = new { page = 1, pages = 1, per_page = 100, items = 1 },
-            releases = new[]
-            {
-                new
-                {
-                    id = 999,
-                    basic_information = new
-                    {
-                        title = "Blue Train",
-                        year = 1957,
-                        artists = new[] { new { name = "John Coltrane" } },
-                        formats = new[] { new { name = "Vinyl" } }
-                    }
-                }
-            }
-        };
-        var content = new StringContent(
-            JsonSerializer.Serialize(payload),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
-
-        // Act
-        var result = await sut.GetCollectionAsync(CancellationToken.None);
-
-        // Assert
-        result.Should().HaveCount(1);
-        var release = result.Single();
-        release.Id.Should().Be(999);
-        release.BasicInformation.Title.Should().Be("Blue Train");
-        release.BasicInformation.Year.Should().Be(1957);
-        release.BasicInformation.Artists.Should().ContainSingle(a => a.Name == "John Coltrane");
-        release.BasicInformation.Formats.Should().ContainSingle(f => f.Name == "Vinyl");
-    }
-
     // ── Empty results ─────────────────────────────────────────────────────────
 
     [Fact]
@@ -225,48 +188,6 @@ public class DiscogsClientTests
 
         // Assert
         result.Should().BeEmpty();
-    }
-
-    // ── Pagination — multiple pages ───────────────────────────────────────────
-
-    [Fact]
-    public async Task GetCollectionAsync_TwoPages_ReturnsCombinedReleasesFromBothPages()
-    {
-        // Arrange — page 1 returns 3 releases, page 2 returns 2 releases
-        var responses = new Queue<HttpResponseMessage>(new[]
-        {
-            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(page: 1, totalPages: 2, releaseCount: 3) },
-            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(page: 2, totalPages: 2, releaseCount: 2) }
-        });
-        var handler = new QueuedResponseHandler(responses);
-        var sut = CreateClient(handler);
-
-        // Act
-        var result = await sut.GetCollectionAsync(CancellationToken.None);
-
-        // Assert
-        result.Should().HaveCount(5);
-    }
-
-    [Fact]
-    public async Task GetCollectionAsync_ThreePages_IssuesThreeHttpRequests()
-    {
-        // Arrange
-        var responses = new Queue<HttpResponseMessage>(new[]
-        {
-            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(1, 3, 2) },
-            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(2, 3, 2) },
-            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(3, 3, 2) }
-        });
-        var handler = new QueuedResponseHandler(responses);
-        var sut = CreateClient(handler);
-
-        // Act
-        var result = await sut.GetCollectionAsync(CancellationToken.None);
-
-        // Assert
-        result.Should().HaveCount(6);
-        handler.CallCount.Should().Be(3);
     }
 
     // ── Rate-limit retry ──────────────────────────────────────────────────────
@@ -324,6 +245,106 @@ public class DiscogsClientTests
         handler.CallCount.Should().Be(3);
     }
 
+    // ── Single page — happy path ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetCollectionAsync_SinglePage_MapsReleaseFieldsCorrectly()
+    {
+        // Arrange — one release with known values
+        var payload = new
+        {
+            pagination = new { page = 1, pages = 1, per_page = 100, items = 1 },
+            releases = new[]
+            {
+                new
+                {
+                    id = 999,
+                    basic_information = new
+                    {
+                        title = "Blue Train",
+                        year = 1957,
+                        artists = new[] { new { name = "John Coltrane" } },
+                        formats = new[] { new { name = "Vinyl" } }
+                    }
+                }
+            }
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetCollectionAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(1);
+        var release = result.Single();
+        release.Id.Should().Be(999);
+        release.BasicInformation.Title.Should().Be("Blue Train");
+        release.BasicInformation.Year.Should().Be(1957);
+        release.BasicInformation.Artists.Should().ContainSingle(a => a.Name == "John Coltrane");
+        release.BasicInformation.Formats.Should().ContainSingle(f => f.Name == "Vinyl");
+    }
+
+    [Fact]
+    public async Task GetCollectionAsync_SinglePage_ReturnsAllReleasesFromPage()
+    {
+        // Arrange
+        var handler = new StaticResponseHandler(HttpStatusCode.OK, JsonPage(page: 1, totalPages: 1, releaseCount: 5));
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetCollectionAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(5);
+    }
+
+    // ── Pagination — multiple pages ───────────────────────────────────────────
+
+    [Fact]
+    public async Task GetCollectionAsync_ThreePages_IssuesThreeHttpRequests()
+    {
+        // Arrange
+        var responses = new Queue<HttpResponseMessage>(new[]
+        {
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(1, 3, 2) },
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(2, 3, 2) },
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(3, 3, 2) }
+        });
+        var handler = new QueuedResponseHandler(responses);
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetCollectionAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(6);
+        handler.CallCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetCollectionAsync_TwoPages_ReturnsCombinedReleasesFromBothPages()
+    {
+        // Arrange — page 1 returns 3 releases, page 2 returns 2 releases
+        var responses = new Queue<HttpResponseMessage>(new[]
+        {
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(page: 1, totalPages: 2, releaseCount: 3) },
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonPage(page: 2, totalPages: 2, releaseCount: 2) }
+        });
+        var handler = new QueuedResponseHandler(responses);
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetCollectionAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(5);
+    }
+
     // ── Authorization header ──────────────────────────────────────────────────
 
     [Fact]
@@ -346,17 +367,138 @@ public class DiscogsClientTests
         authHeader!.Scheme.Should().Be("Discogs");
         authHeader.Parameter.Should().Be("token=super-secret-token");
     }
+
+    // ── GetReleaseDetailAsync — happy path ────────────────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_FullResponse_MapsAllFieldsCorrectly()
+    {
+        // Arrange
+        var payload = new
+        {
+            genres = new[] { "Jazz" }
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(12345, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Genres.Should().ContainSingle(g => g == "Jazz");
+    }
+
+    // ── GetReleaseDetailAsync — missing optional fields ───────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_NoGenres_ReturnsEmptyGenresCollection()
+    {
+        // Arrange
+        var payload = new
+        {
+            genres = Array.Empty<string>()
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(42, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Genres.Should().BeEmpty();
+    }
+
+    // ── GetReleaseDetailAsync — non-success response ──────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_NotFoundResponse_ReturnsNull()
+    {
+        // Arrange
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.NotFound,
+            new StringContent(string.Empty)));
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(99999, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_ServerError_ReturnsNullWithoutThrowing()
+    {
+        // Arrange
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.InternalServerError,
+            new StringContent(string.Empty)));
+
+        // Act
+        Func<Task> act = () => sut.GetReleaseDetailAsync(1, CancellationToken.None);
+
+        // Assert — must not throw; must return null
+        await act.Should().NotThrowAsync();
+        var result = await sut.GetReleaseDetailAsync(1, CancellationToken.None);
+        result.Should().BeNull();
+    }
+
+    // ── GetReleaseDetailAsync — rate-limit retry ──────────────────────────────
+
+    [Fact]
+    public async Task GetReleaseDetailAsync_RateLimited_RetriesAndReturnsDetail()
+    {
+        // Arrange — first response is 429, second is success
+        var rateLimitResponse = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        rateLimitResponse.Headers.RetryAfter =
+            new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(0));
+
+        var detailPayload = new
+        {
+            genres = new[] { "Jazz" }
+        };
+        var successResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(detailPayload),
+                System.Text.Encoding.UTF8,
+                "application/json")
+        };
+
+        var responses = new Queue<HttpResponseMessage>(new[] { rateLimitResponse, successResponse });
+        var handler = new QueuedResponseHandler(responses);
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetReleaseDetailAsync(77, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Genres.Should().ContainSingle(g => g == "Jazz");
+        handler.CallCount.Should().Be(2); // one 429 + one success
+    }
 }
 
 // ── Test doubles ──────────────────────────────────────────────────────────────
 
-/// <summary>Always returns the same pre-built response.</summary>
-internal sealed class StaticResponseHandler(HttpStatusCode statusCode, HttpContent content)
-    : HttpMessageHandler
+/// <summary>Captures the last request and returns a fixed response.</summary>
+internal sealed class CapturingHandler(HttpResponseMessage response) : HttpMessageHandler
 {
+    public HttpRequestMessage? LastRequest { get; private set; }
+
     protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken cancellationToken) =>
-        Task.FromResult(new HttpResponseMessage(statusCode) { Content = content });
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        LastRequest = request;
+        return Task.FromResult(response);
+    }
 }
 
 /// <summary>Returns responses from a queue in order.</summary>
@@ -373,15 +515,11 @@ internal sealed class QueuedResponseHandler(Queue<HttpResponseMessage> responses
     }
 }
 
-/// <summary>Captures the last request and returns a fixed response.</summary>
-internal sealed class CapturingHandler(HttpResponseMessage response) : HttpMessageHandler
+/// <summary>Always returns the same pre-built response.</summary>
+internal sealed class StaticResponseHandler(HttpStatusCode statusCode, HttpContent content)
+    : HttpMessageHandler
 {
-    public HttpRequestMessage? LastRequest { get; private set; }
-
     protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        LastRequest = request;
-        return Task.FromResult(response);
-    }
+        HttpRequestMessage request, CancellationToken cancellationToken) =>
+        Task.FromResult(new HttpResponseMessage(statusCode) { Content = content });
 }

@@ -19,31 +19,15 @@ public class SyncService(
 {
     private readonly DiscogsOptions _options = options.Value;
 
-    // 0 = idle, 1 = running
-    private int _syncRunning;
-
     // Channel used to signal the background loop that a sync was requested.
     private readonly System.Threading.Channels.Channel<bool> _syncChannel =
         System.Threading.Channels.Channel.CreateBounded<bool>(1);
 
+    // 0 = idle, 1 = running
+    private int _syncRunning;
+
     /// <inheritdoc/>
     public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
-
-    /// <inheritdoc/>
-    public SyncStartResult TryStartSync()
-    {
-        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
-            return SyncStartResult.TokenNotConfigured;
-
-        // Try to acquire the running flag atomically.
-        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
-            return SyncStartResult.AlreadyRunning;
-
-        // Signal the background loop. If the channel is already full the write
-        // will fail, but that's fine — a sync is about to run anyway.
-        _syncChannel.Writer.TryWrite(true);
-        return SyncStartResult.Started;
-    }
 
     /// <summary>
     /// Background loop: waits for sync signals and executes them one at a time.
@@ -84,13 +68,15 @@ public class SyncService(
         logger.LogInformation("Fetched {Count} releases from Discogs.", apiReleases.Count);
 
         var now = DateTimeOffset.UtcNow;
-        var entities = apiReleases.Select(r =>
+        var entities = new List<Release>(apiReleases.Count);
+
+        foreach (var r in apiReleases)
         {
             var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
             var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
             var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
 
-            return new Release
+            var release = new Release
             {
                 Id = Guid.NewGuid(),
                 DiscogsId = r.Id,
@@ -100,9 +86,37 @@ public class SyncService(
                 Format = format,
                 LastSyncedAt = now
             };
-        });
+
+            // Fetch extended detail fields for each release. Rate-limit back-off
+            // is handled inside FetchWithRetryAsync; failures are logged and skipped.
+            var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
+            if (detail is not null)
+            {
+                release.Genre = detail.Genres.FirstOrDefault();
+
+                logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
+            }
+
+            entities.Add(release);
+        }
 
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Discogs sync completed successfully.");
+    }
+
+    /// <inheritdoc/>
+    public SyncStartResult TryStartSync()
+    {
+        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
+            return SyncStartResult.TokenNotConfigured;
+
+        // Try to acquire the running flag atomically.
+        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
+            return SyncStartResult.AlreadyRunning;
+
+        // Signal the background loop. If the channel is already full the write
+        // will fail, but that's fine — a sync is about to run anyway.
+        _syncChannel.Writer.TryWrite(true);
+        return SyncStartResult.Started;
     }
 }

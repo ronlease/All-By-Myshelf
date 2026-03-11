@@ -45,6 +45,10 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(r => r.Genre)
+            .HasColumnName("genre")
+            .HasMaxLength(200);
+
         builder.Property(r => r.LastSyncedAt)
             .HasColumnName("last_synced_at")
             .IsRequired();

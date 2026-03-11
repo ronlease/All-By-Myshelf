@@ -3,6 +3,7 @@ using System;
 using AllByMyshelf.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AllByMyshelf.Api.Migrations
 {
     [DbContext(typeof(AllByMyshelfDbContext))]
-    partial class AllByMyshelfDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260311110027_RemoveNotesAndStylesMaxLength")]
+    partial class RemoveNotesAndStylesMaxLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,6 +37,11 @@ namespace AllByMyshelf.Api.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("artist");
 
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("country");
+
                     b.Property<int>("DiscogsId")
                         .HasColumnType("integer")
                         .HasColumnName("discogs_id");
@@ -49,9 +57,22 @@ namespace AllByMyshelf.Api.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("genre");
 
+                    b.Property<string>("Label")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("label");
+
                     b.Property<DateTimeOffset>("LastSyncedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_synced_at");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Styles")
+                        .HasColumnType("text")
+                        .HasColumnName("styles");
 
                     b.Property<string>("Title")
                         .IsRequired()

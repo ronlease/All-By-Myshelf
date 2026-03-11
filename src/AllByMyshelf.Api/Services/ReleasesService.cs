@@ -11,6 +11,25 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
     private const int MaxPageSize = 100;
 
     /// <inheritdoc/>
+    public async Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var release = await repository.GetByIdAsync(id, cancellationToken);
+        if (release is null)
+            return null;
+
+        return new ReleaseDetailDto
+        {
+            Id = release.Id,
+            DiscogsId = release.DiscogsId,
+            Artist = release.Artist,
+            Title = release.Title,
+            Year = release.Year,
+            Format = release.Format,
+            Genre = release.Genre,
+        };
+    }
+
+    /// <inheritdoc/>
     public async Task<PagedResult<ReleaseDto>> GetReleasesAsync(
         int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -21,9 +40,10 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         var dtos = items.Select(r => new ReleaseDto
         {
             Artist = r.Artist,
+            Format = r.Format,
+            Id = r.Id,
             Title = r.Title,
-            Year = r.Year,
-            Format = r.Format
+            Year = r.Year
         }).ToList();
 
         return new PagedResult<ReleaseDto>
