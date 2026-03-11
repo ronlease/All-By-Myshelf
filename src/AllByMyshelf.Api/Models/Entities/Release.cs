@@ -8,6 +8,9 @@ public class Release
     /// <summary>Artist name as returned by Discogs.</summary>
     public string Artist { get; set; } = string.Empty;
 
+    /// <summary>Full-size cover image URL as returned by Discogs; null when not provided.</summary>
+    public string? CoverImageUrl { get; set; }
+
     /// <summary>Discogs release ID used for upsert matching.</summary>
     public int DiscogsId { get; set; }
 
@@ -25,6 +28,9 @@ public class Release
 
     /// <summary>Release title as returned by Discogs.</summary>
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>Thumbnail image URL as returned by Discogs; null when not provided.</summary>
+    public string? ThumbnailUrl { get; set; }
 
     /// <summary>Release year; null when Discogs does not provide one.</summary>
     public int? Year { get; set; }

@@ -19,13 +19,14 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
 
         return new ReleaseDetailDto
         {
-            Id = release.Id,
-            DiscogsId = release.DiscogsId,
             Artist = release.Artist,
-            Title = release.Title,
-            Year = release.Year,
+            CoverImageUrl = release.CoverImageUrl,
+            DiscogsId = release.DiscogsId,
             Format = release.Format,
             Genre = release.Genre,
+            Id = release.Id,
+            Title = release.Title,
+            Year = release.Year,
         };
     }
 
@@ -42,8 +43,9 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Artist = r.Artist,
             Format = r.Format,
             Id = r.Id,
+            ThumbnailUrl = r.ThumbnailUrl,
             Title = r.Title,
-            Year = r.Year
+            Year = r.Year,
         }).ToList();
 
         return new PagedResult<ReleaseDto>

@@ -8,6 +8,9 @@ public class ReleaseDetailDto
     /// <summary>Artist name.</summary>
     public string Artist { get; init; } = string.Empty;
 
+    /// <summary>Discogs CDN URL for the full-resolution cover image. Null when Discogs does not provide a cover image.</summary>
+    public string? CoverImageUrl { get; init; }
+
     /// <summary>Discogs release ID.</summary>
     public int DiscogsId { get; init; }
 

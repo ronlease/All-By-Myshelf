@@ -22,9 +22,17 @@
   } @else if (release()) {
     <mat-card class="release-detail-card mat-elevation-z2">
       <div class="release-detail-layout">
-        <div class="release-art-placeholder" aria-label="Album art placeholder">
-          <mat-icon class="release-art-icon">album</mat-icon>
-        </div>
+        @if (release()!.coverImageUrl) {
+          <img
+            [src]="release()!.coverImageUrl"
+            [alt]="release()!.title + ' cover art'"
+            class="release-art-image"
+          />
+        } @else {
+          <div class="release-art-placeholder" aria-label="Album art placeholder">
+            <mat-icon class="release-art-icon">album</mat-icon>
+          </div>
+        }
 
         <div class="release-detail-content">
           <mat-card-header>

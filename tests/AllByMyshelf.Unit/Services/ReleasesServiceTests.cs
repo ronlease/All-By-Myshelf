@@ -1,5 +1,6 @@
 // Feature: Paginated collection endpoint  (ABM-004)
 // Feature: Release detail view             (ABM-012)
+// Feature: Album art URL storage           (ABM-011)
 //
 // Scenario: Retrieve the first page of releases
 //   Given the database contains releases
@@ -44,6 +45,26 @@
 //   Given the repository returns a release whose detail fields are all null
 //   When GetByIdAsync is called
 //   Then the returned dto has null for genre
+//
+// Scenario: GetReleasesAsync maps ThumbnailUrl from entity to ReleaseDto
+//   Given the repository returns a release with ThumbnailUrl populated
+//   When GetReleasesAsync is called
+//   Then the returned ReleaseDto has a matching ThumbnailUrl
+//
+// Scenario: GetReleasesAsync maps null ThumbnailUrl from entity to ReleaseDto
+//   Given the repository returns a release with ThumbnailUrl null
+//   When GetReleasesAsync is called
+//   Then the returned ReleaseDto has null ThumbnailUrl
+//
+// Scenario: GetByIdAsync maps CoverImageUrl from entity to ReleaseDetailDto
+//   Given the repository returns a release with CoverImageUrl populated
+//   When GetByIdAsync is called
+//   Then the returned ReleaseDetailDto has a matching CoverImageUrl
+//
+// Scenario: GetByIdAsync maps null CoverImageUrl from entity to ReleaseDetailDto
+//   Given the repository returns a release with CoverImageUrl null
+//   When GetByIdAsync is called
+//   Then the returned ReleaseDetailDto has null CoverImageUrl
 
 using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
@@ -320,5 +341,85 @@ public class ReleasesServiceTests
 
         // Assert
         result.Items.Single().Year.Should().BeNull();
+    }
+
+    // ── GetReleasesAsync — ThumbnailUrl mapping ───────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_ReleasesWithThumbnailUrl_MapsThumbnailUrlToDto()
+    {
+        // Arrange
+        var release = MakeRelease(10);
+        release.ThumbnailUrl = "https://i.discogs.com/thumb.jpg";
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release> { release }, 1));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Single().ThumbnailUrl.Should().Be("https://i.discogs.com/thumb.jpg");
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_ReleasesWithNullThumbnailUrl_MapsNullThumbnailUrlToDto()
+    {
+        // Arrange
+        var release = MakeRelease(11);
+        release.ThumbnailUrl = null;
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Release> { release }, 1));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Single().ThumbnailUrl.Should().BeNull();
+    }
+
+    // ── GetByIdAsync — CoverImageUrl mapping ─────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_ReleaseWithCoverImageUrl_MapsCoverImageUrlToDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 777);
+        release.CoverImageUrl = "https://i.discogs.com/cover.jpg";
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.CoverImageUrl.Should().Be("https://i.discogs.com/cover.jpg");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReleaseWithNullCoverImageUrl_MapsNullCoverImageUrlToDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 778);
+        release.CoverImageUrl = null;
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.CoverImageUrl.Should().BeNull();
     }
 }
