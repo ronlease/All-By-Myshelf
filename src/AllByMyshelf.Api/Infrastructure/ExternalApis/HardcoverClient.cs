@@ -57,7 +57,7 @@ public class HardcoverClient(
         };
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.hardcover.app/v1/graphql");
-        request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {_options.ApiToken.Trim()}");
+        request.Headers.TryAddWithoutValidation("authorization", _options.ApiToken.Trim());
         request.Content = JsonContent.Create(query);
 
         var response = await client.SendAsync(request, cancellationToken);
