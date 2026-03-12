@@ -66,6 +66,15 @@ public class BooksController(
     /// <response code="202">Sync started. The operation runs asynchronously in the background.</response>
     /// <response code="409">A sync is already in progress.</response>
     /// <response code="503">The Hardcover API token is not configured.</response>
+    /// <summary>Returns whether a Hardcover sync is currently running.</summary>
+    [HttpGet("sync/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetSyncStatus() =>
+        Ok(new { isRunning = booksSyncService.IsSyncRunning });
+
+    /// <summary>
+    /// Triggers a manual sync of the Hardcover read books collection.
+    /// </summary>
     [HttpPost("sync")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]

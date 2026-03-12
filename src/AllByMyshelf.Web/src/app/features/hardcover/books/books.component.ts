@@ -36,6 +36,7 @@ export class BooksComponent implements OnInit {
   readonly pageSize = 25;
   private readonly snackBar = inject(MatSnackBar);
   syncing = signal(false);
+  private syncTimer?: ReturnType<typeof setTimeout>;
   totalCount = signal(0);
 
   loadBooks(page: number): void {
@@ -71,7 +72,7 @@ export class BooksComponent implements OnInit {
       next: (response) => {
         if (response.status === 202) {
           this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
-          this.loadBooks(this.currentPage());
+          this.pollSyncStatus();
         } else {
           this.syncing.set(false);
         }
@@ -87,5 +88,24 @@ export class BooksComponent implements OnInit {
         }
       },
     });
+  }
+
+  private pollSyncStatus(): void {
+    const poll = () => {
+      this.hardcoverService.getSyncStatus().subscribe({
+        next: (status) => {
+          if (status.isRunning) {
+            this.syncTimer = setTimeout(poll, 2000);
+          } else {
+            this.syncing.set(false);
+            this.loadBooks(this.currentPage());
+          }
+        },
+        error: () => {
+          this.syncTimer = setTimeout(poll, 3000);
+        },
+      });
+    };
+    poll();
   }
 }
