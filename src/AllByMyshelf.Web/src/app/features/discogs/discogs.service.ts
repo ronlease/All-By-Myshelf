@@ -24,6 +24,12 @@ export interface ReleaseDto {
   year: number | null;
 }
 
+export interface RandomReleaseFilter {
+  decade?: string;
+  format?: string;
+  genre?: string;
+}
+
 export interface CollectionFilter {
   artist?: string;
   format?: string;
@@ -59,6 +65,14 @@ export class DiscogsService {
     if (filter?.year) params = params.set('year', filter.year);
 
     return this.http.get<PagedResult<ReleaseDto>>(`${this.baseUrl}/api/v1/releases`, { params });
+  }
+
+  getRandomRelease(filter?: RandomReleaseFilter): Observable<ReleaseDetailDto> {
+    let params = new HttpParams();
+    if (filter?.decade) params = params.set('decade', filter.decade);
+    if (filter?.format) params = params.set('format', filter.format);
+    if (filter?.genre) params = params.set('genre', filter.genre);
+    return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/random`, { params });
   }
 
   getRelease(id: string): Observable<ReleaseDetailDto> {

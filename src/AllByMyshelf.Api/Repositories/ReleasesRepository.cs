@@ -67,6 +67,38 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
+    public async Task<Release?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken)
+    {
+        IQueryable<Release> query = db.Releases;
+
+        if (filter is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.Decade) &&
+                filter.Decade.EndsWith('s') &&
+                int.TryParse(filter.Decade[..^1], out var decadeStart))
+            {
+                query = query.Where(r => r.Year >= decadeStart && r.Year < decadeStart + 10);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Format))
+                query = query.Where(r => EF.Functions.ILike(r.Format, $"%{filter.Format}%"));
+
+            if (!string.IsNullOrWhiteSpace(filter.Genre))
+                query = query.Where(r => r.Genre != null && EF.Functions.ILike(r.Genre, $"%{filter.Genre}%"));
+        }
+
+        var count = await query.CountAsync(cancellationToken);
+        if (count == 0) return null;
+
+        var skip = Random.Shared.Next(0, count);
+        return await query
+            .OrderBy(r => r.Id)
+            .Skip(skip)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<Release> releases, CancellationToken cancellationToken)
     {
         var incoming = releases.ToList();

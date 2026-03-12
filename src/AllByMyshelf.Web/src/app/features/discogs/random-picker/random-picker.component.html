@@ -1,0 +1,121 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button (click)="onBackClick()" aria-label="Back to collection">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span>What Should I Listen To?</span>
+</mat-toolbar>
+
+<div class="page-content">
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else {
+    <mat-card class="mat-elevation-z2" style="margin-bottom: 24px;">
+      <mat-card-header>
+        <mat-card-title>Narrow it down</mat-card-title>
+        <mat-card-subtitle>Leave all filters blank to pick from the full collection.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content style="padding-top: 16px;">
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Format</mat-label>
+            <mat-select [ngModel]="formatFilter()" (ngModelChange)="formatFilter.set($event)">
+              <mat-option value="">Any</mat-option>
+              @for (f of distinctFormats; track f) {
+                <mat-option [value]="f"><mat-icon>{{ f | formatIcon }}</mat-icon> {{ f }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Genre</mat-label>
+            <mat-select [ngModel]="genreFilter()" (ngModelChange)="genreFilter.set($event)">
+              <mat-option value="">Any</mat-option>
+              @for (g of distinctGenres; track g) {
+                <mat-option [value]="g">{{ g }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Decade</mat-label>
+            <mat-select [ngModel]="decadeFilter()" (ngModelChange)="decadeFilter.set($event)">
+              <mat-option value="">Any</mat-option>
+              @for (d of distinctDecades; track d) {
+                <mat-option [value]="d">{{ d }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" [disabled]="picking()" (click)="onPickClick()">
+          @if (picking()) { Picking… } @else { 🎲 Pick one! }
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    @if (picking()) {
+      <div class="spinner-container">
+        <mat-spinner></mat-spinner>
+      </div>
+    }
+
+    @if (result(); as release) {
+      <mat-card class="release-detail-card mat-elevation-z2">
+        <div class="release-detail-layout">
+          @if (release.coverImageUrl) {
+            <img
+              [src]="release.coverImageUrl"
+              [alt]="release.title + ' cover art'"
+              class="release-art-image"
+            />
+          } @else {
+            <div class="release-art-placeholder" aria-label="Album art placeholder">
+              <mat-icon class="release-art-icon">album</mat-icon>
+            </div>
+          }
+
+          <div class="release-detail-content">
+            <mat-card-header>
+              <mat-card-title>{{ release.title }}</mat-card-title>
+              <mat-card-subtitle>{{ release.artist }}</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <mat-list>
+                @if (release.year !== null) {
+                  <mat-list-item>
+                    <span matListItemTitle>Year</span>
+                    <span matListItemLine>{{ release.year }}</span>
+                  </mat-list-item>
+                }
+                <mat-list-item>
+                  <span matListItemTitle>Format</span>
+                  <span matListItemLine><mat-icon>{{ release.format | formatIcon }}</mat-icon> {{ release.format }}</span>
+                </mat-list-item>
+                @if (release.genre !== null) {
+                  <mat-list-item>
+                    <span matListItemTitle>Genre</span>
+                    <span matListItemLine>{{ release.genre }}</span>
+                  </mat-list-item>
+                }
+              </mat-list>
+            </mat-card-content>
+
+            <mat-card-actions>
+              <button mat-raised-button color="primary" (click)="onPickClick()">
+                🎲 Pick again!
+              </button>
+              <button mat-button (click)="onViewDetailsClick()">
+                <mat-icon>open_in_new</mat-icon>
+                View Details
+              </button>
+            </mat-card-actions>
+          </div>
+        </div>
+      </mat-card>
+    }
+  }
+</div>

@@ -7,11 +7,13 @@ import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { DiscogsService, ReleaseDetailDto } from '../discogs.service';
+import { FormatIconPipe } from '../format-icon.pipe';
 
 @Component({
   selector: 'app-release-detail',
   standalone: true,
   imports: [
+    FormatIconPipe,
     MatButtonModule,
     MatCardModule,
     MatIconModule,

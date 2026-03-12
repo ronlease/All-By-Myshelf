@@ -50,7 +50,7 @@
               }
               <mat-list-item>
                 <span matListItemTitle>Format</span>
-                <span matListItemLine>{{ release()!.format }}</span>
+                <span matListItemLine><mat-icon>{{ release()!.format | formatIcon }}</mat-icon> {{ release()!.format }}</span>
               </mat-list-item>
               @if (release()!.genre !== null) {
                 <mat-list-item>

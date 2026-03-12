@@ -15,6 +15,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'pick',
+    canActivate: [authGuardFn],
+    loadComponent: () =>
+      import('./features/discogs/random-picker/random-picker.component').then(
+        (m) => m.RandomPickerComponent,
+      ),
+  },
+  {
     path: 'releases/:id',
     canActivate: [authGuardFn],
     loadComponent: () =>

@@ -27,6 +27,14 @@ public interface IReleasesRepository
         int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null);
 
     /// <summary>
+    /// Returns a single randomly selected release, optionally filtered by the criteria
+    /// in <paramref name="filter"/>. Returns null if no releases match.
+    /// </summary>
+    /// <param name="filter">Optional filter criteria; null means any release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<Release?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Replaces the entire collection with <paramref name="releases"/>.
     /// Existing records matching by <see cref="Release.DiscogsId"/> are updated;
     /// new records are inserted; records no longer present are deleted.

@@ -31,6 +31,25 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
     }
 
     /// <inheritdoc/>
+    public async Task<ReleaseDetailDto?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken)
+    {
+        var release = await repository.GetRandomAsync(filter, cancellationToken);
+        if (release is null) return null;
+
+        return new ReleaseDetailDto
+        {
+            Artist = release.Artist,
+            CoverImageUrl = release.CoverImageUrl,
+            DiscogsId = release.DiscogsId,
+            Format = release.Format,
+            Genre = release.Genre,
+            Id = release.Id,
+            Title = release.Title,
+            Year = release.Year,
+        };
+    }
+
+    /// <inheritdoc/>
     public async Task<PagedResult<ReleaseDto>> GetReleasesAsync(
         int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null)
     {
