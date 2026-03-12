@@ -17,6 +17,9 @@ public class ReleaseDto
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;
 
+    /// <summary>Discogs CDN URL for the release thumbnail (~150x150 px). Null when Discogs does not provide a cover image.</summary>
+    public string? ThumbnailUrl { get; init; }
+
     /// <summary>Release year; null when unknown.</summary>
     public int? Year { get; init; }
 }

@@ -58,11 +58,13 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             {
                 // Update in-place so EF tracks the change.
                 existingRelease.Artist = release.Artist;
-                existingRelease.Title = release.Title;
-                existingRelease.Year = release.Year;
+                existingRelease.CoverImageUrl = release.CoverImageUrl;
                 existingRelease.Format = release.Format;
                 existingRelease.Genre = release.Genre;
                 existingRelease.LastSyncedAt = release.LastSyncedAt;
+                existingRelease.ThumbnailUrl = release.ThumbnailUrl;
+                existingRelease.Title = release.Title;
+                existingRelease.Year = release.Year;
             }
             else
             {

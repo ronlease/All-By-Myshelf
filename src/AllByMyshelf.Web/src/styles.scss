@@ -91,6 +91,19 @@ body {
   }
 }
 
+.thumbnail-cell {
+  padding-right: 0 !important;
+  width: 56px;
+}
+
+.release-thumbnail {
+  border-radius: 2px;
+  display: block;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+}
+
 .release-detail-card {
   max-width: 800px;
   margin: 0 auto;
@@ -103,6 +116,19 @@ body {
 
   @media (max-width: 600px) {
     flex-direction: column;
+  }
+}
+
+.release-art-image {
+  border-radius: 4px;
+  flex-shrink: 0;
+  height: 200px;
+  object-fit: cover;
+  width: 200px;
+
+  @media (max-width: 600px) {
+    height: 160px;
+    width: 100%;
   }
 }
 

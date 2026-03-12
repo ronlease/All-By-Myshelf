@@ -30,7 +30,7 @@ import { DiscogsService, ReleaseDto, PagedResult } from '../discogs.service';
 export class CollectionComponent implements OnInit {
   currentPage = signal(1);
   private readonly discogsService = inject(DiscogsService);
-  readonly displayedColumns = ['artist', 'title', 'year', 'format'];
+  readonly displayedColumns = ['thumbnail', 'artist', 'title', 'year', 'format'];
   loading = signal(true);
   pagedResult = signal<PagedResult<ReleaseDto> | null>(null);
   readonly pageSize = 20;

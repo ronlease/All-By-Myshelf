@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 
 export interface ReleaseDetailDto {
   artist: string;
+  coverImageUrl: string | null;
   discogsId: number;
   format: string;
   genre: string | null;
@@ -17,6 +18,7 @@ export interface ReleaseDto {
   artist: string;
   format: string;
   id: string;
+  thumbnailUrl: string | null;
   title: string;
   year: number | null;
 }

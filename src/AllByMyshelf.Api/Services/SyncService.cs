@@ -78,13 +78,15 @@ public class SyncService(
 
             var release = new Release
             {
-                Id = Guid.NewGuid(),
-                DiscogsId = r.Id,
                 Artist = artist,
+                CoverImageUrl = r.BasicInformation.CoverImage,
+                DiscogsId = r.Id,
+                Format = format,
+                Id = Guid.NewGuid(),
+                LastSyncedAt = now,
+                ThumbnailUrl = r.BasicInformation.Thumb,
                 Title = r.BasicInformation.Title,
                 Year = year,
-                Format = format,
-                LastSyncedAt = now
             };
 
             // Fetch extended detail fields for each release. Rate-limit back-off

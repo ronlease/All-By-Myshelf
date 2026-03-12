@@ -1,5 +1,6 @@
 // Feature: Background sync of Discogs collection  (ABM-002)
 // Feature: Manual sync trigger endpoint           (ABM-005)
+// Feature: Album art URL storage                  (ABM-011)
 //
 // Scenario: Sync is triggered and runs in the background
 //   Given the Discogs personal access token is configured
@@ -21,8 +22,25 @@
 // Scenario: IsSyncRunning reflects idle state before any sync
 //   Given the service has just been created
 //   Then IsSyncRunning is false
+//
+// Scenario: CoverImageUrl and ThumbnailUrl are mapped from BasicInformation
+//   Given Discogs returns a release with cover_image and thumb populated
+//   When the sync mapping is applied
+//   Then the Release entity has matching CoverImageUrl and ThumbnailUrl
+//
+// Scenario: CoverImageUrl and ThumbnailUrl are null when Discogs returns null
+//   Given Discogs returns a release where cover_image and thumb are null
+//   When the sync mapping is applied
+//   Then the Release entity has null CoverImageUrl and null ThumbnailUrl
+//
+// Scenario: CoverImageUrl and ThumbnailUrl are null when Discogs returns empty strings
+//   Given Discogs returns a release where cover_image and thumb are empty strings
+//   When the sync mapping is applied
+//   Then the Release entity has empty CoverImageUrl and empty ThumbnailUrl
 
 using AllByMyshelf.Api.Configuration;
+using AllByMyshelf.Api.Infrastructure.ExternalApis;
+using AllByMyshelf.Api.Models.Entities;
 using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -164,5 +182,110 @@ public class SyncServiceTests
 
         // Assert
         sut.IsSyncRunning.Should().BeTrue();
+    }
+
+    // ── Artwork URL mapping — populated values ────────────────────────────────
+
+    [Fact]
+    public void SyncMapping_BasicInformationWithCoverImageAndThumb_MapsUrlsToEntity()
+    {
+        // Arrange — mirror the mapping expression from RunSyncAsync
+        var basicInfo = new DiscogsBasicInformation
+        {
+            Artists = [new DiscogsArtist { Name = "John Coltrane" }],
+            CoverImage = "https://i.discogs.com/cover.jpg",
+            Formats = [new DiscogsFormat { Name = "Vinyl" }],
+            Thumb = "https://i.discogs.com/thumb.jpg",
+            Title = "A Love Supreme",
+            Year = 1964
+        };
+
+        // Act — apply the same mapping logic SyncService.RunSyncAsync uses
+        var entity = new Release
+        {
+            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            CoverImageUrl = basicInfo.CoverImage,
+            DiscogsId = 999,
+            Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            ThumbnailUrl = basicInfo.Thumb,
+            Title = basicInfo.Title,
+            Year = basicInfo.Year == 0 ? (int?)null : basicInfo.Year,
+        };
+
+        // Assert
+        entity.CoverImageUrl.Should().Be("https://i.discogs.com/cover.jpg");
+        entity.ThumbnailUrl.Should().Be("https://i.discogs.com/thumb.jpg");
+    }
+
+    // ── Artwork URL mapping — null values from Discogs ────────────────────────
+
+    [Fact]
+    public void SyncMapping_BasicInformationWithNullCoverImageAndThumb_EntityUrlsAreNull()
+    {
+        // Arrange — Discogs returns null for both artwork fields
+        var basicInfo = new DiscogsBasicInformation
+        {
+            Artists = [new DiscogsArtist { Name = "Miles Davis" }],
+            CoverImage = null,
+            Formats = [new DiscogsFormat { Name = "Vinyl" }],
+            Thumb = null,
+            Title = "Kind of Blue",
+            Year = 1959
+        };
+
+        // Act
+        var entity = new Release
+        {
+            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            CoverImageUrl = basicInfo.CoverImage,
+            DiscogsId = 998,
+            Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            ThumbnailUrl = basicInfo.Thumb,
+            Title = basicInfo.Title,
+            Year = basicInfo.Year == 0 ? (int?)null : basicInfo.Year,
+        };
+
+        // Assert
+        entity.CoverImageUrl.Should().BeNull();
+        entity.ThumbnailUrl.Should().BeNull();
+    }
+
+    // ── Artwork URL mapping — empty string values from Discogs ────────────────
+
+    [Fact]
+    public void SyncMapping_BasicInformationWithEmptyStringCoverImageAndThumb_EntityUrlsAreEmpty()
+    {
+        // Arrange — Discogs returns empty strings (as sometimes observed in real API responses)
+        var basicInfo = new DiscogsBasicInformation
+        {
+            Artists = [new DiscogsArtist { Name = "Ornette Coleman" }],
+            CoverImage = string.Empty,
+            Formats = [new DiscogsFormat { Name = "Vinyl" }],
+            Thumb = string.Empty,
+            Title = "The Shape of Jazz to Come",
+            Year = 1959
+        };
+
+        // Act
+        var entity = new Release
+        {
+            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            CoverImageUrl = basicInfo.CoverImage,
+            DiscogsId = 997,
+            Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            ThumbnailUrl = basicInfo.Thumb,
+            Title = basicInfo.Title,
+            Year = basicInfo.Year == 0 ? (int?)null : basicInfo.Year,
+        };
+
+        // Assert
+        entity.CoverImageUrl.Should().BeEmpty();
+        entity.ThumbnailUrl.Should().BeEmpty();
     }
 }

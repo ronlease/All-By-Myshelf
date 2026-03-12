@@ -142,8 +142,14 @@ public class DiscogsBasicInformation
     [JsonPropertyName("artists")]
     public List<DiscogsArtist> Artists { get; init; } = [];
 
+    [JsonPropertyName("cover_image")]
+    public string? CoverImage { get; init; }
+
     [JsonPropertyName("formats")]
     public List<DiscogsFormat> Formats { get; init; } = [];
+
+    [JsonPropertyName("thumb")]
+    public string? Thumb { get; init; }
 
     [JsonPropertyName("title")]
     public string Title { get; init; } = string.Empty;
