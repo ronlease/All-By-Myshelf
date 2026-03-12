@@ -52,20 +52,7 @@
 //   When the sync mapping is applied
 //   Then the Book entity has null year
 //
-// Scenario: Genre is mapped from first cached_tag
-//   Given Hardcover returns a book with cached_tags populated
-//   When the sync mapping is applied
-//   Then the Book entity has genre from cached_tags[0]
-//
-// Scenario: Genre is null when cached_tags is null
-//   Given Hardcover returns a book with null cached_tags
-//   When the sync mapping is applied
-//   Then the Book entity has null genre
-//
-// Scenario: Genre is null when cached_tags is empty
-//   Given Hardcover returns a book with empty cached_tags
-//   When the sync mapping is applied
-//   Then the Book entity has null genre
+// Scenario: Genre is always null (cached_tags is a JSON blob — see ABM-035)
 //
 // Scenario: CoverImageUrl is mapped from image.url
 //   Given Hardcover returns a book with image populated
@@ -227,7 +214,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — mirror the mapping expression from RunSyncAsync
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: new List<HardcoverClient.HardcoverContribution>
             {
                 new(new HardcoverClient.HardcoverAuthor("Neil Gaiman")),
@@ -245,7 +231,7 @@ public class BooksSyncServiceTests
         {
             Author = author,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -262,7 +248,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null contributions
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12346,
             Image: null,
@@ -276,7 +261,7 @@ public class BooksSyncServiceTests
         {
             Author = author,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -295,7 +280,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns a parseable release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12347,
             Image: null,
@@ -315,7 +299,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -332,7 +316,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns an unparseable release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12348,
             Image: null,
@@ -352,7 +335,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -369,7 +352,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12349,
             Image: null,
@@ -389,7 +371,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -406,7 +388,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns whitespace release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12350,
             Image: null,
@@ -426,7 +407,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -438,101 +419,6 @@ public class BooksSyncServiceTests
         entity.Year.Should().BeNull();
     }
 
-    // ── Mapping — genre from cached_tags ──────────────────────────────────────
-
-    [Fact]
-    public void SyncMapping_BookWithCachedTags_MapsGenreFromFirstTag()
-    {
-        // Arrange — Hardcover returns cached_tags
-        var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: new List<string> { "Science Fiction", "Fantasy" },
-            Contributions: null,
-            Id: 12351,
-            Image: null,
-            ReleaseDate: null,
-            Title: "Dune"
-        );
-
-        // Act
-        var genre = hardcoverBook.CachedTags?.FirstOrDefault();
-        var entity = new Book
-        {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
-            CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = genre,
-            HardcoverId = hardcoverBook.Id,
-            Id = Guid.NewGuid(),
-            LastSyncedAt = DateTimeOffset.UtcNow,
-            Title = hardcoverBook.Title ?? "Unknown Title",
-            Year = null
-        };
-
-        // Assert
-        entity.Genre.Should().Be("Science Fiction");
-    }
-
-    [Fact]
-    public void SyncMapping_BookWithEmptyCachedTags_GenreIsNull()
-    {
-        // Arrange — Hardcover returns empty cached_tags
-        var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: new List<string>(),
-            Contributions: null,
-            Id: 12352,
-            Image: null,
-            ReleaseDate: null,
-            Title: "Empty Tags Book"
-        );
-
-        // Act
-        var genre = hardcoverBook.CachedTags?.FirstOrDefault();
-        var entity = new Book
-        {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
-            CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = genre,
-            HardcoverId = hardcoverBook.Id,
-            Id = Guid.NewGuid(),
-            LastSyncedAt = DateTimeOffset.UtcNow,
-            Title = hardcoverBook.Title ?? "Unknown Title",
-            Year = null
-        };
-
-        // Assert
-        entity.Genre.Should().BeNull();
-    }
-
-    [Fact]
-    public void SyncMapping_BookWithNullCachedTags_GenreIsNull()
-    {
-        // Arrange — Hardcover returns null cached_tags
-        var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
-            Contributions: null,
-            Id: 12353,
-            Image: null,
-            ReleaseDate: null,
-            Title: "No Tags Book"
-        );
-
-        // Act
-        var genre = hardcoverBook.CachedTags?.FirstOrDefault();
-        var entity = new Book
-        {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
-            CoverImageUrl = hardcoverBook.Image?.Url,
-            Genre = genre,
-            HardcoverId = hardcoverBook.Id,
-            Id = Guid.NewGuid(),
-            LastSyncedAt = DateTimeOffset.UtcNow,
-            Title = hardcoverBook.Title ?? "Unknown Title",
-            Year = null
-        };
-
-        // Assert
-        entity.Genre.Should().BeNull();
-    }
-
     // ── Mapping — coverImageUrl from image.url ────────────────────────────────
 
     [Fact]
@@ -540,7 +426,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns image with url
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12354,
             Image: new HardcoverClient.HardcoverImage("https://i.hardcover.com/cover.jpg"),
@@ -554,7 +439,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = coverImageUrl,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -571,7 +456,6 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null image
         var hardcoverBook = new HardcoverClient.HardcoverBook(
-            CachedTags: null,
             Contributions: null,
             Id: 12355,
             Image: null,
@@ -585,7 +469,7 @@ public class BooksSyncServiceTests
         {
             Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
             CoverImageUrl = coverImageUrl,
-            Genre = hardcoverBook.CachedTags?.FirstOrDefault(),
+            Genre = null,
             HardcoverId = hardcoverBook.Id,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
