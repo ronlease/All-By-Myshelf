@@ -64,15 +64,19 @@ public class HardcoverClient(
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        var result = await response.Content.ReadFromJsonAsync<HardcoverGraphQLResponse>(options, cancellationToken);
+        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+        logger.LogDebug("Hardcover raw response: {Response}", raw);
 
-        if (result?.Data?.Me?.UserBooks is null)
+        var result = JsonSerializer.Deserialize<HardcoverGraphQLResponse>(raw, options);
+
+        var userBooks = result?.Data?.Me?.FirstOrDefault()?.UserBooks;
+        if (userBooks is null)
         {
-            logger.LogWarning("Hardcover GraphQL response did not contain expected data structure.");
+            logger.LogWarning("Hardcover GraphQL response did not contain expected data. Raw: {Raw}", raw);
             return new List<HardcoverBook>();
         }
 
-        return result.Data.Me.UserBooks
+        return userBooks
             .Where(ub => ub.Book is not null)
             .Select(ub => ub.Book!)
             .ToList();
@@ -84,7 +88,7 @@ public class HardcoverClient(
         [property: JsonPropertyName("data")] HardcoverData? Data);
 
     private record HardcoverData(
-        [property: JsonPropertyName("me")] HardcoverMe? Me);
+        [property: JsonPropertyName("me")] List<HardcoverMe>? Me);
 
     private record HardcoverMe(
         [property: JsonPropertyName("user_books")] List<HardcoverUserBook>? UserBooks);
