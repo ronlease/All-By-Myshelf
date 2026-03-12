@@ -170,6 +170,7 @@ public class SyncEndpointTests
                 {
                     ["Discogs:PersonalAccessToken"] = "integration-test-token",
                     ["Discogs:Username"] = "integration-test-user",
+                    ["Hardcover:ApiToken"] = "integration-test-token",
                     ["Auth0:Domain"] = "test.auth0.com",
                     ["Auth0:Audience"] = "https://test-api"
                 });

@@ -15,6 +15,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'books',
+    canActivate: [authGuardFn],
+    loadComponent: () =>
+      import('./features/hardcover/books/books.component').then(
+        (m) => m.BooksComponent,
+      ),
+  },
+  {
     path: 'pick',
     canActivate: [authGuardFn],
     loadComponent: () =>

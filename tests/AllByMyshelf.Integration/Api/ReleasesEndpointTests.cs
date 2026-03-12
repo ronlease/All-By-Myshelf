@@ -388,11 +388,12 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         {
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                // Satisfy ValidateOnStart for DiscogsOptions
+                // Satisfy ValidateOnStart for DiscogsOptions and HardcoverOptions
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Discogs:PersonalAccessToken"] = "integration-test-token",
                     ["Discogs:Username"] = "integration-test-user",
+                    ["Hardcover:ApiToken"] = "integration-test-token",
                     ["Auth0:Domain"] = "test.auth0.com",
                     ["Auth0:Audience"] = "https://test-api"
                 });

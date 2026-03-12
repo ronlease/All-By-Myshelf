@@ -9,7 +9,8 @@
       "Bash(cd \"C:\\\\Projects\\\\All-By-Myshelf\\\\src\\\\AllByMyshelf.Web\" && npx ng build --configuration development 2>&1)",
       "Bash(cd /c/Projects/All-By-Myshelf/src/AllByMyshelf.Web && npx ng build --configuration development 2>&1)",
       "Bash(cd \"C:\\\\Projects\\\\All-By-Myshelf\\\\src\\\\AllByMyshelf.Web\" && npx ng build --configuration development 2>&1 | tail -10)",
-      "Skill(commit-commands:commit-push-pr)"
+      "Skill(commit-commands:commit-push-pr)",
+      "WebSearch"
     ]
   }
 }
