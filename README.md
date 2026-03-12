@@ -2,6 +2,16 @@
 
 A personal collection dashboard that aggregates data from external APIs (Discogs, Hardcover, and others) into a single read-only view.
 
+## Features
+
+- **Records** — syncs your Discogs vinyl/CD collection; paginated table with search, column filters, grouping, and album art thumbnails
+- **Record detail** — cover art, format, genre, year, and Discogs marketplace pricing (low/median/high)
+- **Random picker** — suggests a random record from your collection, filterable by decade, format, and genre
+- **Record store finder** — locates independent record stores near a US zip code or city using OpenStreetMap
+- **Books** — syncs your read books from Hardcover; paginated table with cover thumbnails, author, title, year
+- **Collection value** — estimates total collection value from Discogs marketplace lowest-price data
+- **Sync progress** — live progress indicator with rate-limit countdown during Discogs syncs
+
 ## Tech Stack
 
 - **API:** ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 17
@@ -42,6 +52,7 @@ dotnet user-secrets set "Auth0:Domain" "<your-auth0-domain>"
 dotnet user-secrets set "Auth0:Audience" "<your-auth0-audience>"
 dotnet user-secrets set "Discogs:PersonalAccessToken" "<your-discogs-personal-access-token>"
 dotnet user-secrets set "Discogs:Username" "<your-discogs-username>"
+dotnet user-secrets set "Hardcover:ApiToken" "<your-hardcover-api-token>"
 ```
 
 ### 4. Run database migrations
@@ -127,9 +138,9 @@ This project uses [Claude Code](https://claude.ai/code) with a multi-agent setup
 | API | Status | Docs |
 |---|---|---|
 | Discogs | Live | [discogs.com/developers](https://www.discogs.com/developers/) |
+| Hardcover | Live | [docs.hardcover.app](https://docs.hardcover.app/api/getting-started/) |
 | Nominatim (OpenStreetMap) | Live | [nominatim.org/release-docs/latest/api/Search/](https://nominatim.org/release-docs/latest/api/Search/) |
 | Overpass API (OpenStreetMap) | Live | [overpass-api.de](https://overpass-api.de/) |
-| Hardcover | Planned | [hardcover.app](https://hardcover.app/) |
 
 ## Secrets Reference
 
@@ -142,6 +153,7 @@ Never commit secrets. All secrets are managed via `dotnet user-secrets` locally.
 | `Auth0:Audience` | Auth0 API identifier (e.g. `https://localhost/api`) |
 | `Discogs:PersonalAccessToken` | Discogs personal access token |
 | `Discogs:Username` | Discogs username |
+| `Hardcover:ApiToken` | Hardcover API token (from hardcover.app/account/api) |
 
 ## License
 
