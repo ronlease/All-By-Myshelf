@@ -82,7 +82,6 @@ public class HardcoverClient(
                                     }}
                                 }}
                                 release_date
-                                cached_tags
                                 image {{
                                     url
                                 }}
@@ -155,7 +154,6 @@ public class HardcoverClient(
         [property: JsonPropertyName("book")] HardcoverBook? Book);
 
     public record HardcoverBook(
-        [property: JsonPropertyName("cached_tags")] List<string>? CachedTags,
         [property: JsonPropertyName("contributions")] List<HardcoverContribution>? Contributions,
         [property: JsonPropertyName("id")] int Id,
         [property: JsonPropertyName("image")] HardcoverImage? Image,

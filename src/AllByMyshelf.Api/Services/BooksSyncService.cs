@@ -73,7 +73,7 @@ public class BooksSyncService(
         foreach (var b in apiBooks)
         {
             var author = b.Contributions?.FirstOrDefault()?.Author?.Name;
-            var genre = b.CachedTags?.FirstOrDefault();
+            string? genre = null; // cached_tags is a JSON blob; genre support to be added later
             var coverImageUrl = b.Image?.Url;
 
             int? year = null;
