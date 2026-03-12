@@ -31,6 +31,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'statistics',
+    canActivate: [authGuardFn],
+    loadComponent: () =>
+      import('./features/statistics/statistics.component').then(
+        (m) => m.StatisticsComponent,
+      ),
+  },
+  {
+    path: 'stores',
+    canActivate: [authGuardFn],
+    loadComponent: () =>
+      import('./features/store-finder/store-finder.component').then(
+        (m) => m.StoreFinderComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

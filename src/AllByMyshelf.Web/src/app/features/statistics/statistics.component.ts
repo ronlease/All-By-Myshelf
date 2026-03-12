@@ -1,51 +1,38 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { DiscogsService, ReleaseDetailDto } from '../discogs.service';
-import { FormatIconPipe } from '../format-icon.pipe';
+import { CollectionValueDto, StatisticsService } from './statistics.service';
 
 @Component({
-  selector: 'app-release-detail',
+  selector: 'app-statistics',
   standalone: true,
   imports: [
     CurrencyPipe,
-    FormatIconPipe,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
-    MatListModule,
     MatProgressSpinnerModule,
     MatToolbarModule,
-    RouterModule,
   ],
-  templateUrl: './release-detail.component.html',
+  templateUrl: './statistics.component.html',
 })
-export class ReleaseDetailComponent implements OnInit {
-  private readonly discogsService = inject(DiscogsService);
-  private readonly route = inject(ActivatedRoute);
+export class StatisticsComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly statisticsService = inject(StatisticsService);
 
+  collectionValue = signal<CollectionValueDto | null>(null);
   error = signal(false);
   loading = signal(true);
-  release = signal<ReleaseDetailDto | null>(null);
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.error.set(true);
-      this.loading.set(false);
-      return;
-    }
-
-    this.discogsService.getRelease(id).subscribe({
-      next: (detail) => {
-        this.release.set(detail);
+    this.statisticsService.getCollectionValue().subscribe({
+      next: (data) => {
+        this.collectionValue.set(data);
         this.loading.set(false);
       },
       error: () => {

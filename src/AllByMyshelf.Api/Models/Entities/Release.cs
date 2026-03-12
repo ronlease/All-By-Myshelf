@@ -20,11 +20,20 @@ public class Release
     /// <summary>Primary genre; null when not populated by sync.</summary>
     public string? Genre { get; set; }
 
+    /// <summary>Highest marketplace price from Discogs; null when unavailable.</summary>
+    public decimal? HighestPrice { get; set; }
+
     /// <summary>Primary key (application-generated GUID).</summary>
     public Guid Id { get; set; }
 
     /// <summary>UTC timestamp of the last sync that touched this record.</summary>
     public DateTimeOffset LastSyncedAt { get; set; }
+
+    /// <summary>Lowest marketplace price from Discogs; null when unavailable.</summary>
+    public decimal? LowestPrice { get; set; }
+
+    /// <summary>Median marketplace price from Discogs; null when unavailable.</summary>
+    public decimal? MedianPrice { get; set; }
 
     /// <summary>Release title as returned by Discogs.</summary>
     public string Title { get; set; } = string.Empty;

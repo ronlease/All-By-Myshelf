@@ -1,3 +1,5 @@
+using AllByMyshelf.Api.Models.DTOs;
+
 namespace AllByMyshelf.Api.Services;
 
 /// <summary>
@@ -24,6 +26,9 @@ public interface ISyncService
     /// Indicates whether a sync is currently running.
     /// </summary>
     bool IsSyncRunning { get; }
+
+    /// <summary>Current sync progress snapshot.</summary>
+    SyncProgressDto Progress { get; }
 
     /// <summary>
     /// Attempts to start a background sync.

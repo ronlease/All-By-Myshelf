@@ -23,6 +23,7 @@
 
 using System.Net;
 using AllByMyshelf.Api.Infrastructure.Data;
+using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
@@ -212,7 +213,7 @@ public class SyncEndpointTests
         : ISyncService
     {
         public bool IsSyncRunning { get; } = isSyncRunning;
-
+        public SyncProgressDto Progress => new(IsSyncRunning, 0, null, IsSyncRunning ? "syncing" : "idle", 0);
         public SyncStartResult TryStartSync() => result;
     }
 }

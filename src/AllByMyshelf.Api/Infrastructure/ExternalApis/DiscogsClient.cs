@@ -13,6 +13,12 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
 {
     private readonly DiscogsOptions _options = options.Value;
 
+    /// <summary>Fired when a rate-limit response is received. Argument is the number of seconds to wait.</summary>
+    public event Action<int>? OnRateLimitPause;
+
+    /// <summary>Fired when execution resumes after a rate-limit delay.</summary>
+    public event Action? OnRateLimitResume;
+
     private async Task<HttpResponseMessage> FetchWithRetryAsync(string url, CancellationToken cancellationToken)
     {
         while (true)
@@ -27,7 +33,9 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
                 var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(60);
                 logger.LogWarning("Discogs rate limit hit. Backing off for {Seconds}s before retrying {Url}.",
                     retryAfter.TotalSeconds, url);
+                OnRateLimitPause?.Invoke((int)retryAfter.TotalSeconds);
                 await Task.Delay(retryAfter, cancellationToken);
+                OnRateLimitResume?.Invoke();
                 continue;
             }
 
@@ -93,6 +101,28 @@ public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> optio
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Failed to fetch release detail for Discogs ID {DiscogsId}. Skipping detail fields.", discogsId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Fetches marketplace pricing statistics for a single Discogs release.
+    /// Returns null gracefully on failure so the sync can continue without pricing data.
+    /// </summary>
+    /// <param name="discogsId">The Discogs release ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="DiscogsMarketplaceStats"/> with low/median/high prices, or null on failure.</returns>
+    public async Task<DiscogsMarketplaceStats?> GetMarketplaceStatsAsync(int discogsId, CancellationToken cancellationToken)
+    {
+        var url = $"/marketplace/stats/{discogsId}?curr_abbr=USD";
+        try
+        {
+            var response = await FetchWithRetryAsync(url, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<DiscogsMarketplaceStats>(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Failed to fetch marketplace stats for Discogs ID {DiscogsId}. Skipping pricing.", discogsId);
             return null;
         }
     }
@@ -179,4 +209,27 @@ public class DiscogsReleaseDetail
 {
     [JsonPropertyName("genres")]
     public List<string> Genres { get; init; } = [];
+}
+
+/// <summary>Marketplace pricing statistics for a release (GET /marketplace/stats/{id}).</summary>
+public class DiscogsMarketplaceStats
+{
+    [JsonPropertyName("highest_price")]
+    public DiscogsPrice? HighestPrice { get; init; }
+
+    [JsonPropertyName("lowest_price")]
+    public DiscogsPrice? LowestPrice { get; init; }
+
+    [JsonPropertyName("median_price")]
+    public DiscogsPrice? MedianPrice { get; init; }
+}
+
+/// <summary>A price value with currency from the Discogs marketplace.</summary>
+public class DiscogsPrice
+{
+    [JsonPropertyName("currency")]
+    public string Currency { get; init; } = string.Empty;
+
+    [JsonPropertyName("value")]
+    public decimal Value { get; init; }
 }

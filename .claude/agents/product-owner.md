@@ -45,3 +45,5 @@ Feature: [Feature name]
 - Acceptance criteria must be specific enough for QA to write tests without ambiguity.
 - Do not gold-plate. MVP scope only unless explicitly told otherwise.
 - When updating the backlog, always read the current state of `docs/backlog.md` first.
+- **When a feature is implemented and merged, immediately update its status to `Done` in `docs/backlog.md`.** Do not wait to be asked. If multiple items were completed in one PR (e.g., ABM-014–017), update all of them.
+- After any implementation work is reported complete, scan the recent git log (`git log --oneline -20`) to identify any other merged items whose status has not yet been updated, and update them too.

@@ -4,7 +4,7 @@
 
 ## [ABM-001] Store Discogs Personal Access Token
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -31,7 +31,7 @@ Feature: Discogs personal access token configuration
 
 ## [ABM-002] Sync Discogs Collection in the Background
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -71,7 +71,7 @@ Feature: Background sync of Discogs collection
 
 ## [ABM-003] Persist Discogs Collection to the Local Database
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -104,7 +104,7 @@ Feature: Persisting synced releases to the database
 
 ## [ABM-004] Expose a Paginated API Endpoint for the Collection
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -148,7 +148,7 @@ Feature: Paginated collection endpoint
 
 ## [ABM-005] Trigger a Manual Collection Sync
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -183,7 +183,7 @@ Feature: Manual sync trigger endpoint
 
 ## [ABM-006] MVP Collection Dashboard (Angular Frontend)
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -251,7 +251,7 @@ Feature: MVP collection dashboard
 
 ## [ABM-007] GitHub Actions — CI Pipeline
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -303,7 +303,7 @@ Feature: GitHub Actions CI pipeline
 
 ## [ABM-008] Auto-Refresh Collection After Sync Completes
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -345,7 +345,7 @@ Feature: Auto-refresh collection after sync completes
 
 ## [ABM-009] Respect OS Light/Dark Mode Preference
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -377,7 +377,7 @@ Feature: OS light/dark mode preference
 
 ## [ABM-010] Purple Brand Theme Using Material 3 Seed Color
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -413,7 +413,7 @@ Feature: Purple Material 3 seed color theme
 
 ## [ABM-011] Album Art Thumbnails on the Collection List
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -448,7 +448,7 @@ Feature: Album art thumbnails on the collection list
 
 ## [ABM-012] Release Detail View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -564,7 +564,7 @@ Feature: Local independent record store finder
 
 ## [ABM-014] Genre Column on Collection List
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -600,7 +600,7 @@ Feature: Genre column on the collection list
 
 ## [ABM-015] Collection Search
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -642,7 +642,7 @@ Feature: Collection search
 
 ## [ABM-016] Column Header Filtering
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -683,7 +683,7 @@ Feature: Column header filtering
 
 ## [ABM-017] Collection Grouping
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -809,7 +809,7 @@ Feature: Statistics dashboard
 
 ## [ABM-019] Random Record Picker
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -1166,7 +1166,7 @@ Feature: Duplicate detection
 
 ## [ABM-025] Format Emoji Icons
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1464,4 +1464,228 @@ Feature: Code complexity audit and simplification
     Then the total line count is reduced or unchanged
     And the number of files, classes, or interfaces is reduced or unchanged
     And no new abstractions have been introduced
+```
+
+---
+
+## [ABM-028] Enforce Authentication on All API Endpoints
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+My collection data is personal and should never be exposed to unauthenticated callers. Although Auth0 authentication exists on the frontend, I need confidence that the backend API consistently enforces authorization on every endpoint. If any endpoint allows unauthenticated requests to reach business logic, my data could be accessed by anyone who discovers the API URL. A global authentication requirement ensures that only requests with a valid token are processed, protecting my collection information from unauthorized access.
+
+### Acceptance Criteria
+```gherkin
+Feature: API authentication enforcement
+
+  # --- Authenticated requests succeed ---
+
+  Scenario: Authenticated request to a protected endpoint succeeds
+    Given I have a valid Auth0 access token
+    When I make a GET request to "/api/v1/collection" with the Authorization header set to "Bearer <valid_token>"
+    Then the response status code is 200
+    And the response body contains collection data
+
+  Scenario: Authenticated request with valid token to any endpoint succeeds
+    Given I have a valid Auth0 access token
+    When I make a request to any API endpoint under "/api/v1/" with the Authorization header set to "Bearer <valid_token>"
+    Then the request is processed by the endpoint's business logic
+    And the response reflects the expected behavior for that endpoint
+
+  # --- Unauthenticated requests are rejected ---
+
+  Scenario: Request without Authorization header is rejected
+    Given I do not include an Authorization header
+    When I make a GET request to "/api/v1/collection"
+    Then the response status code is 401 Unauthorized
+    And the response body does not contain any collection data
+
+  Scenario: Request with missing Bearer token is rejected
+    Given I include an Authorization header with value ""
+    When I make a GET request to "/api/v1/collection"
+    Then the response status code is 401 Unauthorized
+
+  Scenario: Request with malformed Authorization header is rejected
+    Given I include an Authorization header with value "InvalidScheme abc123"
+    When I make a GET request to "/api/v1/collection"
+    Then the response status code is 401 Unauthorized
+
+  Scenario: Request with invalid token is rejected
+    Given I include an Authorization header with value "Bearer invalid_or_expired_token"
+    When I make a GET request to "/api/v1/collection"
+    Then the response status code is 401 Unauthorized
+    And the response body does not contain any collection data
+
+  Scenario: Request with expired token is rejected
+    Given I have an Auth0 access token that has expired
+    When I make a GET request to "/api/v1/collection" with the Authorization header set to "Bearer <expired_token>"
+    Then the response status code is 401 Unauthorized
+
+  # --- All endpoints are covered ---
+
+  Scenario: All API endpoints require authentication by default
+    Given the ASP.NET Core API is configured
+    When I review the authentication middleware and controller configurations
+    Then authentication is required globally for all endpoints under "/api/v1/"
+    And no endpoint is accidentally left open via [AllowAnonymous] or missing [Authorize] attributes
+
+  Scenario: No business logic executes for unauthenticated requests
+    Given I make an unauthenticated request to any API endpoint
+    When the request is processed by the middleware pipeline
+    Then the request is rejected before reaching any controller action
+    And no database queries or external API calls are made
+
+  # --- Health check exception (if applicable) ---
+
+  Scenario: Health check endpoint remains accessible without authentication
+    Given the application exposes a health check endpoint at "/health" or "/healthz"
+    When I make a GET request to the health check endpoint without an Authorization header
+    Then the response status code is 200
+    And the response indicates the application health status
+    And no sensitive data is exposed
+
+  # --- Error response format ---
+
+  Scenario: Unauthorized response includes appropriate headers
+    Given I make an unauthenticated request to a protected endpoint
+    When the response is returned with status 401
+    Then the response includes a "WWW-Authenticate" header indicating the expected authentication scheme
+    And the response body is either empty or contains a generic error message without sensitive details
+```
+
+---
+
+## [ABM-029] Collection Maintenance View
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I have approximately 150 records in my collection, and some of them have gaps in their data such as missing release year, pricing information, genre, or cover art. Without a quick way to identify which records are incomplete, I have to scroll through my entire collection manually to find them. A dedicated maintenance view saves time by surfacing all records with missing data in one place, and provides direct links to Discogs so I can fix the gaps at the source.
+
+### Acceptance Criteria
+```gherkin
+Feature: Collection maintenance view
+
+  # --- Navigation ---
+
+  Scenario: Toolbar button navigates to maintenance view
+    Given I am on the collection page
+    When I click the "Maintenance" toolbar button
+    Then I am navigated to the "/maintenance" route
+    And the maintenance view is displayed
+
+  # --- Listing records with missing data ---
+
+  Scenario: Maintenance view lists records with missing year
+    Given my collection contains a record with a missing release year
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Year" field is shown as missing for that record
+
+  Scenario: Maintenance view lists records with missing pricing data
+    Given my collection contains a record with missing lowest price
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Lowest Price" field is shown as missing for that record
+
+  Scenario: Maintenance view lists records with missing median price
+    Given my collection contains a record with missing median price
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Median Price" field is shown as missing for that record
+
+  Scenario: Maintenance view lists records with missing highest price
+    Given my collection contains a record with missing highest price
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Highest Price" field is shown as missing for that record
+
+  Scenario: Maintenance view lists records with missing genre
+    Given my collection contains a record with a missing genre
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Genre" field is shown as missing for that record
+
+  Scenario: Maintenance view lists records with missing cover image
+    Given my collection contains a record with a missing cover image
+    When I view the maintenance page
+    Then the record appears in the maintenance list
+    And the "Cover Image" field is shown as missing for that record
+
+  Scenario: Records with multiple missing fields appear once with all gaps listed
+    Given my collection contains a record missing both year and genre
+    When I view the maintenance page
+    Then the record appears once in the maintenance list
+    And both "Year" and "Genre" are shown as missing for that record
+
+  Scenario: Records with complete data do not appear in the maintenance list
+    Given my collection contains a record with all fields populated (year, genre, all price fields, cover image)
+    When I view the maintenance page
+    Then that record does not appear in the maintenance list
+
+  # --- Row information ---
+
+  Scenario: Each row displays record name and artist
+    Given my collection contains a record with missing data
+    When I view the maintenance page
+    Then the row displays the record title
+    And the row displays the artist name
+
+  Scenario: Each row shows which specific fields are missing
+    Given my collection contains a record with missing year and missing cover image
+    When I view the maintenance page
+    Then the row clearly indicates "Year" and "Cover Image" as the missing fields
+
+  # --- Discogs links ---
+
+  Scenario: Each row links to the Discogs release page
+    Given my collection contains a record with Discogs ID "12345" and missing data
+    When I view the maintenance page
+    Then the row contains a link to "https://www.discogs.com/release/12345"
+    And clicking the link opens the Discogs release page in a new tab
+
+  Scenario: Each row links to the user's Discogs collection entry
+    Given my collection contains a record with Discogs ID "12345" and instance ID "67890" and missing data
+    When I view the maintenance page
+    Then the row contains a link to edit the collection entry on Discogs
+    And clicking the link opens the Discogs collection entry page in a new tab
+
+  # --- Empty state ---
+
+  Scenario: Empty state when all records have complete data
+    Given all records in my collection have year, genre, all price fields, and cover image populated
+    When I view the maintenance page
+    Then the maintenance list is empty
+    And an empty state message is displayed indicating "No records with missing data"
+
+  # --- Loading state ---
+
+  Scenario: Loading indicator while fetching maintenance data
+    Given I navigate to the maintenance page
+    When the page is loading data from the API
+    Then a loading indicator is displayed
+    And the maintenance list is not yet visible
+
+  Scenario: Loading indicator disappears when data loads successfully
+    Given the maintenance page is loading
+    When the API returns the list of records with missing data
+    Then the loading indicator is hidden
+    And the maintenance list is displayed
+
+  # --- Error state ---
+
+  Scenario: Error state when API request fails
+    Given I navigate to the maintenance page
+    When the API request fails with an error
+    Then an error message is displayed to the user
+    And the error message suggests trying again later
+
+  Scenario: Error state does not show maintenance list
+    Given the maintenance page encountered an API error
+    When I view the maintenance page
+    Then the maintenance list is not displayed
+    And only the error message is visible
 ```

@@ -1,5 +1,6 @@
 using AllByMyshelf.Api.Configuration;
 using AllByMyshelf.Api.Infrastructure.ExternalApis;
+using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
 using AllByMyshelf.Api.Repositories;
 using Microsoft.Extensions.Options;
@@ -23,11 +24,24 @@ public class SyncService(
     private readonly System.Threading.Channels.Channel<bool> _syncChannel =
         System.Threading.Channels.Channel.CreateBounded<bool>(1);
 
+    private volatile int _current;
+    private volatile int _retryAfterSeconds;
+    private volatile string _status = "idle";
     // 0 = idle, 1 = running
     private int _syncRunning;
+    private volatile int _total;
 
     /// <inheritdoc/>
     public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
+
+    /// <inheritdoc/>
+    public SyncProgressDto Progress => new(
+        IsRunning: IsSyncRunning,
+        Current: _current,
+        RetryAfterSeconds: _retryAfterSeconds > 0 ? _retryAfterSeconds : null,
+        Status: _status,
+        Total: _total
+    );
 
     /// <summary>
     /// Background loop: waits for sync signals and executes them one at a time.
@@ -50,6 +64,10 @@ public class SyncService(
             }
             finally
             {
+                _status = "idle";
+                _current = 0;
+                _total = 0;
+                _retryAfterSeconds = 0;
                 Volatile.Write(ref _syncRunning, 0);
             }
         }
@@ -64,14 +82,32 @@ public class SyncService(
         var discogsClient = scope.ServiceProvider.GetRequiredService<DiscogsClient>();
         var releasesRepository = scope.ServiceProvider.GetRequiredService<IReleasesRepository>();
 
+        discogsClient.OnRateLimitPause += seconds =>
+        {
+            _retryAfterSeconds = seconds;
+            _status = "pausing";
+        };
+        discogsClient.OnRateLimitResume += () =>
+        {
+            _retryAfterSeconds = 0;
+            _status = "resuming";
+        };
+
         var apiReleases = await discogsClient.GetCollectionAsync(cancellationToken);
         logger.LogInformation("Fetched {Count} releases from Discogs.", apiReleases.Count);
+
+        _total = apiReleases.Count;
+        _current = 0;
+        _status = "syncing";
 
         var now = DateTimeOffset.UtcNow;
         var entities = new List<Release>(apiReleases.Count);
 
         foreach (var r in apiReleases)
         {
+            _current++;
+            _status = "syncing";
+
             var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
             var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
             var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
@@ -95,13 +131,22 @@ public class SyncService(
             if (detail is not null)
             {
                 release.Genre = detail.Genres.FirstOrDefault();
-
                 logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
+            }
+
+            var stats = await discogsClient.GetMarketplaceStatsAsync(r.Id, cancellationToken);
+            if (stats is not null)
+            {
+                release.HighestPrice = stats.HighestPrice?.Value;
+                release.LowestPrice = stats.LowestPrice?.Value;
+                release.MedianPrice = stats.MedianPrice?.Value;
+                logger.LogDebug("Fetched marketplace stats for Discogs ID {DiscogsId}.", r.Id);
             }
 
             entities.Add(release);
         }
 
+        _status = "saving";
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Discogs sync completed successfully.");
     }

@@ -24,7 +24,10 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             DiscogsId = release.DiscogsId,
             Format = release.Format,
             Genre = release.Genre,
+            HighestPrice = release.HighestPrice,
             Id = release.Id,
+            LowestPrice = release.LowestPrice,
+            MedianPrice = release.MedianPrice,
             Title = release.Title,
             Year = release.Year,
         };
@@ -43,7 +46,10 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             DiscogsId = release.DiscogsId,
             Format = release.Format,
             Genre = release.Genre,
+            HighestPrice = release.HighestPrice,
             Id = release.Id,
+            LowestPrice = release.LowestPrice,
+            MedianPrice = release.MedianPrice,
             Title = release.Title,
             Year = release.Year,
         };

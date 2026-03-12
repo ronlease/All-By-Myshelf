@@ -442,6 +442,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
     private sealed class NoOpSyncService : ISyncService
     {
         public bool IsSyncRunning => false;
+        public SyncProgressDto Progress => new(false, 0, null, "idle", 0);
         public SyncStartResult TryStartSync() => SyncStartResult.Started;
     }
 }

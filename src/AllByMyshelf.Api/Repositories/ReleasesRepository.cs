@@ -123,7 +123,10 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 existingRelease.CoverImageUrl = release.CoverImageUrl;
                 existingRelease.Format = release.Format;
                 existingRelease.Genre = release.Genre;
+                existingRelease.HighestPrice = release.HighestPrice;
                 existingRelease.LastSyncedAt = release.LastSyncedAt;
+                existingRelease.LowestPrice = release.LowestPrice;
+                existingRelease.MedianPrice = release.MedianPrice;
                 existingRelease.ThumbnailUrl = release.ThumbnailUrl;
                 existingRelease.Title = release.Title;
                 existingRelease.Year = release.Year;
