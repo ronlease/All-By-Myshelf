@@ -58,6 +58,22 @@
                   <span matListItemLine>{{ release()!.genre }}</span>
                 </mat-list-item>
               }
+              @if (release()!.lowestPrice !== null || release()!.medianPrice !== null || release()!.highestPrice !== null) {
+                <mat-list-item>
+                  <span matListItemTitle>Marketplace Pricing</span>
+                  <span matListItemLine>
+                    @if (release()!.lowestPrice !== null) {
+                      Low: {{ release()!.lowestPrice | currency:'USD' }}
+                    }
+                    @if (release()!.medianPrice !== null) {
+                      &nbsp; Median: {{ release()!.medianPrice | currency:'USD' }}
+                    }
+                    @if (release()!.highestPrice !== null) {
+                      &nbsp; High: {{ release()!.highestPrice | currency:'USD' }}
+                    }
+                  </span>
+                </mat-list-item>
+              }
             </mat-list>
           </mat-card-content>
 

@@ -127,6 +127,8 @@ This project uses [Claude Code](https://claude.ai/code) with a multi-agent setup
 | API | Status | Docs |
 |---|---|---|
 | Discogs | Live | [discogs.com/developers](https://www.discogs.com/developers/) |
+| Nominatim (OpenStreetMap) | Live | [nominatim.org/release-docs/latest/api/Search/](https://nominatim.org/release-docs/latest/api/Search/) |
+| Overpass API (OpenStreetMap) | Live | [overpass-api.de](https://overpass-api.de/) |
 | Hardcover | Planned | [hardcover.app](https://hardcover.app/) |
 
 ## Secrets Reference

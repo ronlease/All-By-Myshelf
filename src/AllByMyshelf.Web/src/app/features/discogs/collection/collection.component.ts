@@ -15,7 +15,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { HttpErrorResponse } from '@angular/common/http';
-import { DiscogsService, ReleaseDto } from '../discogs.service';
+import { DiscogsService, ReleaseDto, SyncProgressDto } from '../discogs.service';
 import { FormatIconPipe } from '../format-icon.pipe';
 
 @Component({
@@ -63,12 +63,36 @@ export class CollectionComponent implements OnInit {
   readonly pageSize = 20;
   private readonly router = inject(Router);
   searchTerm = signal('');
+  private pauseStartTime = 0;
+  private pauseTotalSeconds = 0;
   private searchTimer?: ReturnType<typeof setTimeout>;
   private readonly snackBar = inject(MatSnackBar);
+  syncProgress = signal<SyncProgressDto | null>(null);
+  private syncTimer?: ReturnType<typeof setTimeout>;
   syncing = signal(false);
   yearFilter = signal<string[]>([]);
 
   // ── Computed ────────────────────────────────────────────────────────────────
+
+  get syncStatusLabel(): string {
+    const p = this.syncProgress();
+    if (!p) return 'Syncing...';
+    switch (p.status) {
+      case 'pausing': {
+        const elapsed = Math.floor((Date.now() - this.pauseStartTime) / 1000);
+        const remaining = Math.max(0, this.pauseTotalSeconds - Math.floor(elapsed / 5) * 5);
+        return `Pausing ${remaining}s (rate limit)`;
+      }
+      case 'resuming':
+        return 'Resuming…';
+      case 'saving':
+        return 'Saving…';
+      default:
+        return p.total > 0
+          ? `Syncing ${p.current} of ${p.total}…`
+          : 'Syncing…';
+    }
+  }
 
   get filteredReleases(): ReleaseDto[] {
     let releases = this.allReleases();
@@ -232,8 +256,8 @@ export class CollectionComponent implements OnInit {
     this.discogsService.triggerSync().subscribe({
       next: (response) => {
         if (response.status === 202) {
-          this.snackBar.open('Sync started. This may take a few minutes.', 'Dismiss', { duration: 5000 });
-          setTimeout(() => this.loadAll(), 10000);
+          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
+          this.pollSyncStatus();
         } else {
           this.syncing.set(false);
         }
@@ -249,5 +273,31 @@ export class CollectionComponent implements OnInit {
         }
       },
     });
+  }
+
+  private pollSyncStatus(): void {
+    const poll = () => {
+      this.discogsService.getSyncStatus().subscribe({
+        next: (progress) => {
+          if (progress.status === 'pausing' && this.syncProgress()?.status !== 'pausing') {
+            this.pauseStartTime = Date.now();
+            this.pauseTotalSeconds = progress.retryAfterSeconds ?? 60;
+          }
+          this.syncProgress.set(progress);
+          if (progress.isRunning) {
+            this.syncTimer = setTimeout(poll, 1000);
+          } else {
+            this.syncing.set(false);
+            this.syncProgress.set(null);
+            this.loadAll();
+          }
+        },
+        error: () => {
+          // On error, keep polling — a transient failure shouldn't stop the progress display
+          this.syncTimer = setTimeout(poll, 2000);
+        },
+      });
+    };
+    poll();
   }
 }

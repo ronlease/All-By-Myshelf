@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,15 @@ namespace AllByMyshelf.Api.Controllers;
 [Produces("application/json")]
 public class SyncController(ISyncService syncService) : ControllerBase
 {
+    /// <summary>Returns the current sync progress.</summary>
+    /// <response code="200">Current sync status.</response>
+    [HttpGet("status")]
+    [ProducesResponseType(typeof(SyncProgressDto), StatusCodes.Status200OK)]
+    public IActionResult GetStatus()
+    {
+        return Ok(syncService.Progress);
+    }
+
     /// <summary>
     /// Triggers a manual sync of the Discogs collection.
     /// </summary>

@@ -57,6 +57,18 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .HasColumnName("genre")
             .HasMaxLength(200);
 
+        builder.Property(r => r.HighestPrice)
+            .HasColumnName("highest_price")
+            .HasPrecision(10, 2);
+
+        builder.Property(r => r.LowestPrice)
+            .HasColumnName("lowest_price")
+            .HasPrecision(10, 2);
+
+        builder.Property(r => r.MedianPrice)
+            .HasColumnName("median_price")
+            .HasPrecision(10, 2);
+
         builder.Property(r => r.LastSyncedAt)
             .HasColumnName("last_synced_at")
             .IsRequired();

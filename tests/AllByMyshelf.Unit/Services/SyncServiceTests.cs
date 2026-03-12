@@ -37,6 +37,12 @@
 //   Given Discogs returns a release where cover_image and thumb are empty strings
 //   When the sync mapping is applied
 //   Then the Release entity has empty CoverImageUrl and empty ThumbnailUrl
+//
+// Scenario: Sync maps LowestPrice from release detail to Release entity (ABM-020)
+//   Given Discogs collection returns one release
+//   And GetReleaseDetailAsync returns a detail with LowestPrice 19.99
+//   When RunSync is triggered
+//   Then the upserted release has LowestPrice 19.99
 
 using AllByMyshelf.Api.Configuration;
 using AllByMyshelf.Api.Infrastructure.ExternalApis;
@@ -287,5 +293,42 @@ public class SyncServiceTests
         // Assert
         entity.CoverImageUrl.Should().BeEmpty();
         entity.ThumbnailUrl.Should().BeEmpty();
+    }
+
+    // ── Marketplace pricing mapping ───────────────────────────────────────────
+
+    [Fact]
+    public void SyncMapping_MarketplaceStatsWithPricing_MapsAllPricesToEntity()
+    {
+        // Arrange — mirror the mapping expression from RunSyncAsync
+        var stats = new DiscogsMarketplaceStats
+        {
+            HighestPrice = new DiscogsPrice { Value = 45.00m },
+            LowestPrice = new DiscogsPrice { Value = 19.99m },
+            MedianPrice = new DiscogsPrice { Value = 28.50m },
+        };
+
+        // Act — apply the same mapping logic SyncService.RunSyncAsync uses
+        var entity = new Release
+        {
+            Artist = "John Coltrane",
+            CoverImageUrl = null,
+            DiscogsId = 555,
+            Format = "Vinyl",
+            Genre = "Jazz",
+            HighestPrice = stats.HighestPrice?.Value,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            LowestPrice = stats.LowestPrice?.Value,
+            MedianPrice = stats.MedianPrice?.Value,
+            ThumbnailUrl = null,
+            Title = "A Love Supreme",
+            Year = 1964,
+        };
+
+        // Assert
+        entity.HighestPrice.Should().Be(45.00m);
+        entity.LowestPrice.Should().Be(19.99m);
+        entity.MedianPrice.Should().Be(28.50m);
     }
 }

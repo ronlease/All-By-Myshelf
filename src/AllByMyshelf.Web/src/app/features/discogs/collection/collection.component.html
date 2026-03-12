@@ -4,8 +4,14 @@
   <button mat-raised-button routerLink="/pick" style="margin-right: 8px;">
     🎲 What should I listen to?
   </button>
+  <button mat-raised-button routerLink="/stores" style="margin-right: 8px;">
+    🏪 Record Stores
+  </button>
+  <button mat-raised-button routerLink="/statistics" style="margin-right: 8px;">
+    📊 Statistics
+  </button>
   <button mat-raised-button color="accent" [disabled]="syncing()" (click)="onSyncClick()">
-    @if (syncing()) { Syncing... } @else { Sync Collection }
+    @if (syncing()) { {{ syncStatusLabel }} } @else { Sync Collection }
   </button>
 </mat-toolbar>
 

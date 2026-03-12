@@ -1,0 +1,74 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button (click)="onBackClick()" aria-label="Back to collection">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span>Record Store Finder</span>
+</mat-toolbar>
+
+<div class="page-content">
+  <mat-card class="mat-elevation-z2">
+    <mat-card-header>
+      <mat-card-title>Find Independent Record Stores</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="locationForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Location</mat-label>
+          <input
+            matInput
+            formControlName="location"
+            placeholder="ZIP code or City, ST"
+            type="text"
+          />
+          @if (locationForm.controls.location.hasError('required') && locationForm.controls.location.touched) {
+            <mat-error>A location is required</mat-error>
+          }
+          @if (locationForm.controls.location.hasError('usLocationRequired') && locationForm.controls.location.touched) {
+            <mat-error>Enter a US ZIP code (e.g. 97201) or city and state (e.g. Portland, OR)</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit">
+          Find Stores
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <mat-card class="mat-elevation-z2">
+      <mat-card-content>
+        <p class="empty-state">Could not retrieve store data. Please try again.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (searched() && stores().length === 0) {
+    <mat-card class="mat-elevation-z2">
+      <mat-card-content>
+        <p class="empty-state">No independent record stores found near that location.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (stores().length > 0) {
+    <mat-card class="mat-elevation-z2">
+      <mat-card-header>
+        <mat-card-title>Stores Near You</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          @for (store of stores(); track store.name) {
+            <mat-list-item>
+              <span matListItemTitle>{{ store.name }}</span>
+              @if (store.address) {
+                <span matListItemLine>{{ store.address }}</span>
+              }
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

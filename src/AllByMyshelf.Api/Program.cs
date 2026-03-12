@@ -33,6 +33,8 @@ builder.Services.AddHttpClient<DiscogsClient>(client =>
 // ── Repositories & services ───────────────────────────────────────────────────
 builder.Services.AddScoped<IReleasesRepository, ReleasesRepository>();
 builder.Services.AddScoped<IReleasesService, ReleasesService>();
+builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // SyncService is a singleton BackgroundService; also exposed as ISyncService.
 builder.Services.AddSingleton<SyncService>();

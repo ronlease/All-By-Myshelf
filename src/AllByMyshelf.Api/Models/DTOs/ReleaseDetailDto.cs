@@ -20,8 +20,17 @@ public class ReleaseDetailDto
     /// <summary>Primary genre; null when not populated by sync.</summary>
     public string? Genre { get; init; }
 
+    /// <summary>Highest marketplace price in USD; null when unavailable.</summary>
+    public decimal? HighestPrice { get; init; }
+
     /// <summary>Application-generated identifier.</summary>
     public Guid Id { get; init; }
+
+    /// <summary>Lowest marketplace price in USD; null when unavailable.</summary>
+    public decimal? LowestPrice { get; init; }
+
+    /// <summary>Median marketplace price in USD; null when unavailable.</summary>
+    public decimal? MedianPrice { get; init; }
 
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;

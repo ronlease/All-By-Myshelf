@@ -9,7 +9,10 @@ export interface ReleaseDetailDto {
   discogsId: number;
   format: string;
   genre: string | null;
+  highestPrice: number | null;
   id: string;
+  lowestPrice: number | null;
+  medianPrice: number | null;
   title: string;
   year: number | null;
 }
@@ -28,6 +31,14 @@ export interface RandomReleaseFilter {
   decade?: string;
   format?: string;
   genre?: string;
+}
+
+export interface SyncProgressDto {
+  current: number;
+  isRunning: boolean;
+  retryAfterSeconds: number | null;
+  status: 'idle' | 'syncing' | 'pausing' | 'resuming' | 'saving';
+  total: number;
 }
 
 export interface CollectionFilter {
@@ -77,6 +88,10 @@ export class DiscogsService {
 
   getRelease(id: string): Observable<ReleaseDetailDto> {
     return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/${id}`);
+  }
+
+  getSyncStatus(): Observable<SyncProgressDto> {
+    return this.http.get<SyncProgressDto>(`${this.baseUrl}/api/v1/sync/status`);
   }
 
   triggerSync(): Observable<HttpResponse<unknown>> {
