@@ -12,15 +12,19 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DiscogsService, ReleaseDto } from '../discogs.service';
+import { FormatIconPipe } from '../format-icon.pipe';
 
 @Component({
   selector: 'app-collection',
   standalone: true,
   imports: [
     CommonModule,
+    FormatIconPipe,
+    MatIconModule,
     FormsModule,
     MatButtonModule,
     MatCardModule,

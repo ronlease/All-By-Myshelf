@@ -15,6 +15,14 @@ public interface IReleasesService
     Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Returns a randomly selected release, optionally filtered by the criteria in
+    /// <paramref name="filter"/>. Returns null if no releases match.
+    /// </summary>
+    /// <param name="filter">Optional filter criteria; null means any release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ReleaseDetailDto?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns a paginated result of releases stored in the local database,
     /// optionally filtered by the criteria in <paramref name="filter"/>.
     /// </summary>

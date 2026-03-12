@@ -15,6 +15,37 @@ namespace AllByMyshelf.Api.Controllers;
 public class ReleasesController(IReleasesService releasesService) : ControllerBase
 {
     /// <summary>
+    /// Returns a randomly selected release, optionally filtered by format, genre, or decade.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="decade">Optional decade filter in the form "1980s".</param>
+    /// <param name="format">Optional case-insensitive contains filter on the format.</param>
+    /// <param name="genre">Optional case-insensitive contains filter on the genre.</param>
+    /// <returns>A randomly selected release matching the specified criteria.</returns>
+    /// <response code="200">Returns a randomly selected release.</response>
+    /// <response code="404">No releases match the specified criteria.</response>
+    [HttpGet("random")]
+    [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReleaseDetailDto>> GetRandom(
+        CancellationToken cancellationToken = default,
+        [FromQuery] string? decade = null,
+        [FromQuery] string? format = null,
+        [FromQuery] string? genre = null)
+    {
+        var filter = new RandomReleaseFilter(
+            Decade: decade,
+            Format: format,
+            Genre: genre);
+
+        var result = await releasesService.GetRandomAsync(filter, cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns the full detail for a single release.
     /// </summary>
     /// <param name="id">The application-generated GUID for the release.</param>

@@ -734,3 +734,734 @@ Feature: Collection grouping
     Then the collection returns to the flat paginated list view
     And pagination controls reappear
 ```
+
+---
+
+## [ABM-018] Statistics Dashboard
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I have a growing vinyl collection but no way to see patterns or trends in what I own. I want a dedicated statistics page with visual breakdowns — by genre, format, decade, artist, and label — so I can understand my collection at a glance. This helps me identify gaps (genres I am under-represented in), spot my biases (decades I gravitate toward), and simply appreciate the shape of my library.
+
+### Acceptance Criteria
+```gherkin
+Feature: Statistics dashboard
+
+  Scenario: Navigating to the statistics page
+    Given I am logged in
+    When I navigate to /statistics
+    Then the statistics dashboard page loads
+    And the page title indicates this is the collection statistics view
+
+  Scenario: Genre breakdown chart is displayed
+    Given I am logged in
+    And my collection contains releases with genre data
+    When the statistics page renders
+    Then a chart displays the distribution of releases by genre
+    And each genre segment shows the genre name and count or percentage
+
+  Scenario: Format breakdown chart is displayed
+    Given I am logged in
+    And my collection contains releases with format data
+    When the statistics page renders
+    Then a chart displays the distribution of releases by format
+    And each format segment shows the format name and count or percentage
+
+  Scenario: Decade breakdown chart is displayed
+    Given I am logged in
+    And my collection contains releases with year data
+    When the statistics page renders
+    Then a chart displays the distribution of releases by decade
+    And each decade segment shows the decade label (e.g., "1970s") and count or percentage
+
+  Scenario: Top artists list is displayed
+    Given I am logged in
+    And my collection contains releases from multiple artists
+    When the statistics page renders
+    Then a ranked list of the top 10 artists by release count is displayed
+    And each entry shows the artist name and number of releases
+
+  Scenario: Top labels list is displayed
+    Given I am logged in
+    And my collection contains releases with label data
+    When the statistics page renders
+    Then a ranked list of the top 10 labels by release count is displayed
+    And each entry shows the label name and number of releases
+
+  Scenario: Collection contains no releases
+    Given I am logged in
+    And my collection is empty
+    When the statistics page renders
+    Then the page displays a message indicating there is no data to display
+    And no charts or lists are rendered
+
+  Scenario: Releases missing a particular field are excluded from that chart
+    Given I am logged in
+    And some releases have no genre stored
+    When the genre breakdown chart renders
+    Then only releases with a stored genre are counted
+    And a note or separate "Unknown" category indicates how many releases lack genre data
+```
+
+---
+
+## [ABM-019] Random Record Picker
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+Sometimes I cannot decide what to play. Staring at a list of 150 records leads to decision paralysis, and I end up putting on the same few favorites. I want a "What should I listen to?" feature that randomly selects a record for me. Optional filters let me narrow the pool first — maybe I am in the mood for jazz, or I only want to consider records from the 1980s — before the app surprises me with a selection.
+
+### Acceptance Criteria
+```gherkin
+Feature: Random record picker
+
+  Scenario: Navigating to the random picker page
+    Given I am logged in
+    When I navigate to /pick
+    Then the random picker page loads
+    And a "Pick for me" button is visible
+
+  Scenario: Picking a random record with no filters
+    Given I am logged in
+    And I have not applied any filters
+    When I click the "Pick for me" button
+    Then a single release is selected at random from the entire collection
+    And the selected release is displayed with its cover art, artist, title, year, format, and genre
+
+  Scenario: Picking a random record with a genre filter
+    Given I am logged in
+    And I select a genre from the filter options
+    When I click the "Pick for me" button
+    Then a single release is selected at random from only releases matching that genre
+    And the selected release is displayed
+
+  Scenario: Picking a random record with a decade filter
+    Given I am logged in
+    And I select a decade from the filter options
+    When I click the "Pick for me" button
+    Then a single release is selected at random from only releases in that decade
+    And the selected release is displayed
+
+  Scenario: Picking a random record with a format filter
+    Given I am logged in
+    And I select a format from the filter options
+    When I click the "Pick for me" button
+    Then a single release is selected at random from only releases matching that format
+    And the selected release is displayed
+
+  Scenario: Combining multiple filters narrows the pool
+    Given I am logged in
+    And I select both a genre filter and a decade filter
+    When I click the "Pick for me" button
+    Then a single release is selected at random from only releases matching both filters
+    And the selected release is displayed
+
+  Scenario: No releases match the selected filters
+    Given I am logged in
+    And I select filters that exclude all releases in my collection
+    When I click the "Pick for me" button
+    Then a message is displayed indicating no records match the current filters
+    And no release is shown
+
+  Scenario: Clicking the button again picks a new random record
+    Given I am logged in
+    And a release has already been selected
+    When I click the "Pick for me" button again
+    Then a new release is selected at random (which may or may not differ from the previous selection)
+    And the display updates to show the new selection
+
+  Scenario: Link to view the selected release details
+    Given I am logged in
+    And a release has been selected by the random picker
+    When I click on the displayed release
+    Then I am navigated to /releases/{id} for that release
+```
+
+---
+
+## [ABM-020] Collection Value Estimate
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I am curious what my vinyl collection is worth on the secondhand market. Discogs provides low, median, and high marketplace pricing data for most releases. Displaying this information per record — and summing it for a total collection value — helps me understand the financial dimension of my hobby, whether for insurance purposes, bragging rights, or deciding which records to sell.
+
+### Data Notes
+- The Discogs release detail endpoint returns pricing data in the `lowest_price` field on the release object, but for full low/median/high stats, the `/releases/{id}` endpoint or the `community` statistics may be used. The sync should fetch and store `lowest_price`, `median_price`, and `highest_price` per release (where available).
+- Value is displayed in USD. Currency conversion is out of scope.
+
+### Acceptance Criteria
+```gherkin
+Feature: Collection value estimate
+
+  Scenario: Sync stores marketplace pricing data for each release
+    Given a manual sync is triggered
+    When the sync fetches a release from the Discogs API
+    Then the lowest price, median price, and highest price (if available) are stored in the database for that release
+
+  Scenario: Release detail view shows marketplace pricing
+    Given I am logged in
+    And I navigate to /releases/{id} for a release that has pricing data stored
+    When the detail view renders
+    Then the lowest price, median price, and highest price are displayed
+    And the prices are shown in USD format
+
+  Scenario: Release without pricing data does not show a price section
+    Given I am logged in
+    And I navigate to /releases/{id} for a release that has no pricing data stored
+    When the detail view renders
+    Then no marketplace pricing section is displayed
+    And no placeholder text such as "$0.00" or "N/A" is shown for price
+
+  Scenario: Statistics page displays total collection value
+    Given I am logged in
+    And my collection contains releases with pricing data
+    When I navigate to /statistics
+    Then a "Collection Value" section is visible
+    And the section displays the sum of median prices for all releases that have pricing data
+    And the value is shown in USD format
+
+  Scenario: Collection value excludes releases without pricing
+    Given I am logged in
+    And some releases have no pricing data stored
+    When the collection value is calculated
+    Then only releases with a stored median price are included in the sum
+    And a note indicates how many releases were excluded from the calculation
+
+  Scenario: Collection value when no releases have pricing data
+    Given I am logged in
+    And no releases have pricing data stored
+    When I view the collection value section on the statistics page
+    Then a message is displayed indicating pricing data is unavailable
+    And no dollar amount is shown
+```
+
+---
+
+## [ABM-021] Recently Added Releases
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+After a Discogs sync, I want to see which records are new to my collection since the last sync. When I add records on Discogs and then sync to the dashboard, a "Recently Added" section lets me confirm the import worked and highlights my newest acquisitions without having to hunt through the full list.
+
+### Data Notes
+- The sync should track the date each release was first added to the local database. This timestamp is set once on first insert and never updated on subsequent syncs.
+
+### Acceptance Criteria
+```gherkin
+Feature: Recently added releases
+
+  Scenario: Sync stores an "added" timestamp for newly inserted releases
+    Given a release does not exist in the local database
+    When a sync inserts that release for the first time
+    Then an "added" timestamp is stored with the current date and time
+    And subsequent syncs do not update that timestamp
+
+  Scenario: Dashboard shows a "Recently Added" section
+    Given I am logged in
+    And at least one release has an "added" timestamp within the last 30 days
+    When the dashboard loads
+    Then a "Recently Added" section is visible
+    And the section displays releases added in the last 30 days, sorted by most recent first
+
+  Scenario: Recently added section shows limited number of releases
+    Given I am logged in
+    And more than 10 releases have been added in the last 30 days
+    When the recently added section renders
+    Then at most 10 releases are displayed in the section
+    And a link is provided to view all recently added releases
+
+  Scenario: No releases added recently
+    Given I am logged in
+    And no releases have an "added" timestamp within the last 30 days
+    When the dashboard loads
+    Then the "Recently Added" section is not displayed
+    And no empty placeholder is shown
+
+  Scenario: Clicking a recently added release navigates to its detail view
+    Given I am logged in
+    And the recently added section is displaying releases
+    When I click on a release in the section
+    Then I am navigated to /releases/{id} for that release
+```
+
+---
+
+## [ABM-022] Wishlist Tracking
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+Discogs lets me maintain a wantlist of records I am hunting for. I want to see my wantlist alongside my collection in the dashboard so I can track what I am looking for and celebrate when items move from "wanted" to "owned." Surfacing wantlist items here saves me from switching between the dashboard and Discogs to check what I am still seeking.
+
+### Data Notes
+- The Discogs API provides a wantlist endpoint (`GET /users/{username}/wants`) that returns paginated results. This should be synced similarly to the collection.
+- Wantlist releases are stored in a separate table or with a flag distinguishing them from owned releases.
+
+### Acceptance Criteria
+```gherkin
+Feature: Wishlist tracking
+
+  Scenario: Sync fetches wantlist releases from Discogs
+    Given the Discogs personal access token is configured
+    When a sync runs
+    Then the sync retrieves all releases from my Discogs wantlist
+    And each wantlist release is stored in the database with artist, title, year, format, and cover image URL
+
+  Scenario: Navigating to the wantlist page
+    Given I am logged in
+    When I navigate to /wantlist
+    Then the wantlist page loads
+    And a paginated list of wantlist releases is displayed
+
+  Scenario: Wantlist display matches the collection list format
+    Given I am logged in
+    And the wantlist contains releases
+    When the wantlist page renders
+    Then each row displays cover thumbnail, artist, title, year, format, and genre
+    And pagination controls are visible
+
+  Scenario: Wantlist release is removed from Discogs
+    Given a release is in the local wantlist database
+    When a sync runs
+    And that release is no longer in my Discogs wantlist
+    Then the release is removed from the local wantlist database
+
+  Scenario: Wantlist item moves to collection
+    Given a release is in my Discogs wantlist and synced locally
+    When I add that same release to my Discogs collection
+    And a sync runs
+    Then the release appears in the local collection
+    And the release is removed from the local wantlist (if it was removed from Discogs wantlist)
+
+  Scenario: Wantlist page shows empty state
+    Given I am logged in
+    And my wantlist is empty
+    When I navigate to /wantlist
+    Then a message is displayed indicating the wantlist is empty
+    And no list rows are rendered
+```
+
+---
+
+## [ABM-023] Listening Notes and Personal Ratings
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+Discogs is great for catalog data, but I want to capture my own thoughts about my records. A personal notes field and a simple 1-to-5 star rating let me record my impressions — when I last played a record, whether it is a favorite, or any other observations. This data stays local since Discogs does not store arbitrary personal notes.
+
+### Data Notes
+- Notes and ratings are stored locally only and are not synced back to Discogs.
+- Rating is optional and can be null.
+- Notes is a free-text field with no length limit in the UI, though a reasonable database column limit (e.g., 2000 characters) is acceptable.
+
+### Acceptance Criteria
+```gherkin
+Feature: Listening notes and personal ratings
+
+  Scenario: Viewing notes and rating on the release detail page
+    Given I am logged in
+    And I navigate to /releases/{id}
+    When the detail view renders
+    Then a "My Notes" section is visible with a text area for notes
+    And a "My Rating" section is visible with a 1-to-5 star selector
+
+  Scenario: Saving a personal note
+    Given I am logged in
+    And I am viewing /releases/{id}
+    When I enter text into the notes field
+    And I click the Save button
+    Then the note is saved to the database for that release
+    And a success message confirms the note was saved
+
+  Scenario: Saving a personal rating
+    Given I am logged in
+    And I am viewing /releases/{id}
+    When I select a star rating
+    And I click the Save button
+    Then the rating is saved to the database for that release
+    And a success message confirms the rating was saved
+
+  Scenario: Viewing a previously saved note and rating
+    Given I have previously saved a note and rating for a release
+    When I navigate to /releases/{id}
+    Then the notes field displays my saved note
+    And the star selector displays my saved rating
+
+  Scenario: Clearing a note
+    Given I have a saved note for a release
+    When I clear the notes field and click Save
+    Then the note is removed from the database for that release
+    And the notes field appears empty
+
+  Scenario: Clearing a rating
+    Given I have a saved rating for a release
+    When I deselect all stars (or click a "clear rating" control) and click Save
+    Then the rating is removed from the database for that release
+    And the star selector shows no rating selected
+
+  Scenario: Notes and ratings are not affected by sync
+    Given I have saved a note and rating for a release
+    When a manual sync runs
+    Then the saved note and rating remain unchanged
+    And the synced catalog data from Discogs is updated independently
+```
+
+---
+
+## [ABM-024] Duplicate Detection
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+Over time, especially with a large collection, I may accidentally buy a record I already own — or intentionally own multiple copies for different pressings. I want the dashboard to identify potential duplicates (same artist and title but different release IDs) so I can review them. This helps me avoid accidental re-purchases when shopping and lets me see at a glance which records I own in multiple versions.
+
+### Acceptance Criteria
+```gherkin
+Feature: Duplicate detection
+
+  Scenario: Navigating to the duplicates page
+    Given I am logged in
+    When I navigate to /duplicates
+    Then the duplicates page loads
+    And potential duplicates are displayed
+
+  Scenario: Duplicates are identified by matching artist and title
+    Given my collection contains multiple releases with the same artist and title but different Discogs release IDs
+    When the duplicates page renders
+    Then each group of matching releases is displayed together
+    And the group shows the shared artist and title
+    And each release in the group shows its year, format, and label to help distinguish versions
+
+  Scenario: No duplicates in collection
+    Given my collection contains no releases that share both artist and title
+    When I navigate to /duplicates
+    Then a message is displayed indicating no potential duplicates were found
+    And no list or groups are rendered
+
+  Scenario: Clicking a release in a duplicate group navigates to its detail view
+    Given the duplicates page is displaying duplicate groups
+    When I click on a release within a group
+    Then I am navigated to /releases/{id} for that release
+
+  Scenario: Single-copy releases are not shown
+    Given my collection contains some releases with unique artist-title combinations
+    When the duplicates page renders
+    Then only releases that have at least one other release with the same artist and title are displayed
+    And unique releases do not appear on the duplicates page
+```
+
+---
+
+## [ABM-025] Format Emoji Icons
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The plain-text format labels in the collection list and detail view are functional but visually bland. A small emoji alongside each format makes scanning the list faster and more enjoyable. I can spot vinyl versus cassette versus CD at a glance without reading the text, and the visual variety adds personality to the interface.
+
+### Format-to-Emoji Mapping
+| Format | Emoji |
+|--------|-------|
+| Vinyl, LP, 12", 10", 7" | vinyl record |
+| Cassette | videocassette |
+| CD | optical disc |
+| Box Set | package |
+| DVD, Blu-ray | optical disc (same as CD) |
+| VHS | videocassette (same as Cassette) |
+| Digital, File | musical note |
+| Unknown / unmapped | musical note (fallback) |
+
+### Acceptance Criteria
+```gherkin
+Feature: Format emoji icons
+
+  Scenario: Vinyl formats display a vinyl record emoji
+    Given I am logged in
+    And the collection contains a release with format "Vinyl", "LP", "12\"", "10\"", or "7\""
+    When the collection list renders
+    Then that release displays a vinyl record emoji alongside the format text
+
+  Scenario: Cassette format displays a videocassette emoji
+    Given I am logged in
+    And the collection contains a release with format "Cassette"
+    When the collection list renders
+    Then that release displays a videocassette emoji alongside the format text
+
+  Scenario: CD format displays an optical disc emoji
+    Given I am logged in
+    And the collection contains a release with format "CD"
+    When the collection list renders
+    Then that release displays an optical disc emoji alongside the format text
+
+  Scenario: Box Set format displays a package emoji
+    Given I am logged in
+    And the collection contains a release with format "Box Set"
+    When the collection list renders
+    Then that release displays a package emoji alongside the format text
+
+  Scenario: DVD and Blu-ray formats display an optical disc emoji
+    Given I am logged in
+    And the collection contains a release with format "DVD" or "Blu-ray"
+    When the collection list renders
+    Then that release displays an optical disc emoji alongside the format text
+
+  Scenario: VHS format displays a videocassette emoji
+    Given I am logged in
+    And the collection contains a release with format "VHS"
+    When the collection list renders
+    Then that release displays a videocassette emoji alongside the format text
+
+  Scenario: Digital formats display a musical note emoji
+    Given I am logged in
+    And the collection contains a release with format "File" or other digital-only format
+    When the collection list renders
+    Then that release displays a musical note emoji alongside the format text
+
+  Scenario: Unknown format displays a fallback emoji
+    Given I am logged in
+    And the collection contains a release with a format not in the known mapping
+    When the collection list renders
+    Then that release displays a musical note emoji as a fallback alongside the format text
+
+  Scenario: Detail view also displays the format emoji
+    Given I am logged in
+    And I navigate to /releases/{id}
+    When the detail view renders
+    Then the format field displays the appropriate emoji alongside the format text
+
+  Scenario: Emoji does not replace the text label
+    Given I am logged in
+    When the collection list or detail view renders a format
+    Then both the emoji and the plain-text format label are visible
+    And the text remains readable for accessibility
+```
+
+---
+
+## [ABM-026] GitHub Workflow Audit and Hardening
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The CI pipeline works but has accumulated inefficiencies and gaps that cost time and money on every build. Redundant setup steps across jobs mean I pay for the same checkout, restore, and install work multiple times per workflow run. Missing quality gates — Angular linting, Angular unit tests, and TypeScript static analysis — let preventable defects slip through. Incorrectly pinned action versions may resolve unpredictably, and the lack of test artifacts makes debugging failures harder than it should be. Tightening up the workflows saves runner minutes, catches more bugs earlier, and makes CI failures easier to diagnose.
+
+### Current State
+- **ci.yml** has 5 jobs: `dotnet-build-test`, `dotnet-dependency-scan`, `angular-build`, `npm-audit`, `secret-scan`
+- **codeql.yml** runs C# static analysis on push, PR, and a weekly schedule
+- **dependabot-auto-merge.yml** auto-merges minor/patch Dependabot PRs
+
+### Acceptance Criteria
+```gherkin
+Feature: GitHub workflow audit and hardening
+
+  # --- Redundancy fixes ---
+
+  Scenario: .NET jobs share a single checkout and restore
+    Given the ci.yml workflow is triggered
+    When the dotnet-build-test and dotnet-dependency-scan jobs run
+    Then checkout and dotnet restore are performed once, not independently in each job
+    And both jobs reuse the restored packages via caching or a shared artifact
+
+  Scenario: Angular jobs share a single checkout and npm ci
+    Given the ci.yml workflow is triggered
+    When the angular-build and npm-audit jobs run
+    Then checkout and npm ci are performed once, not independently in each job
+    And both jobs reuse the installed node_modules via caching or a shared artifact
+
+  Scenario: NuGet packages are cached between workflow runs
+    Given a workflow run completes successfully
+    When a subsequent workflow run starts with the same dependency lockfile
+    Then NuGet packages are restored from cache
+    And dotnet restore completes faster than a cold restore
+
+  Scenario: Dependabot auto-merge workflow only runs for Dependabot PRs
+    Given a pull request is opened by a non-Dependabot actor
+    When the dependabot-auto-merge workflow is evaluated
+    Then no runner is started for that workflow
+    And runner minutes are not consumed
+
+  # --- Gap fixes: Angular quality gates ---
+
+  Scenario: Angular linting runs on pull requests
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then ng lint is executed against the Angular project
+    And linting errors cause the pipeline to fail
+
+  Scenario: Angular unit tests run on pull requests
+    Given a pull request is opened or updated against main
+    When the CI pipeline runs
+    Then ng test is executed with headless Chrome
+    And failing tests cause the pipeline to fail
+
+  # --- Gap fixes: CodeQL coverage ---
+
+  Scenario: CodeQL analyzes TypeScript in addition to C#
+    Given a pull request is opened or updated against main
+    When the CodeQL workflow runs
+    Then both csharp and javascript languages are analyzed
+    And security findings in Angular TypeScript code are reported
+
+  # --- Gap fixes: Action version pinning ---
+
+  Scenario: All actions are pinned to stable versions
+    Given I inspect the workflow YAML files
+    When I review the uses: declarations for checkout, setup-node, and setup-dotnet
+    Then actions/checkout is pinned to v4 or a specific SHA
+    And actions/setup-node is pinned to v4 or a specific SHA
+    And actions/setup-dotnet is pinned to a stable version or SHA
+    And no action is pinned to a non-existent version such as v6
+
+  # --- Gap fixes: Test artifacts ---
+
+  Scenario: .NET test results are uploaded as artifacts
+    Given the dotnet-build-test job runs
+    When tests complete (pass or fail)
+    Then a test results artifact (TRX or JUnit XML) is uploaded to the workflow run
+    And the artifact is downloadable from the GitHub Actions UI
+
+  Scenario: Angular test results are uploaded as artifacts
+    Given the Angular unit test job runs
+    When tests complete (pass or fail)
+    Then a test results artifact (JUnit XML or HTML report) is uploaded to the workflow run
+    And the artifact is downloadable from the GitHub Actions UI
+
+  # --- Out of scope ---
+
+  Scenario: CD / deployment workflow is out of scope
+    Given this backlog item is focused on CI hardening
+    Then no continuous deployment workflow is added as part of this item
+    And deployment automation is tracked separately if needed
+```
+
+---
+
+## [ABM-027] Code Complexity Audit and Simplification
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+This is a single-user, read-mostly personal dashboard — not enterprise software serving thousands of tenants. Over time, code can accumulate layers of abstraction, defensive logic, and generalizations that made sense speculatively but add no value for the actual use case. Every unnecessary interface, factory, or indirection layer is cognitive overhead when I read the code, fix bugs, or add features. A deliberate simplification pass removes that cruft, making the codebase easier to understand, faster to modify, and more pleasant to work in.
+
+### Scope
+- **Backend:** ASP.NET Core 10 Web API (`src/AllByMyshelf.Api`)
+- **Frontend:** Angular 21 standalone components (`src/AllByMyshelf.Web`)
+- **Tests:** Unit and integration tests (`tests/`)
+
+### What to Look For
+- Interfaces with only one implementation that exist "for testability" but are never mocked
+- Factory or builder patterns where direct instantiation would suffice
+- Generic abstractions parameterized on a single concrete type
+- Dead code: unused methods, unreachable branches, commented-out blocks
+- Overly defensive validation for inputs that are already validated upstream or cannot occur in a single-user context
+- Premature pagination or batching logic for data sets that will never exceed a few hundred rows
+- Layers of indirection (service calls service calls repository) where a simpler call chain would be clearer
+- Alphabetical ordering violations (per project convention)
+
+### Acceptance Criteria
+```gherkin
+Feature: Code complexity audit and simplification
+
+  # --- Audit phase ---
+
+  Scenario: Backend audit identifies unnecessary abstractions
+    Given I review the ASP.NET Core codebase
+    When I find an interface with exactly one implementation that is never substituted in tests
+    Then that interface is flagged for removal
+    And the concrete class is used directly
+
+  Scenario: Backend audit identifies dead code
+    Given I review the ASP.NET Core codebase
+    When I find methods, classes, or branches that are never called or unreachable
+    Then that dead code is flagged for removal
+
+  Scenario: Backend audit identifies over-defensive validation
+    Given I review the ASP.NET Core codebase
+    When I find null checks, permission checks, or input validation for scenarios that cannot occur in a single-user read-mostly context
+    Then that validation is flagged for simplification or removal
+
+  Scenario: Frontend audit identifies unnecessary abstractions
+    Given I review the Angular codebase
+    When I find services, utilities, or indirection layers that add no value over direct implementation
+    Then those abstractions are flagged for removal or inlining
+
+  Scenario: Frontend audit identifies dead code
+    Given I review the Angular codebase
+    When I find components, methods, or imports that are never used
+    Then that dead code is flagged for removal
+
+  Scenario: Alphabetical ordering violations are identified
+    Given I review both the backend and frontend codebases
+    When I find classes where fields, properties, methods, or variables are not in alphabetical order
+    Then those classes are flagged for reordering
+
+  # --- Simplification phase ---
+
+  Scenario: Unnecessary interfaces are removed from the backend
+    Given an interface has been flagged as unnecessary
+    When the simplification is applied
+    Then the interface is deleted
+    And all references are updated to use the concrete class directly
+    And all existing tests continue to pass
+
+  Scenario: Dead code is removed from the backend
+    Given dead code has been flagged in the backend
+    When the simplification is applied
+    Then the dead code is deleted
+    And the solution builds without errors
+    And all existing tests continue to pass
+
+  Scenario: Over-defensive validation is simplified in the backend
+    Given validation has been flagged as over-defensive
+    When the simplification is applied
+    Then the unnecessary checks are removed
+    And the API continues to function correctly for the single-user use case
+
+  Scenario: Unnecessary abstractions are removed from the frontend
+    Given an abstraction has been flagged as unnecessary in the frontend
+    When the simplification is applied
+    Then the abstraction is inlined or deleted
+    And the Angular application builds without errors
+
+  Scenario: Dead code is removed from the frontend
+    Given dead code has been flagged in the frontend
+    When the simplification is applied
+    Then the dead code is deleted
+    And the Angular application builds without errors
+
+  Scenario: Alphabetical ordering is corrected
+    Given classes have been flagged for ordering violations
+    When the simplification is applied
+    Then all fields, properties, methods, and variables are reordered alphabetically
+    And the application builds and all tests pass
+
+  # --- Verification ---
+
+  Scenario: All existing functionality is preserved
+    Given the audit and simplification work is complete
+    When I run the full test suite (backend and frontend)
+    Then all tests pass
+    And no regressions are introduced
+
+  Scenario: Codebase is measurably simpler
+    Given the audit and simplification work is complete
+    When I compare the before and after states
+    Then the total line count is reduced or unchanged
+    And the number of files, classes, or interfaces is reduced or unchanged
+    And no new abstractions have been introduced
+```
