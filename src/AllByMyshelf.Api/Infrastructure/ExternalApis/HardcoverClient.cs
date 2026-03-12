@@ -30,6 +30,8 @@ public class HardcoverClient(
             throw new InvalidOperationException("Hardcover API token is not configured.");
 
         var client = httpClientFactory.CreateClient("Hardcover");
+        client.DefaultRequestHeaders.Remove("Authorization");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {_options.ApiToken.Trim()}");
 
         var query = new
         {
