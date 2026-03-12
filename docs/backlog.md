@@ -504,7 +504,7 @@ Feature: Release detail view
 
 ## [ABM-013] Local Independent Record Store Finder
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -739,7 +739,7 @@ Feature: Collection grouping
 
 ## [ABM-018] Statistics Dashboard
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -885,7 +885,7 @@ Feature: Random record picker
 
 ## [ABM-020] Collection Value Estimate
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -1694,7 +1694,7 @@ Feature: Collection maintenance view
 
 ## [ABM-030] Store Hardcover API Token
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -1733,7 +1733,7 @@ Feature: Hardcover API token configuration
 
 ## [ABM-031] Sync Read Books from Hardcover
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -1861,7 +1861,7 @@ Feature: Background sync of read books from Hardcover
 
 ## [ABM-032] Expose Paginated Books Endpoint
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -1979,7 +1979,7 @@ Feature: Paginated books endpoint
 
 ## [ABM-033] Books Dashboard
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2251,4 +2251,91 @@ Feature: Books display genre from Hardcover
     When the book is synced to the local database
     Then the book's Genre column remains null
     And the Books dashboard displays "—" for that book
+```
+
+---
+
+## [ABM-036] Make External API Integrations Optional
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I want to run All By Myshelf with any combination of external integrations configured — Discogs only, Hardcover only, both, or neither — without the application failing to start. Currently, if either `Discogs:PersonalAccessToken` or `Hardcover:ApiToken` is missing from user-secrets, the application fails on startup due to `ValidateOnStart`. This makes it impossible to use the app for only one collection type or to demo the UI without any API credentials.
+
+Future integrations (e.g., other book or music APIs) should follow the same pattern: optional configuration with graceful degradation.
+
+### Implementation Notes
+- Remove or make conditional the `ValidateOnStart` behavior on `HardcoverOptions` and `DiscogsOptions`
+- The sync endpoints already return `TokenNotConfigured` (503) when credentials are missing; startup validation is the only blocker
+- Expose a `GET /api/v1/config/features` endpoint returning which integrations are active (have valid credentials)
+- Frontend should conditionally show/hide navigation items and dashboard sections based on the features endpoint
+- Unconfigured sections should either be hidden entirely or display a "not configured" message — never crash or show raw errors
+
+### Acceptance Criteria
+```gherkin
+Feature: Optional external API integrations
+
+  # --- Startup behavior ---
+
+  Scenario: Application starts with no integrations configured
+    Given neither Discogs nor Hardcover credentials are in user-secrets
+    When the application starts
+    Then the application starts successfully without errors
+    And no sync operations are attempted
+
+  Scenario: Application starts with only Discogs configured
+    Given the Discogs personal access token is in user-secrets
+    And the Hardcover API token is NOT in user-secrets
+    When the application starts
+    Then the application starts successfully without errors
+    And the Discogs integration is available
+    And the Hardcover integration is unavailable
+
+  Scenario: Application starts with only Hardcover configured
+    Given the Hardcover API token is in user-secrets
+    And the Discogs personal access token is NOT in user-secrets
+    When the application starts
+    Then the application starts successfully without errors
+    And the Hardcover integration is available
+    And the Discogs integration is unavailable
+
+  Scenario: Application starts with both integrations configured
+    Given both Discogs and Hardcover credentials are in user-secrets
+    When the application starts
+    Then the application starts successfully without errors
+    And both integrations are available
+
+  # --- Features endpoint ---
+
+  Scenario: Features endpoint returns active integrations
+    Given the Discogs integration is configured
+    And the Hardcover integration is NOT configured
+    When I call GET /api/v1/config/features
+    Then the response includes discogs as active
+    And the response includes hardcover as inactive
+
+  # --- Frontend behavior ---
+
+  Scenario: Navigation hides unconfigured integrations
+    Given the Discogs integration is configured
+    And the Hardcover integration is NOT configured
+    When I view the application
+    Then the Records navigation item is visible
+    And the Books navigation item is hidden or disabled
+
+  Scenario: Dashboard shows only configured sections
+    Given the Discogs integration is configured
+    And the Hardcover integration is NOT configured
+    When I navigate to the dashboard
+    Then the Records section is displayed
+    And the Books section is either hidden or shows "Not configured"
+
+  # --- Sync endpoints ---
+
+  Scenario: Sync endpoint for unconfigured integration returns 503
+    Given the Hardcover integration is NOT configured
+    When I call POST /api/v1/books/sync
+    Then the response status is 503 Service Unavailable
+    And the response body indicates the integration is not configured
 ```
