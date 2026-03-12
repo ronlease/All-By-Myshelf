@@ -4,15 +4,6 @@
   <button mat-raised-button routerLink="/" style="margin-right: 8px;">
     💿 Records
   </button>
-  <button mat-raised-button routerLink="/pick" style="margin-right: 8px;">
-    🎲 What should I listen to?
-  </button>
-  <button mat-raised-button routerLink="/stores" style="margin-right: 8px;">
-    🏪 Record Stores
-  </button>
-  <button mat-raised-button routerLink="/statistics" style="margin-right: 8px;">
-    📊 Statistics
-  </button>
   <button mat-raised-button color="accent" [disabled]="syncing()" (click)="onSyncClick()">
     @if (syncing()) {
       <mat-spinner diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>

@@ -2085,3 +2085,135 @@ Feature: Books dashboard
     And the error message suggests trying again later
     And a retry option is available
 ```
+
+---
+
+## [ABM-034] Unified Statistics Dashboard for Records and Books
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The current statistics page only displays collection value for music records. Now that the dashboard supports both records (from Discogs) and books (from Hardcover), I want a unified statistics view that provides meaningful insights across both collections. This helps me understand my collecting habits, see trends over time, and get a high-level summary of what I own without scrolling through individual items.
+
+### Data Notes
+- Records: Collection value (sum of LowestPrice) is already implemented via ABM-020. This feature enhances it with additional breakdowns.
+- Books: Reading pace is calculated from read dates stored during Hardcover sync. If read dates are unavailable for some books, those books are excluded from pace calculations but still counted in totals.
+- All statistics are read-only aggregations of existing data. No new external API calls are required.
+
+### Acceptance Criteria
+```gherkin
+Feature: Unified statistics dashboard
+
+  # --- Page structure ---
+
+  Scenario: Statistics page displays sections for both collections
+    Given I am logged in
+    When I navigate to /statistics
+    Then I see a "Records" statistics section
+    And I see a "Books" statistics section
+    And both sections are visible on the same page
+
+  # --- Records statistics ---
+
+  Scenario: Records section displays total count
+    Given I am logged in
+    And my records collection contains items
+    When I view the records statistics section
+    Then I see the total number of records in my collection
+
+  Scenario: Records section displays collection value
+    Given I am logged in
+    And my records collection contains items with pricing data
+    When I view the records statistics section
+    Then I see the total collection value (sum of lowest prices)
+    And the value is displayed in USD format
+    And a note indicates how many records lack pricing data
+
+  Scenario: Records section displays format breakdown
+    Given I am logged in
+    And my records collection contains items with various formats
+    When I view the records statistics section
+    Then I see a breakdown of records by format (e.g., LP, CD, 7")
+    And each format shows the count of records
+
+  Scenario: Records section displays genre breakdown
+    Given I am logged in
+    And my records collection contains items with genre data
+    When I view the records statistics section
+    Then I see a breakdown of records by genre
+    And each genre shows the count of records
+
+  Scenario: Records section displays decade breakdown
+    Given I am logged in
+    And my records collection contains items with release year data
+    When I view the records statistics section
+    Then I see a breakdown of records by decade (e.g., 1970s, 1980s, 1990s)
+    And each decade shows the count of records
+
+  # --- Books statistics ---
+
+  Scenario: Books section displays total read count
+    Given I am logged in
+    And my books collection contains items
+    When I view the books statistics section
+    Then I see the total number of books I have read
+
+  Scenario: Books section displays genre breakdown
+    Given I am logged in
+    And my books collection contains items with genre data
+    When I view the books statistics section
+    Then I see a breakdown of books by genre
+    And each genre shows the count of books
+
+  Scenario: Books section displays year breakdown
+    Given I am logged in
+    And my books collection contains items with read dates
+    When I view the books statistics section
+    Then I see a breakdown of books read by year
+    And each year shows the count of books read that year
+
+  Scenario: Books section displays reading pace
+    Given I am logged in
+    And my books collection contains items with read dates spanning multiple years
+    When I view the books statistics section
+    Then I see a reading pace metric (average books per year)
+    And the pace is calculated from the earliest to latest read date
+
+  Scenario: Reading pace handles missing read dates
+    Given I am logged in
+    And some books in my collection have no read date
+    When I view the books statistics section
+    Then the reading pace is calculated using only books with read dates
+    And a note indicates how many books were excluded from the pace calculation
+
+  # --- Empty states ---
+
+  Scenario: Records section handles empty collection
+    Given I am logged in
+    And my records collection is empty
+    When I view the records statistics section
+    Then I see a message indicating no records are available
+    And no statistics are displayed for records
+
+  Scenario: Books section handles empty collection
+    Given I am logged in
+    And my books collection is empty
+    When I view the books statistics section
+    Then I see a message indicating no books are available
+    And no statistics are displayed for books
+
+  # --- Loading and error states ---
+
+  Scenario: Statistics page shows loading indicator
+    Given I am logged in
+    When the statistics page is fetching data
+    Then a loading indicator is visible
+    And the statistics sections are not shown until data has loaded
+
+  Scenario: Statistics page handles API error
+    Given I am logged in
+    When the API request to fetch statistics fails
+    Then an error message is displayed
+    And a retry option is available
+```
