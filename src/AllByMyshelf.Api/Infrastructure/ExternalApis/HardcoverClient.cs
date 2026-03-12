@@ -30,8 +30,6 @@ public class HardcoverClient(
             throw new InvalidOperationException("Hardcover API token is not configured.");
 
         var client = httpClientFactory.CreateClient("Hardcover");
-        client.DefaultRequestHeaders.Remove("Authorization");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {_options.ApiToken.Trim()}");
 
         var query = new
         {
@@ -58,7 +56,11 @@ public class HardcoverClient(
                 }"
         };
 
-        var response = await client.PostAsJsonAsync("", query, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.hardcover.app/v1/graphql");
+        request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {_options.ApiToken.Trim()}");
+        request.Content = JsonContent.Create(query);
+
+        var response = await client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var options = new JsonSerializerOptions

@@ -40,12 +40,7 @@ builder.Services.AddOptions<HardcoverOptions>()
     .ValidateOnStart();
 
 // ── Hardcover HTTP client ─────────────────────────────────────────────────────
-builder.Services.AddHttpClient("Hardcover", (sp, client) =>
-{
-    var opts = sp.GetRequiredService<IOptions<HardcoverOptions>>().Value;
-    client.BaseAddress = new Uri("https://api.hardcover.app/v1/graphql");
-    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", opts.ApiToken);
-});
+builder.Services.AddHttpClient("Hardcover");
 
 builder.Services.AddScoped<HardcoverClient>();
 
