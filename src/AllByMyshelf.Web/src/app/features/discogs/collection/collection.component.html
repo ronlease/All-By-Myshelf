@@ -1,82 +1,183 @@
 <mat-toolbar color="primary">
   <span>All By Myshelf</span>
   <span class="toolbar-spacer"></span>
-  <button
-    mat-raised-button
-    color="accent"
-    [disabled]="syncing()"
-    (click)="onSyncClick()"
-  >
-    @if (syncing()) {
-      Syncing...
-    } @else {
-      Sync Collection
-    }
+  <button mat-raised-button color="accent" [disabled]="syncing()" (click)="onSyncClick()">
+    @if (syncing()) { Syncing... } @else { Sync Collection }
   </button>
 </mat-toolbar>
 
 <div class="page-content">
+  <div class="collection-controls">
+    <mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Search</mat-label>
+      <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onSearchChange()" placeholder="Search all fields…" />
+    </mat-form-field>
+
+    <mat-form-field class="group-by-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Group by</mat-label>
+      <mat-select [ngModel]="groupByField()" (ngModelChange)="groupByField.set($event); onGroupByChange()">
+        @for (option of groupByOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
   @if (loading()) {
     <div class="spinner-container">
       <mat-spinner></mat-spinner>
     </div>
-  } @else {
-    @if (releases.length === 0) {
-      <mat-card>
-        <mat-card-content>
-          <p class="empty-state">
-            Your collection is empty. Run a sync to import your Discogs records.
-          </p>
-        </mat-card-content>
-      </mat-card>
-    } @else {
-      <table mat-table [dataSource]="releases" class="collection-table mat-elevation-z2">
+  } @else if (filteredReleases.length === 0) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">
+          No releases found. Try adjusting your search or filters, or run a sync to import your Discogs records.
+        </p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (groupByField()) {
+    @for (group of groupedReleases; track group.key) {
+      <mat-expansion-panel
+        [expanded]="isGroupExpanded(group.key)"
+        (opened)="onGroupToggle(group.key)"
+        (closed)="onGroupToggle(group.key)"
+        class="group-panel mat-elevation-z2"
+      >
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ group.key }}</mat-panel-title>
+          <mat-panel-description>{{ group.items.length }} {{ group.items.length === 1 ? 'release' : 'releases' }}</mat-panel-description>
+        </mat-expansion-panel-header>
 
-        <ng-container matColumnDef="thumbnail">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let release" class="thumbnail-cell">
-            @if (release.thumbnailUrl) {
-              <img
-                [src]="release.thumbnailUrl"
-                [alt]="release.title + ' thumbnail'"
-                class="release-thumbnail"
-              />
-            }
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="artist">
-          <th mat-header-cell *matHeaderCellDef>Artist</th>
-          <td mat-cell *matCellDef="let release">{{ release.artist }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>Title</th>
-          <td mat-cell *matCellDef="let release">{{ release.title }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="year">
-          <th mat-header-cell *matHeaderCellDef>Year</th>
-          <td mat-cell *matCellDef="let release">{{ release.year ?? '—' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="format">
-          <th mat-header-cell *matHeaderCellDef>Format</th>
-          <td mat-cell *matCellDef="let release">{{ release.format }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"></tr>
-      </table>
-
-      <mat-paginator
-        [length]="totalCount"
-        [pageSize]="pageSize"
-        [pageIndex]="currentPage() - 1"
-        [pageSizeOptions]="[20]"
-        (page)="onPageChange($event)"
-        aria-label="Select page of releases"
-      ></mat-paginator>
+        <table mat-table [dataSource]="group.items" class="collection-table">
+          <ng-container matColumnDef="thumbnail">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let release" class="thumbnail-cell">
+              @if (release.thumbnailUrl) {
+                <img [src]="release.thumbnailUrl" [alt]="release.title + ' thumbnail'" class="release-thumbnail" />
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="artist">
+            <th mat-header-cell *matHeaderCellDef>Artist</th>
+            <td mat-cell *matCellDef="let release">{{ release.artist }}</td>
+          </ng-container>
+          <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef>Title</th>
+            <td mat-cell *matCellDef="let release">{{ release.title }}</td>
+          </ng-container>
+          <ng-container matColumnDef="genre">
+            <th mat-header-cell *matHeaderCellDef>Genre</th>
+            <td mat-cell *matCellDef="let release">{{ release.genre ?? '' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="year">
+            <th mat-header-cell *matHeaderCellDef>Year</th>
+            <td mat-cell *matCellDef="let release">{{ release.year ?? '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="format">
+            <th mat-header-cell *matHeaderCellDef>Format</th>
+            <td mat-cell *matCellDef="let release">{{ release.format }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"></tr>
+        </table>
+      </mat-expansion-panel>
     }
+  } @else {
+    <table mat-table [dataSource]="pagedReleases" class="collection-table mat-elevation-z2">
+
+      <ng-container matColumnDef="thumbnail">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let release" class="thumbnail-cell">
+          @if (release.thumbnailUrl) {
+            <img [src]="release.thumbnailUrl" [alt]="release.title + ' thumbnail'" class="release-thumbnail" />
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="artist">
+        <th mat-header-cell *matHeaderCellDef>
+          <div class="col-header-row" (click)="$event.stopPropagation()">
+            <span [class.filter-active]="hasActiveFilter('artist')">Artist</span>
+            <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
+              <mat-select multiple panelClass="col-filter-panel" [value]="artistFilter()" (selectionChange)="onColumnFilterChange('artist', $event.value)">
+                <mat-select-trigger>▾</mat-select-trigger>
+                @for (val of distinctValues('artist'); track val) {
+                  <mat-option [value]="val">{{ val }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let release">{{ release.artist }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let release">{{ release.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="genre">
+        <th mat-header-cell *matHeaderCellDef>
+          <div class="col-header-row" (click)="$event.stopPropagation()">
+            <span [class.filter-active]="hasActiveFilter('genre')">Genre</span>
+            <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
+              <mat-select multiple panelClass="col-filter-panel" [value]="genreFilter()" (selectionChange)="onColumnFilterChange('genre', $event.value)">
+                <mat-select-trigger>▾</mat-select-trigger>
+                @for (val of distinctValues('genre'); track val) {
+                  <mat-option [value]="val">{{ val }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let release">{{ release.genre ?? '' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="year">
+        <th mat-header-cell *matHeaderCellDef>
+          <div class="col-header-row" (click)="$event.stopPropagation()">
+            <span [class.filter-active]="hasActiveFilter('year')">Year</span>
+            <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
+              <mat-select multiple panelClass="col-filter-panel" [value]="yearFilter()" (selectionChange)="onColumnFilterChange('year', $event.value)">
+                <mat-select-trigger>▾</mat-select-trigger>
+                @for (val of distinctValues('year'); track val) {
+                  <mat-option [value]="val">{{ val }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let release">{{ release.year ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="format">
+        <th mat-header-cell *matHeaderCellDef>
+          <div class="col-header-row" (click)="$event.stopPropagation()">
+            <span [class.filter-active]="hasActiveFilter('format')">Format</span>
+            <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
+              <mat-select multiple panelClass="col-filter-panel" [value]="formatFilter()" (selectionChange)="onColumnFilterChange('format', $event.value)">
+                <mat-select-trigger>▾</mat-select-trigger>
+                @for (val of distinctValues('format'); track val) {
+                  <mat-option [value]="val">{{ val }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let release">{{ release.format }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalFilteredCount"
+      [pageSize]="pageSize"
+      [pageIndex]="currentPage() - 1"
+      [pageSizeOptions]="[20]"
+      (page)="onPageChange($event)"
+      aria-label="Select page of releases"
+    ></mat-paginator>
   }
 </div>

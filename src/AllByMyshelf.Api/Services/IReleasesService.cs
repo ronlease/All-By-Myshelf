@@ -15,11 +15,13 @@ public interface IReleasesService
     Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns a paginated result of releases stored in the local database.
+    /// Returns a paginated result of releases stored in the local database,
+    /// optionally filtered by the criteria in <paramref name="filter"/>.
     /// </summary>
     /// <param name="page">1-based page number.</param>
-    /// <param name="pageSize">Number of items per page (capped at 100).</param>
+    /// <param name="pageSize">Number of items per page (capped at 10000).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="filter">Optional filter criteria; null means no filtering.</param>
     Task<PagedResult<ReleaseDto>> GetReleasesAsync(
-        int page, int pageSize, CancellationToken cancellationToken);
+        int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null);
 }

@@ -559,3 +559,178 @@ Feature: Local independent record store finder
     Then each result shows only the store name and address
     And no hours, phone number, or website link is displayed for any store
 ```
+
+---
+
+## [ABM-014] Genre Column on Collection List
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The collection list shows artist, title, year, and format but omits genre. Genre is one of the first things I use to orient myself when browsing, and having to open a detail view just to see it breaks my scanning flow. Adding genre as a column means the most useful classification information is visible at a glance without any extra navigation.
+
+### Acceptance Criteria
+```gherkin
+Feature: Genre column on the collection list
+
+  Scenario: Release with a genre displays it in the list
+    Given I am logged in
+    And the API returns a release that has a genre value stored
+    When the collection list renders
+    Then a Genre column is visible in the list
+    And the genre value for that release is displayed in the Genre column
+
+  Scenario: Release without a genre shows an empty cell
+    Given I am logged in
+    And the API returns a release that has no genre value stored
+    When the collection list renders
+    Then the Genre column cell for that release is empty
+    And no placeholder text such as "N/A" is shown
+
+  Scenario: Genre column is consistently present regardless of data
+    Given I am logged in
+    And the collection contains a mix of releases with and without a stored genre
+    When the collection list renders
+    Then the Genre column header is always visible
+    And each row has a Genre cell in the correct column position alongside artist, title, year, and format
+```
+
+---
+
+## [ABM-015] Collection Search
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+As my collection grows, scrolling through pages to find a specific release becomes tedious. I want a single search input that filters the visible results across artist, title, year, format, and genre simultaneously so I can narrow the list down to what I am looking for in seconds.
+
+### Acceptance Criteria
+```gherkin
+Feature: Collection search
+
+  Scenario: Typing in the search input filters the collection list
+    Given I am logged in
+    And the collection list is showing releases
+    When I type a search term into the search input
+    Then only releases whose artist, title, year, format, or genre contain the search term (case-insensitive) are displayed
+    And the pagination reflects the filtered result count
+
+  Scenario: Clearing the search input restores the full collection
+    Given I am logged in
+    And I have typed a search term that has narrowed the list
+    When I clear the search input
+    Then the full unfiltered collection list is displayed again
+    And the pagination reflects the total unfiltered record count
+
+  Scenario: Search term that matches no releases shows an empty state
+    Given I am logged in
+    When I type a search term that matches no release in any field
+    Then the collection list shows no rows
+    And a message is displayed indicating no results were found for that term
+
+  Scenario: Search resets to the first page
+    Given I am logged in
+    And I am viewing page 2 or later of the collection
+    When I type a search term into the search input
+    Then the results reset to page 1
+    And the pagination controls reflect the new filtered page count
+```
+
+---
+
+## [ABM-016] Column Header Filtering
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The global search input (ABM-015) narrows results across all fields at once, but sometimes I want to filter on a specific column — for example, all releases in a given year or all releases of a certain format — without that filter term also matching unrelated fields. Per-column filter inputs at the header level give me that precision.
+
+### Acceptance Criteria
+```gherkin
+Feature: Column header filtering
+
+  Scenario: Entering a value in a column filter narrows the list to that column
+    Given I am logged in
+    And the collection list is showing releases
+    When I enter a filter value in the column header filter for a specific column
+    Then only releases whose value in that column contains the filter term (case-insensitive) are displayed
+    And releases that match in other columns but not the filtered column are excluded
+
+  Scenario: Multiple column filters are applied together
+    Given I am logged in
+    And the collection list is showing releases
+    When I enter filter values in two or more column header filters
+    Then only releases that satisfy all active column filters simultaneously are displayed
+
+  Scenario: Clearing a column filter restores results for that column
+    Given I have an active column header filter that has narrowed the list
+    When I clear the filter input for that column
+    Then releases previously excluded only by that column filter reappear
+    And any other active column filters remain in effect
+
+  Scenario: Column filters reset to the first page
+    Given I am logged in
+    And I am viewing page 2 or later of the collection
+    When I enter a value in any column header filter
+    Then the results reset to page 1
+    And the pagination controls reflect the new filtered page count
+```
+
+---
+
+## [ABM-017] Collection Grouping
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+When I want to browse my collection by a particular dimension — say, all my records from a given year, or everything in a format — a flat paginated list forces me to scroll and search rather than navigate naturally. A grouping option lets me select one dimension and see the collection organized into collapsible sections, making thematic browsing effortless.
+
+### Acceptance Criteria
+```gherkin
+Feature: Collection grouping
+
+  Scenario: Default state shows no grouping
+    Given I am logged in
+    And I have not changed the grouping selection
+    When the collection list renders
+    Then the grouping combobox displays "No grouping"
+    And the collection is displayed as a flat paginated list
+
+  Scenario: Selecting a grouping field organizes the list into groups
+    Given I am logged in
+    When I select a grouping field (artist, format, year, or genre) from the grouping combobox
+    Then the collection list is reorganized into sections, one per distinct value of the selected field
+    And each section header displays the group value
+    And all sections are collapsed by default
+    And pagination is no longer shown while grouping is active
+
+  Scenario: Expanding a group reveals its releases
+    Given I have selected a grouping field
+    And the collection list shows collapsed group sections
+    When I click on a group section header
+    Then that section expands to show all releases belonging to that group
+    And other sections remain in their current collapsed or expanded state
+
+  Scenario: Collapsing an expanded group hides its releases
+    Given I have selected a grouping field
+    And at least one group section is expanded
+    When I click the expanded section header
+    Then that section collapses and its releases are hidden
+
+  Scenario: Changing the grouping selection resets all groups to collapsed
+    Given I have selected a grouping field
+    And one or more sections are expanded
+    When I select a different grouping field from the combobox
+    Then the collection is regrouped by the new field
+    And all sections in the new grouping are collapsed
+
+  Scenario: Selecting "No grouping" returns to the flat paginated list
+    Given I have an active grouping selection
+    When I select "No grouping" from the grouping combobox
+    Then the collection returns to the flat paginated list view
+    And pagination controls reappear
+```
