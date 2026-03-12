@@ -1689,3 +1689,566 @@ Feature: Collection maintenance view
     Then the maintenance list is not displayed
     And only the error message is visible
 ```
+
+---
+
+## [ABM-030] Store Hardcover API Token
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+Before the application can communicate with the Hardcover GraphQL API, it needs a way to securely hold my API token. Storing it in user-secrets keeps it off disk and out of source control so the credential is never accidentally exposed. The application should fail fast on startup if the token is missing, making configuration errors immediately obvious rather than surfacing later at runtime.
+
+### Acceptance Criteria
+```gherkin
+Feature: Hardcover API token configuration
+
+  Scenario: Application starts with a valid token configured
+    Given the Hardcover API token has been set in user-secrets under the key "Hardcover:ApiToken"
+    When the application starts
+    Then the application reads the token without error
+    And the token is available to the Hardcover GraphQL client
+
+  Scenario: Application starts without a token configured
+    Given the Hardcover API token has NOT been set in user-secrets
+    When the application starts
+    Then the application fails to start
+    And a clear error message is logged indicating "Hardcover:ApiToken" is missing from configuration
+    And the error message includes instructions on how to configure the token using dotnet user-secrets
+
+  Scenario: Application starts with an empty token value
+    Given the Hardcover API token has been set in user-secrets with an empty string value
+    When the application starts
+    Then the application fails to start
+    And a clear error message is logged indicating the token value cannot be empty
+
+  Scenario: Token is used as Bearer authentication
+    Given the Hardcover API token is configured
+    When the application makes a request to the Hardcover GraphQL API
+    Then the request includes an Authorization header with value "Bearer <token>"
+```
+
+---
+
+## [ABM-031] Sync Read Books from Hardcover
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+I want to import my read books from Hardcover into the local database so the application has a local copy to serve from. Hardcover tracks books with different statuses (want to read, currently reading, read, did not finish), but I only care about books I have finished reading (status_id: 3). The sync must run as a background process so the HTTP response that triggered it returns immediately. With a rate limit of 60 requests per minute, standard retry logic is sufficient without special backoff handling.
+
+### Acceptance Criteria
+```gherkin
+Feature: Background sync of read books from Hardcover
+
+  # --- Triggering the sync ---
+
+  Scenario: Sync is triggered and runs in the background
+    Given the Hardcover API token is configured
+    And no Hardcover sync is currently running
+    When I trigger a manual Hardcover sync via POST /api/v1/books/sync
+    Then the API responds immediately with HTTP 202 Accepted
+    And the sync runs asynchronously in the background
+
+  Scenario: Sync is already in progress
+    Given a Hardcover sync is currently running
+    When I trigger another manual Hardcover sync via POST /api/v1/books/sync
+    Then the API responds with HTTP 409 Conflict
+    And no second sync process is started
+
+  Scenario: Attempt to trigger sync with no token configured
+    Given the Hardcover API token is NOT configured
+    When I send POST /api/v1/books/sync
+    Then the response is HTTP 503 Service Unavailable
+    And the response body explains that the Hardcover token is not configured
+
+  # --- GraphQL query ---
+
+  Scenario: Sync fetches only read books from Hardcover
+    Given the Hardcover API token is configured
+    When a sync runs
+    Then the sync queries the Hardcover GraphQL API for "me { user_books }"
+    And only books with status_id equal to 3 (Read) are retrieved
+    And books with other status values are ignored
+
+  # --- Data extraction ---
+
+  Scenario: Sync extracts book title
+    Given the Hardcover API returns a read book
+    When the sync processes the book
+    Then the book title is extracted from the response
+
+  Scenario: Sync extracts author name
+    Given the Hardcover API returns a read book with contributions
+    When the sync processes the book
+    Then the author is extracted from the first contribution's name field
+
+  Scenario: Sync handles book with no contributions
+    Given the Hardcover API returns a read book with an empty contributions array
+    When the sync processes the book
+    Then the author is stored as null or empty
+    And the sync does not fail
+
+  Scenario: Sync extracts publication year
+    Given the Hardcover API returns a read book with a release_date
+    When the sync processes the book
+    Then the year is extracted from the release_date field
+
+  Scenario: Sync handles book with no release date
+    Given the Hardcover API returns a read book with a null release_date
+    When the sync processes the book
+    Then the year is stored as null
+    And the sync does not fail
+
+  Scenario: Sync extracts genre from tags
+    Given the Hardcover API returns a read book with cached_tags containing genre tags
+    When the sync processes the book
+    Then the genre is extracted from the first tag in cached_tags
+
+  Scenario: Sync handles book with no tags
+    Given the Hardcover API returns a read book with an empty or null cached_tags array
+    When the sync processes the book
+    Then the genre is stored as null
+    And the sync does not fail
+
+  Scenario: Sync extracts cover image URL
+    Given the Hardcover API returns a read book with an image object
+    When the sync processes the book
+    Then the cover image URL is extracted from image.url
+
+  Scenario: Sync handles book with no cover image
+    Given the Hardcover API returns a read book with a null image object
+    When the sync processes the book
+    Then the cover image URL is stored as null
+    And the sync does not fail
+
+  Scenario: Sync stores Hardcover book ID
+    Given the Hardcover API returns a read book
+    When the sync processes the book
+    Then the Hardcover book ID is stored for future reference and deduplication
+
+  # --- Persistence ---
+
+  Scenario: New books are inserted on first sync
+    Given the local database contains no books
+    When a Hardcover sync completes successfully
+    Then all read books retrieved from Hardcover are saved to the database
+
+  Scenario: Existing books are updated on subsequent sync
+    Given the local database already contains books from a previous Hardcover sync
+    When a sync completes successfully
+    Then books that still exist in Hardcover with status "Read" are updated with current data
+    And books that no longer exist or are no longer marked as "Read" are removed from the database
+    And no duplicate book records are created
+
+  Scenario: Sync failure does not corrupt existing data
+    Given the local database contains books from a previous Hardcover sync
+    When a sync fails partway through
+    Then the previously stored books remain intact in the database
+
+  # --- Rate limiting ---
+
+  Scenario: Sync respects Hardcover rate limits
+    Given the Hardcover API rate limit is 60 requests per minute
+    When a sync runs
+    Then the sync does not exceed 60 requests per minute
+    And standard HTTP retry logic handles any 429 responses
+```
+
+---
+
+## [ABM-032] Expose Paginated Books Endpoint
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+I need an API endpoint that returns my locally stored book collection so the frontend can display it as a paginated list. Serving from the local database keeps responses fast regardless of Hardcover API availability. Filters for author, title, year, and genre help me quickly find specific books.
+
+### Acceptance Criteria
+```gherkin
+Feature: Paginated books endpoint
+
+  # --- Basic pagination ---
+
+  Scenario: Retrieve the first page of books
+    Given the database contains books
+    When I request GET /api/v1/books?page=1&pageSize=25
+    Then the response is HTTP 200 OK
+    And the response body contains up to 25 books
+    And each book includes title, author, year, genre, and cover image URL
+    And the response includes total record count and total page count
+
+  Scenario: Retrieve a subsequent page
+    Given the database contains more than 25 books
+    When I request GET /api/v1/books?page=2&pageSize=25
+    Then the response is HTTP 200 OK
+    And the response body contains books from the second page
+    And the books on page 2 do not overlap with those on page 1
+
+  Scenario: Request a page beyond the available data
+    Given the database contains 30 books
+    When I request GET /api/v1/books?page=5&pageSize=25
+    Then the response is HTTP 200 OK
+    And the response body contains an empty books array
+    And the total record count still reflects 30
+
+  Scenario: Database contains no books
+    Given no Hardcover sync has been run and the database contains no books
+    When I request GET /api/v1/books?page=1&pageSize=25
+    Then the response is HTTP 200 OK
+    And the response body contains an empty books array
+    And the total record count is 0
+
+  # --- Filtering by title ---
+
+  Scenario: Filter books by title (partial match)
+    Given the database contains books with titles "The Great Gatsby", "Great Expectations", and "Moby Dick"
+    When I request GET /api/v1/books?title=great
+    Then the response contains "The Great Gatsby" and "Great Expectations"
+    And the response does not contain "Moby Dick"
+
+  Scenario: Filter by title is case-insensitive
+    Given the database contains a book with title "The Great Gatsby"
+    When I request GET /api/v1/books?title=GREAT
+    Then the response contains "The Great Gatsby"
+
+  # --- Filtering by author ---
+
+  Scenario: Filter books by author (partial match)
+    Given the database contains books by "F. Scott Fitzgerald", "Charles Dickens", and "Herman Melville"
+    When I request GET /api/v1/books?author=fitzgerald
+    Then the response contains only books by "F. Scott Fitzgerald"
+
+  Scenario: Filter by author is case-insensitive
+    Given the database contains a book by "F. Scott Fitzgerald"
+    When I request GET /api/v1/books?author=FITZGERALD
+    Then the response contains books by "F. Scott Fitzgerald"
+
+  # --- Filtering by year ---
+
+  Scenario: Filter books by exact year
+    Given the database contains books from years 1925, 1851, and 1860
+    When I request GET /api/v1/books?year=1925
+    Then the response contains only books from 1925
+
+  Scenario: Filter by year with no matches
+    Given the database contains books from years 1925, 1851, and 1860
+    When I request GET /api/v1/books?year=2000
+    Then the response contains an empty books array
+
+  # --- Filtering by genre ---
+
+  Scenario: Filter books by genre (partial match)
+    Given the database contains books with genres "Fiction", "Science Fiction", and "Biography"
+    When I request GET /api/v1/books?genre=fiction
+    Then the response contains books with genres "Fiction" and "Science Fiction"
+    And the response does not contain books with genre "Biography"
+
+  Scenario: Filter by genre is case-insensitive
+    Given the database contains a book with genre "Science Fiction"
+    When I request GET /api/v1/books?genre=SCIENCE
+    Then the response contains books with genre "Science Fiction"
+
+  # --- Combined filters ---
+
+  Scenario: Multiple filters are combined with AND logic
+    Given the database contains books with various titles, authors, years, and genres
+    When I request GET /api/v1/books?author=fitzgerald&year=1925
+    Then the response contains only books by Fitzgerald published in 1925
+    And books by Fitzgerald from other years are excluded
+    And books from 1925 by other authors are excluded
+
+  Scenario: Filters combined with pagination
+    Given the database contains 50 books matching a filter criteria
+    When I request GET /api/v1/books?genre=fiction&page=2&pageSize=25
+    Then the response contains the second page of fiction books
+    And the total count reflects only the filtered results
+
+  # --- Default sorting ---
+
+  Scenario: Books are sorted by title by default
+    Given the database contains books with titles "Zebra", "Apple", and "Mango"
+    When I request GET /api/v1/books
+    Then the books are returned in alphabetical order by title
+```
+
+---
+
+## [ABM-033] Books Dashboard
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+I need a browser-based interface to see my read book collection from Hardcover. Without a frontend, the book data has no practical value day-to-day. The dashboard must require me to be logged in, show my books in a data table with title, author, year, genre, and cover thumbnail, and let me trigger a fresh sync without opening a separate HTTP client.
+
+### Acceptance Criteria
+```gherkin
+Feature: Books dashboard
+
+  # --- Authentication ---
+
+  Scenario: Unauthenticated user is redirected to login
+    Given I am not logged in
+    When I navigate to /books
+    Then I am redirected to the Auth0 login page
+    And I cannot see any book data
+
+  # --- Data table display ---
+
+  Scenario: Authenticated user sees the books data table
+    Given I am logged in
+    And the API returns a non-empty page of books
+    When the books dashboard loads
+    Then I see a data table of books
+    And each row displays the title, author, year, genre, and cover thumbnail
+    And pagination controls are visible
+
+  Scenario: Cover thumbnail displays book cover image
+    Given I am logged in
+    And a book has a cover image URL
+    When the books dashboard loads
+    Then the cover thumbnail displays the image from the cover URL
+    And the thumbnail is appropriately sized for a table row
+
+  Scenario: Cover thumbnail handles missing cover image
+    Given I am logged in
+    And a book has no cover image URL
+    When the books dashboard loads
+    Then a placeholder image or icon is displayed for that book
+    And the table layout remains consistent
+
+  Scenario: Navigating to another page of results
+    Given I am logged in
+    And the book collection contains more books than fit on one page
+    When I click to go to the next page
+    Then the table updates to show the next page of books
+    And the pagination controls reflect the new current page
+
+  # --- Empty state ---
+
+  Scenario: Book collection is empty
+    Given I am logged in
+    And the API returns zero books
+    When the books dashboard loads
+    Then I see a message indicating the book collection is empty
+    And no table rows are rendered
+    And the Sync Books button is prominently displayed
+
+  # --- Loading state ---
+
+  Scenario: Dashboard shows a loading indicator while fetching data
+    Given I am logged in
+    When the dashboard is waiting for the API to respond
+    Then a loading indicator is visible
+    And the table area is not shown until data has loaded
+
+  # --- Sync button ---
+
+  Scenario: Triggering a manual sync successfully
+    Given I am logged in
+    When I click the "Sync Books" button
+    And the API responds with HTTP 202 Accepted
+    Then the Sync Books button is disabled for the duration of the operation
+    And I see a success notification confirming the sync has started
+
+  Scenario: Triggering a sync while one is already running
+    Given I am logged in
+    When I click the "Sync Books" button
+    And the API responds with HTTP 409 Conflict
+    Then I see a notification informing me a sync is already in progress
+
+  Scenario: Triggering a sync when the token is not configured
+    Given I am logged in
+    When I click the "Sync Books" button
+    And the API responds with HTTP 503 Service Unavailable
+    Then I see a notification informing me the Hardcover token is not configured
+
+  # --- Navigation ---
+
+  Scenario: Books page is accessible from main navigation
+    Given I am logged in
+    And I am on any page in the application
+    When I look at the main navigation
+    Then I see a link or menu item for "Books"
+    And clicking it navigates me to /books
+
+  # --- Error handling ---
+
+  Scenario: Error loading books displays error message
+    Given I am logged in
+    When the API request to fetch books fails
+    Then an error message is displayed
+    And the error message suggests trying again later
+    And a retry option is available
+```
+
+---
+
+## [ABM-034] Unified Statistics Dashboard for Records and Books
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The current statistics page only displays collection value for music records. Now that the dashboard supports both records (from Discogs) and books (from Hardcover), I want a unified statistics view that provides meaningful insights across both collections. This helps me understand my collecting habits, see trends over time, and get a high-level summary of what I own without scrolling through individual items.
+
+### Data Notes
+- Records: Collection value (sum of LowestPrice) is already implemented via ABM-020. This feature enhances it with additional breakdowns.
+- Books: Reading pace is calculated from read dates stored during Hardcover sync. If read dates are unavailable for some books, those books are excluded from pace calculations but still counted in totals.
+- All statistics are read-only aggregations of existing data. No new external API calls are required.
+
+### Acceptance Criteria
+```gherkin
+Feature: Unified statistics dashboard
+
+  # --- Page structure ---
+
+  Scenario: Statistics page displays sections for both collections
+    Given I am logged in
+    When I navigate to /statistics
+    Then I see a "Records" statistics section
+    And I see a "Books" statistics section
+    And both sections are visible on the same page
+
+  # --- Records statistics ---
+
+  Scenario: Records section displays total count
+    Given I am logged in
+    And my records collection contains items
+    When I view the records statistics section
+    Then I see the total number of records in my collection
+
+  Scenario: Records section displays collection value
+    Given I am logged in
+    And my records collection contains items with pricing data
+    When I view the records statistics section
+    Then I see the total collection value (sum of lowest prices)
+    And the value is displayed in USD format
+    And a note indicates how many records lack pricing data
+
+  Scenario: Records section displays format breakdown
+    Given I am logged in
+    And my records collection contains items with various formats
+    When I view the records statistics section
+    Then I see a breakdown of records by format (e.g., LP, CD, 7")
+    And each format shows the count of records
+
+  Scenario: Records section displays genre breakdown
+    Given I am logged in
+    And my records collection contains items with genre data
+    When I view the records statistics section
+    Then I see a breakdown of records by genre
+    And each genre shows the count of records
+
+  Scenario: Records section displays decade breakdown
+    Given I am logged in
+    And my records collection contains items with release year data
+    When I view the records statistics section
+    Then I see a breakdown of records by decade (e.g., 1970s, 1980s, 1990s)
+    And each decade shows the count of records
+
+  # --- Books statistics ---
+
+  Scenario: Books section displays total read count
+    Given I am logged in
+    And my books collection contains items
+    When I view the books statistics section
+    Then I see the total number of books I have read
+
+  Scenario: Books section displays genre breakdown
+    Given I am logged in
+    And my books collection contains items with genre data
+    When I view the books statistics section
+    Then I see a breakdown of books by genre
+    And each genre shows the count of books
+
+  Scenario: Books section displays year breakdown
+    Given I am logged in
+    And my books collection contains items with read dates
+    When I view the books statistics section
+    Then I see a breakdown of books read by year
+    And each year shows the count of books read that year
+
+  Scenario: Books section displays reading pace
+    Given I am logged in
+    And my books collection contains items with read dates spanning multiple years
+    When I view the books statistics section
+    Then I see a reading pace metric (average books per year)
+    And the pace is calculated from the earliest to latest read date
+
+  Scenario: Reading pace handles missing read dates
+    Given I am logged in
+    And some books in my collection have no read date
+    When I view the books statistics section
+    Then the reading pace is calculated using only books with read dates
+    And a note indicates how many books were excluded from the pace calculation
+
+  # --- Empty states ---
+
+  Scenario: Records section handles empty collection
+    Given I am logged in
+    And my records collection is empty
+    When I view the records statistics section
+    Then I see a message indicating no records are available
+    And no statistics are displayed for records
+
+  Scenario: Books section handles empty collection
+    Given I am logged in
+    And my books collection is empty
+    When I view the books statistics section
+    Then I see a message indicating no books are available
+    And no statistics are displayed for books
+
+  # --- Loading and error states ---
+
+  Scenario: Statistics page shows loading indicator
+    Given I am logged in
+    When the statistics page is fetching data
+    Then a loading indicator is visible
+    And the statistics sections are not shown until data has loaded
+
+  Scenario: Statistics page handles API error
+    Given I am logged in
+    When the API request to fetch statistics fails
+    Then an error message is displayed
+    And a retry option is available
+```
+
+---
+
+## [ABM-035] Bug: Books Dashboard Shows "—" for Genre on All Books
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The Books dashboard displays "—" for the genre column on every book, even though genres exist in Hardcover. This makes it impossible to filter or browse my collection by genre. The `Book` entity already has a `Genre` column, but it is never populated during sync.
+
+### Root Cause
+The Hardcover API returns `cached_tags` as a `json!` blob (not a string array). Rather than parsing this structure, the sync service was modified to skip the field entirely, hardcoding `Genre = null` in `BooksSyncService`.
+
+### Fix Required
+1. Query the Hardcover API to determine the actual structure of `cached_tags` (likely `{"Genre": ["Fiction"], "Mood": [...]}` or similar)
+2. Update `BooksSyncService` to parse the first genre value from `cached_tags` during sync
+3. Re-sync books to populate the `Genre` column
+
+### Acceptance Criteria
+```gherkin
+Feature: Books display genre from Hardcover
+
+  Scenario: Book with genre in Hardcover shows genre in dashboard
+    Given a book in Hardcover has cached_tags containing a genre
+    When the book is synced to the local database
+    Then the book's Genre column is populated with the first genre value
+    And the Books dashboard displays that genre instead of "—"
+
+  Scenario: Book without genre in Hardcover shows placeholder
+    Given a book in Hardcover has no genre in cached_tags
+    When the book is synced to the local database
+    Then the book's Genre column remains null
+    And the Books dashboard displays "—" for that book
+```

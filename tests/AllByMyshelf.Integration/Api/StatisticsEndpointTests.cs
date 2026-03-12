@@ -142,6 +142,7 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
                     {
                         ["Discogs:PersonalAccessToken"] = "integration-test-token",
                         ["Discogs:Username"] = "integration-test-user",
+                        ["Hardcover:ApiToken"] = "integration-test-token",
                         ["Auth0:Domain"] = "test.auth0.com",
                         ["Auth0:Audience"] = "https://test-api"
                     });
@@ -199,11 +200,12 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
         {
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                // Satisfy ValidateOnStart for DiscogsOptions
+                // Satisfy ValidateOnStart for DiscogsOptions and HardcoverOptions
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Discogs:PersonalAccessToken"] = "integration-test-token",
                     ["Discogs:Username"] = "integration-test-user",
+                    ["Hardcover:ApiToken"] = "integration-test-token",
                     ["Auth0:Domain"] = "test.auth0.com",
                     ["Auth0:Audience"] = "https://test-api"
                 });

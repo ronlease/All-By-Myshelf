@@ -5,6 +5,7 @@ using AllByMyshelf.Api.Repositories;
 using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +31,31 @@ builder.Services.AddHttpClient<DiscogsClient>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "AllByMyshelf/1.0");
 });
 
+// ── Hardcover configuration (fail-fast on startup if token is missing) ────────
+builder.Services.AddOptions<HardcoverOptions>()
+    .Bind(builder.Configuration.GetSection(HardcoverOptions.SectionName))
+    .Validate(
+        opts => !string.IsNullOrWhiteSpace(opts.ApiToken),
+        "Hardcover:ApiToken must be set. Run: dotnet user-secrets set \"Hardcover:ApiToken\" \"<token>\"")
+    .ValidateOnStart();
+
+// ── Hardcover HTTP client ─────────────────────────────────────────────────────
+builder.Services.AddHttpClient("Hardcover");
+
+builder.Services.AddScoped<HardcoverClient>();
+
 // ── Repositories & services ───────────────────────────────────────────────────
+builder.Services.AddScoped<IBooksRepository, BooksRepository>();
+builder.Services.AddScoped<IBooksService, BooksService>();
 builder.Services.AddScoped<IReleasesRepository, ReleasesRepository>();
 builder.Services.AddScoped<IReleasesService, ReleasesService>();
 builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+
+// BooksSyncService is a singleton BackgroundService; also exposed as IBooksSyncService.
+builder.Services.AddSingleton<BooksSyncService>();
+builder.Services.AddSingleton<IBooksSyncService>(sp => sp.GetRequiredService<BooksSyncService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<BooksSyncService>());
 
 // SyncService is a singleton BackgroundService; also exposed as ISyncService.
 builder.Services.AddSingleton<SyncService>();
