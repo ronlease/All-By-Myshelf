@@ -2217,3 +2217,38 @@ Feature: Unified statistics dashboard
     Then an error message is displayed
     And a retry option is available
 ```
+
+---
+
+## [ABM-035] Bug: Books Dashboard Shows "—" for Genre on All Books
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The Books dashboard displays "—" for the genre column on every book, even though genres exist in Hardcover. This makes it impossible to filter or browse my collection by genre. The `Book` entity already has a `Genre` column, but it is never populated during sync.
+
+### Root Cause
+The Hardcover API returns `cached_tags` as a `json!` blob (not a string array). Rather than parsing this structure, the sync service was modified to skip the field entirely, hardcoding `Genre = null` in `BooksSyncService`.
+
+### Fix Required
+1. Query the Hardcover API to determine the actual structure of `cached_tags` (likely `{"Genre": ["Fiction"], "Mood": [...]}` or similar)
+2. Update `BooksSyncService` to parse the first genre value from `cached_tags` during sync
+3. Re-sync books to populate the `Genre` column
+
+### Acceptance Criteria
+```gherkin
+Feature: Books display genre from Hardcover
+
+  Scenario: Book with genre in Hardcover shows genre in dashboard
+    Given a book in Hardcover has cached_tags containing a genre
+    When the book is synced to the local database
+    Then the book's Genre column is populated with the first genre value
+    And the Books dashboard displays that genre instead of "—"
+
+  Scenario: Book without genre in Hardcover shows placeholder
+    Given a book in Hardcover has no genre in cached_tags
+    When the book is synced to the local database
+    Then the book's Genre column remains null
+    And the Books dashboard displays "—" for that book
+```
