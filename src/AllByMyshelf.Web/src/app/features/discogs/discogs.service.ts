@@ -17,10 +17,20 @@ export interface ReleaseDetailDto {
 export interface ReleaseDto {
   artist: string;
   format: string;
+  genre: string | null;
   id: string;
   thumbnailUrl: string | null;
   title: string;
   year: number | null;
+}
+
+export interface CollectionFilter {
+  artist?: string;
+  format?: string;
+  genre?: string;
+  search?: string;
+  title?: string;
+  year?: string;
 }
 
 export interface PagedResult<T> {
@@ -36,10 +46,17 @@ export class DiscogsService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
 
-  getCollection(page: number, pageSize: number): Observable<PagedResult<ReleaseDto>> {
-    const params = new HttpParams()
+  getCollection(page: number, pageSize: number, filter?: CollectionFilter): Observable<PagedResult<ReleaseDto>> {
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
+
+    if (filter?.artist) params = params.set('artist', filter.artist);
+    if (filter?.format) params = params.set('format', filter.format);
+    if (filter?.genre) params = params.set('genre', filter.genre);
+    if (filter?.search) params = params.set('search', filter.search);
+    if (filter?.title) params = params.set('title', filter.title);
+    if (filter?.year) params = params.set('year', filter.year);
 
     return this.http.get<PagedResult<ReleaseDto>>(`${this.baseUrl}/api/v1/releases`, { params });
   }

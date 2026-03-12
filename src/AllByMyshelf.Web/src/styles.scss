@@ -167,3 +167,65 @@ body {
   flex: 1;
   min-width: 0;
 }
+
+.collection-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.search-field {
+  flex: 1 1 240px;
+}
+
+.group-by-field {
+  flex: 0 0 200px;
+}
+
+.col-header-row {
+  align-items: center;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+
+  .filter-active {
+    font-weight: 700;
+  }
+}
+
+.col-filter-panel {
+  min-width: 200px !important;
+}
+
+.col-filter-field {
+  width: 24px;
+
+  // Hide the outline border
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border: none;
+  }
+
+  // Collapse padding so only the arrow glyph shows
+  .mat-mdc-form-field-infix {
+    min-height: 24px;
+    padding: 0;
+    width: 20px;
+  }
+
+  // Hide the subscript spacer
+  .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.group-panel {
+  margin-bottom: 8px;
+
+  .collection-table {
+    box-shadow: none;
+  }
+}

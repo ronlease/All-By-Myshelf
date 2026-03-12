@@ -1,6 +1,9 @@
 // Feature: Paginated collection endpoint  (ABM-004)
 // Feature: Release detail view             (ABM-012)
 // Feature: Album art URL storage           (ABM-011)
+// Feature: Genre field on collection DTO   (ABM-014)
+// Feature: Full-text search filter         (ABM-015)
+// Feature: Column filters                  (ABM-016)
 //
 // Scenario: Retrieve the first page of releases
 //   Given the database contains releases
@@ -26,10 +29,10 @@
 //   Then the result items list is empty
 //   And TotalCount is 0
 //
-// Scenario: PageSize is capped at 100
-//   Given the caller requests pageSize=200
+// Scenario: PageSize is capped at 10000
+//   Given the caller requests pageSize=20000
 //   When GetReleasesAsync is called
-//   Then the repository is queried with pageSize=100
+//   Then the repository is queried with pageSize=10000
 //
 // Scenario: GetByIdAsync returns a fully mapped ReleaseDetailDto when the release exists
 //   Given the repository returns a release with all fields populated
@@ -65,6 +68,31 @@
 //   Given the repository returns a release with CoverImageUrl null
 //   When GetByIdAsync is called
 //   Then the returned ReleaseDetailDto has null CoverImageUrl
+//
+// Scenario: GetReleasesAsync maps Genre from entity to ReleaseDto (ABM-014)
+//   Given the repository returns a release with Genre = "Jazz"
+//   When GetReleasesAsync is called
+//   Then the returned ReleaseDto has Genre = "Jazz"
+//
+// Scenario: GetReleasesAsync maps null Genre from entity to ReleaseDto (ABM-014)
+//   Given the repository returns a release with Genre = null
+//   When GetReleasesAsync is called
+//   Then the returned ReleaseDto has Genre = null
+//
+// Scenario: Search filter is passed through to repository (ABM-015)
+//   Given a ReleaseFilter with Search = "blue"
+//   When GetReleasesAsync is called with that filter
+//   Then repository.GetPagedAsync is called with a filter whose Search = "blue"
+//
+// Scenario: Column filters are passed through to repository (ABM-016)
+//   Given a ReleaseFilter with Artist = "Miles" and Genre = "Jazz"
+//   When GetReleasesAsync is called with that filter
+//   Then repository.GetPagedAsync is called with a filter whose Artist = "Miles" and Genre = "Jazz"
+//
+// Scenario: Null filter is passed through to repository unchanged
+//   Given GetReleasesAsync is called with filter = null
+//   When the service calls the repository
+//   Then repository.GetPagedAsync is called with filter = null
 
 using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
@@ -252,34 +280,36 @@ public class ReleasesServiceTests
     // ── GetReleasesAsync — page size cap ─────────────────────────────────────
 
     [Fact]
-    public async Task GetReleasesAsync_PageSizeExactly100_IsNotCapped()
+    public async Task GetReleasesAsync_PageSizeExactly10000_IsNotCapped()
     {
         // Arrange
         _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetPagedAsync(1, 10000, It.IsAny<CancellationToken>(), null))
             .ReturnsAsync((new List<Release>(), 0));
 
         // Act
-        var result = await _sut.GetReleasesAsync(1, 100, CancellationToken.None);
+        var result = await _sut.GetReleasesAsync(1, 10000, CancellationToken.None);
 
         // Assert
-        result.PageSize.Should().Be(100);
+        result.PageSize.Should().Be(10000);
     }
 
     [Fact]
-    public async Task GetReleasesAsync_PageSizeOver100_CapsAt100()
+    public async Task GetReleasesAsync_PageSizeOver10000_CapsAt10000()
     {
-        // Arrange — repository must be called with exactly 100, not 200
+        // Arrange — repository must be called with exactly 10000, not 20000
         _repositoryMock
-            .Setup(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetPagedAsync(1, 10000, It.IsAny<CancellationToken>(), null))
             .ReturnsAsync((new List<Release>(), 0));
 
         // Act
-        var result = await _sut.GetReleasesAsync(1, 200, CancellationToken.None);
+        var result = await _sut.GetReleasesAsync(1, 20000, CancellationToken.None);
 
         // Assert
-        result.PageSize.Should().Be(100);
-        _repositoryMock.Verify(r => r.GetPagedAsync(1, 100, It.IsAny<CancellationToken>()), Times.Once);
+        result.PageSize.Should().Be(10000);
+        _repositoryMock.Verify(
+            r => r.GetPagedAsync(1, 10000, It.IsAny<CancellationToken>(), null),
+            Times.Once);
     }
 
     [Fact]
@@ -421,5 +451,108 @@ public class ReleasesServiceTests
         // Assert
         result.Should().NotBeNull();
         result!.CoverImageUrl.Should().BeNull();
+    }
+
+    // ── GetReleasesAsync — Genre mapping (ABM-014) ────────────────────────────
+
+    [Fact]
+    public async Task GetReleasesAsync_ReleasesWithGenre_MapsGenreToDto()
+    {
+        // Arrange
+        var release = MakeRelease(20);
+        release.Genre = "Jazz";
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>(), null))
+            .ReturnsAsync((new List<Release> { release }, 1));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Single().Genre.Should().Be("Jazz");
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_ReleasesWithNullGenre_MapsNullGenreToDto()
+    {
+        // Arrange
+        var release = MakeRelease(21);
+        release.Genre = null;
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>(), null))
+            .ReturnsAsync((new List<Release> { release }, 1));
+
+        // Act
+        var result = await _sut.GetReleasesAsync(1, 25, CancellationToken.None);
+
+        // Assert
+        result.Items.Single().Genre.Should().BeNull();
+    }
+
+    // ── GetReleasesAsync — filter pass-through (ABM-015 + ABM-016) ───────────
+
+    [Fact]
+    public async Task GetReleasesAsync_WithSearchFilter_PassesFilterToRepository()
+    {
+        // Arrange
+        var filter = new ReleaseFilter(Search: "blue");
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(
+                1, 25, It.IsAny<CancellationToken>(),
+                It.Is<ReleaseFilter>(f => f.Search == "blue")))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        await _sut.GetReleasesAsync(1, 25, CancellationToken.None, filter);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.GetPagedAsync(
+                1, 25, It.IsAny<CancellationToken>(),
+                It.Is<ReleaseFilter>(f => f.Search == "blue")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_WithColumnFilters_PassesFilterToRepository()
+    {
+        // Arrange
+        var filter = new ReleaseFilter(Artist: "Miles", Genre: "Jazz");
+
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(
+                1, 25, It.IsAny<CancellationToken>(),
+                It.Is<ReleaseFilter>(f => f.Artist == "Miles" && f.Genre == "Jazz")))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        await _sut.GetReleasesAsync(1, 25, CancellationToken.None, filter);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.GetPagedAsync(
+                1, 25, It.IsAny<CancellationToken>(),
+                It.Is<ReleaseFilter>(f => f.Artist == "Miles" && f.Genre == "Jazz")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_WithNullFilter_PassesNullFilterToRepository()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>(), null))
+            .ReturnsAsync((new List<Release>(), 0));
+
+        // Act
+        await _sut.GetReleasesAsync(1, 25, CancellationToken.None, filter: null);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>(), null),
+            Times.Once);
     }
 }

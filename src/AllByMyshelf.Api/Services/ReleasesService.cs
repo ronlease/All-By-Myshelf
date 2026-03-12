@@ -8,7 +8,7 @@ namespace AllByMyshelf.Api.Services;
 /// </summary>
 public class ReleasesService(IReleasesRepository repository) : IReleasesService
 {
-    private const int MaxPageSize = 100;
+    private const int MaxPageSize = 10000;
 
     /// <inheritdoc/>
     public async Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -32,16 +32,17 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
 
     /// <inheritdoc/>
     public async Task<PagedResult<ReleaseDto>> GetReleasesAsync(
-        int page, int pageSize, CancellationToken cancellationToken)
+        int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null)
     {
         pageSize = Math.Min(pageSize, MaxPageSize);
 
-        var (items, totalCount) = await repository.GetPagedAsync(page, pageSize, cancellationToken);
+        var (items, totalCount) = await repository.GetPagedAsync(page, pageSize, cancellationToken, filter);
 
         var dtos = items.Select(r => new ReleaseDto
         {
             Artist = r.Artist,
             Format = r.Format,
+            Genre = r.Genre,
             Id = r.Id,
             ThumbnailUrl = r.ThumbnailUrl,
             Title = r.Title,

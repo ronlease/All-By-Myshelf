@@ -11,6 +11,9 @@ public class ReleaseDto
     /// <summary>Primary format description.</summary>
     public string Format { get; init; } = string.Empty;
 
+    /// <summary>Primary genre; null when not populated by sync.</summary>
+    public string? Genre { get; init; }
+
     /// <summary>Database identifier.</summary>
     public Guid Id { get; init; }
 

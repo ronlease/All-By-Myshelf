@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
 
 namespace AllByMyshelf.Api.Repositories;
@@ -15,10 +16,15 @@ public interface IReleasesRepository
     Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns a paginated slice of all releases ordered by artist then title.
+    /// Returns a paginated slice of releases ordered by artist then title,
+    /// optionally filtered by the criteria in <paramref name="filter"/>.
     /// </summary>
+    /// <param name="page">1-based page number.</param>
+    /// <param name="pageSize">Maximum number of items to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="filter">Optional filter criteria; null means no filtering.</param>
     Task<(IReadOnlyList<Release> Items, int TotalCount)> GetPagedAsync(
-        int page, int pageSize, CancellationToken cancellationToken);
+        int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null);
 
     /// <summary>
     /// Replaces the entire collection with <paramref name="releases"/>.

@@ -39,17 +39,29 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     /// <summary>
     /// Returns a paginated list of releases from the local database.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Items per page, maximum 100 (default: 20).</param>
+    /// <param name="artist">Optional case-insensitive contains filter on the artist name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paginated result containing artist, title, year, and format for each release.</returns>
+    /// <param name="format">Optional case-insensitive contains filter on the format.</param>
+    /// <param name="genre">Optional case-insensitive contains filter on the genre.</param>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Items per page, maximum 10000 (default: 20).</param>
+    /// <param name="search">Optional full-text search across artist, format, genre, title, and year.</param>
+    /// <param name="title">Optional case-insensitive contains filter on the title.</param>
+    /// <param name="year">Optional case-insensitive contains filter on the year.</param>
+    /// <returns>A paginated result containing artist, title, year, format, and genre for each release.</returns>
     /// <response code="200">Returns the paginated release list (may be empty if no sync has run).</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<ReleaseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<ReleaseDto>>> GetReleases(
+        [FromQuery] string? artist = null,
+        CancellationToken cancellationToken = default,
+        [FromQuery] string? format = null,
+        [FromQuery] string? genre = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default)
+        [FromQuery] string? search = null,
+        [FromQuery] string? title = null,
+        [FromQuery] string? year = null)
     {
         if (page < 1)
             page = 1;
@@ -57,7 +69,15 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
         if (pageSize < 1)
             pageSize = 1;
 
-        var result = await releasesService.GetReleasesAsync(page, pageSize, cancellationToken);
+        var filter = new ReleaseFilter(
+            Artist: artist,
+            Format: format,
+            Genre: genre,
+            Search: search,
+            Title: title,
+            Year: year);
+
+        var result = await releasesService.GetReleasesAsync(page, pageSize, cancellationToken, filter);
         return Ok(result);
     }
 }
