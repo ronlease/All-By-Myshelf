@@ -4,10 +4,10 @@ using AllByMyshelf.Api.Infrastructure.ExternalApis;
 using AllByMyshelf.Api.Repositories;
 using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,13 +98,26 @@ builder.Services.AddSwaggerGen(options =>
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Enter: Bearer {your Auth0 access token}",
-        In = ParameterLocation.Header,
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme",
+        Scheme = "bearer",
+        Type = SecuritySchemeType.Http
     });
 
-    options.OperationFilter<BearerSecurityOperationFilter>();
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 // ── Build & middleware ────────────────────────────────────────────────────────
@@ -128,18 +141,3 @@ app.MapHealthChecks("/health");
 app.MapControllers().RequireAuthorization();
 
 app.Run();
-
-/// <summary>Adds the Bearer security requirement to every Swagger operation.</summary>
-internal sealed class BearerSecurityOperationFilter : IOperationFilter
-{
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
-    {
-        operation.Security =
-        [
-            new OpenApiSecurityRequirement
-            {
-                { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
-            }
-        ];
-    }
-}
