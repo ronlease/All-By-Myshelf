@@ -2339,3 +2339,61 @@ Feature: Optional external API integrations
     Then the response status is 503 Service Unavailable
     And the response body indicates the integration is not configured
 ```
+
+---
+
+## [ABM-037] Global Sync Progress Indicator
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+When I trigger a sync on the Records or Books page, I am stuck on that page until the sync completes because navigating away would lose visibility into the sync progress. I want to be able to navigate freely throughout the application while a sync runs in the background, with the progress indicator visible regardless of which page I am on. This will let me continue browsing my collection or checking statistics without losing track of ongoing sync operations.
+
+### Acceptance Criteria
+```gherkin
+Feature: Global sync progress indicator
+
+  Scenario: Sync progress remains visible after navigating away
+    Given I am on the Records page
+    And I trigger a sync
+    And the sync is in progress
+    When I navigate to the Books page
+    Then the sync progress indicator is still visible
+    And the progress continues to update
+
+  Scenario: Sync progress is visible on any page
+    Given a Records sync is running in the background
+    When I navigate to the Statistics page
+    Then the sync progress indicator is visible
+    And I can see the current sync status
+
+  Scenario: Multiple syncs show combined progress
+    Given a Records sync is running in the background
+    And I trigger a Books sync
+    When I navigate to any page
+    Then the progress indicator shows both sync operations
+    And each sync displays its individual progress
+
+  Scenario: Sync completes while on a different page
+    Given I am on the Records page
+    And I trigger a sync
+    And I navigate to the Books page
+    When the sync completes
+    Then I receive a notification that the sync completed
+    And the progress indicator is dismissed
+
+  Scenario: Sync fails while on a different page
+    Given I am on the Records page
+    And I trigger a sync
+    And I navigate to the Statistics page
+    When the sync fails
+    Then I receive a notification that the sync failed
+    And the error message is visible
+
+  Scenario: Progress indicator does not interfere with navigation
+    Given a sync is running in the background
+    When I use the navigation menu
+    Then navigation works normally
+    And the progress indicator remains visible but unobtrusive
+```
