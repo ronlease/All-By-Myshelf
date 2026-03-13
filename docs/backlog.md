@@ -2722,7 +2722,7 @@ Feature: Maintenance page incomplete filter fix
 
 ## [ABM-044] Audit Dependencies and Remove Unused Packages
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
