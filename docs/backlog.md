@@ -2583,3 +2583,42 @@ Feature: Sync dropdown button with multi-service support
 ```
 
 Note: This item depends on the Configuration & Settings Page backlog item (for dynamic service detection based on configured tokens). The dropdown options are driven by the existing GET /api/v1/config/features endpoint.
+
+---
+
+## [ABM-041] Display Marketplace Pricing on Release Detail View
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The release detail view already stores three marketplace price fields (lowest, median, highest) from Discogs, but they are not displayed anywhere in the UI. Showing the pricing gives a quick sense of a record's market value. The format should be concise: show the median price prominently with the range in parentheses, e.g., "$38 ($37 - $45)". Drop decimal places using standard rounding rules (e.g., $37.50 rounds to $38, $37.49 rounds to $37).
+
+### Acceptance Criteria
+```gherkin
+Feature: Display marketplace pricing on release detail view
+
+  Scenario: Release has all three price fields populated
+    Given a release has lowestPrice, medianPrice, and highestPrice
+    When I view the release detail page
+    Then I see a "Marketplace Pricing" section
+    And the pricing is displayed as "{median} ({low} - {high})"
+    For example: "$38 ($37 - $45)"
+
+  Scenario: Prices are displayed as whole dollars
+    Given a release has medianPrice 37.50, lowestPrice 19.99, highestPrice 44.51
+    When I view the release detail page
+    Then the pricing is displayed as "$38 ($20 - $45)"
+    And decimals are dropped using standard rounding rules
+
+  Scenario: Release has no pricing data
+    Given a release has null lowestPrice, medianPrice, and highestPrice
+    When I view the release detail page
+    Then the "Marketplace Pricing" section is not shown
+
+  Scenario: Release has partial pricing data
+    Given a release has some price fields null and others populated
+    When I view the release detail page
+    Then the "Marketplace Pricing" section is not shown
+    Because all three values are required to display the range format
+```
