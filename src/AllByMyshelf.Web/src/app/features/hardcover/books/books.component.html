@@ -1,9 +1,11 @@
 <mat-toolbar color="primary">
   <span>All By Myshelf</span>
   <span class="toolbar-spacer"></span>
-  <button mat-raised-button routerLink="/" style="margin-right: 8px;">
-    💿 Records
-  </button>
+  @if (features()?.discogsEnabled) {
+    <button mat-raised-button routerLink="/" style="margin-right: 8px;">
+      💿 Records
+    </button>
+  }
   <button mat-raised-button color="accent" [disabled]="syncing()" (click)="onSyncClick()">
     @if (syncing()) {
       <mat-spinner diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>

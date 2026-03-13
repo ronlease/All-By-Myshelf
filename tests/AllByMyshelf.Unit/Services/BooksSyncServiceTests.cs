@@ -214,6 +214,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — mirror the mapping expression from RunSyncAsync
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: new List<HardcoverClient.HardcoverContribution>
             {
                 new(new HardcoverClient.HardcoverAuthor("Neil Gaiman")),
@@ -248,6 +249,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null contributions
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12346,
             Image: null,
@@ -280,6 +282,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns a parseable release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12347,
             Image: null,
@@ -316,6 +319,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns an unparseable release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12348,
             Image: null,
@@ -352,6 +356,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12349,
             Image: null,
@@ -388,6 +393,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns whitespace release_date
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12350,
             Image: null,
@@ -426,6 +432,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns image with url
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12354,
             Image: new HardcoverClient.HardcoverImage("https://i.hardcover.com/cover.jpg"),
@@ -456,6 +463,7 @@ public class BooksSyncServiceTests
     {
         // Arrange — Hardcover returns null image
         var hardcoverBook = new HardcoverClient.HardcoverBook(
+            CachedTags: null,
             Contributions: null,
             Id: 12355,
             Image: null,

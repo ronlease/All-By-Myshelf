@@ -15,16 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AllByMyshelfDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// ── Discogs configuration (fail-fast on startup if token is missing) ──────────
+// ── Discogs configuration ─────────────────────────────────────────────────────
 builder.Services.AddOptions<DiscogsOptions>()
-    .Bind(builder.Configuration.GetSection(DiscogsOptions.SectionName))
-    .Validate(
-        opts => !string.IsNullOrWhiteSpace(opts.PersonalAccessToken),
-        "Discogs:PersonalAccessToken must be set. Run: dotnet user-secrets set \"Discogs:PersonalAccessToken\" \"<token>\"")
-    .Validate(
-        opts => !string.IsNullOrWhiteSpace(opts.Username),
-        "Discogs:Username must be set in configuration.")
-    .ValidateOnStart();
+    .Bind(builder.Configuration.GetSection(DiscogsOptions.SectionName));
 
 // ── Discogs HTTP client ───────────────────────────────────────────────────────
 builder.Services.AddHttpClient<DiscogsClient>(client =>
@@ -33,13 +26,9 @@ builder.Services.AddHttpClient<DiscogsClient>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "AllByMyshelf/1.0");
 });
 
-// ── Hardcover configuration (fail-fast on startup if token is missing) ────────
+// ── Hardcover configuration ───────────────────────────────────────────────────
 builder.Services.AddOptions<HardcoverOptions>()
-    .Bind(builder.Configuration.GetSection(HardcoverOptions.SectionName))
-    .Validate(
-        opts => !string.IsNullOrWhiteSpace(opts.ApiToken),
-        "Hardcover:ApiToken must be set. Run: dotnet user-secrets set \"Hardcover:ApiToken\" \"<token>\"")
-    .ValidateOnStart();
+    .Bind(builder.Configuration.GetSection(HardcoverOptions.SectionName));
 
 // ── Hardcover HTTP client ─────────────────────────────────────────────────────
 builder.Services.AddHttpClient("Hardcover");

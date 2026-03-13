@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FeaturesDto, FeaturesService } from '../../../core/config/features.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -31,6 +32,8 @@ export class BooksComponent implements OnInit {
   books = signal<BookDto[]>([]);
   currentPage = signal(1);
   readonly displayedColumns = ['thumbnail', 'author', 'title', 'genre', 'year'];
+  features = signal<FeaturesDto | null>(null);
+  private readonly featuresService = inject(FeaturesService);
   private readonly hardcoverService = inject(HardcoverService);
   loading = signal(true);
   readonly pageSize = 25;
@@ -57,6 +60,9 @@ export class BooksComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.featuresService.getFeatures().subscribe({
+      next: (f) => this.features.set(f),
+    });
     this.loadBooks(this.currentPage());
   }
 

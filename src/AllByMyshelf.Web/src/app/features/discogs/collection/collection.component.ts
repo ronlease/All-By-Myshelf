@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FeaturesDto, FeaturesService } from '../../../core/config/features.service';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -46,6 +47,8 @@ export class CollectionComponent implements OnInit {
   artistFilter = signal<string[]>([]);
   currentPage = signal(1);
   private readonly discogsService = inject(DiscogsService);
+  features = signal<FeaturesDto | null>(null);
+  private readonly featuresService = inject(FeaturesService);
   readonly displayedColumns = ['thumbnail', 'artist', 'title', 'genre', 'year', 'format'];
   expandedGroups = signal<Set<string>>(new Set());
   formatFilter = signal<string[]>([]);
@@ -208,6 +211,9 @@ export class CollectionComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.featuresService.getFeatures().subscribe({
+      next: (f) => this.features.set(f),
+    });
     this.loadAll();
   }
 

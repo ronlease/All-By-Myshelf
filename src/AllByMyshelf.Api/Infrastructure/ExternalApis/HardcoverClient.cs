@@ -74,17 +74,18 @@ public class HardcoverClient(
                             offset: {offset}
                         ) {{
                             book {{
-                                id
-                                title
+                                cached_tags
                                 contributions {{
                                     author {{
                                         name
                                     }}
                                 }}
-                                release_date
+                                id
                                 image {{
                                     url
                                 }}
+                                release_date
+                                title
                             }}
                         }}
                     }}"
@@ -154,6 +155,7 @@ public class HardcoverClient(
         [property: JsonPropertyName("book")] HardcoverBook? Book);
 
     public record HardcoverBook(
+        [property: JsonPropertyName("cached_tags")] JsonElement? CachedTags,
         [property: JsonPropertyName("contributions")] List<HardcoverContribution>? Contributions,
         [property: JsonPropertyName("id")] int Id,
         [property: JsonPropertyName("image")] HardcoverImage? Image,

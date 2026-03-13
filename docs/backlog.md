@@ -1470,7 +1470,7 @@ Feature: Code complexity audit and simplification
 
 ## [ABM-028] Enforce Authentication on All API Endpoints
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2222,7 +2222,7 @@ Feature: Unified statistics dashboard
 
 ## [ABM-035] Bug: Books Dashboard Shows "—" for Genre on All Books
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2257,7 +2257,7 @@ Feature: Books display genre from Hardcover
 
 ## [ABM-036] Make External API Integrations Optional
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2338,4 +2338,118 @@ Feature: Optional external API integrations
     When I call POST /api/v1/books/sync
     Then the response status is 503 Service Unavailable
     And the response body indicates the integration is not configured
+```
+
+---
+
+## [ABM-037] Global Sync Progress Indicator
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+When I trigger a sync on the Records or Books page, I am stuck on that page until the sync completes because navigating away would lose visibility into the sync progress. I want to be able to navigate freely throughout the application while a sync runs in the background, with the progress indicator visible regardless of which page I am on. This will let me continue browsing my collection or checking statistics without losing track of ongoing sync operations.
+
+### Acceptance Criteria
+```gherkin
+Feature: Global sync progress indicator
+
+  Scenario: Sync progress remains visible after navigating away
+    Given I am on the Records page
+    And I trigger a sync
+    And the sync is in progress
+    When I navigate to the Books page
+    Then the sync progress indicator is still visible
+    And the progress continues to update
+
+  Scenario: Sync progress is visible on any page
+    Given a Records sync is running in the background
+    When I navigate to the Statistics page
+    Then the sync progress indicator is visible
+    And I can see the current sync status
+
+  Scenario: Multiple syncs show combined progress
+    Given a Records sync is running in the background
+    And I trigger a Books sync
+    When I navigate to any page
+    Then the progress indicator shows both sync operations
+    And each sync displays its individual progress
+
+  Scenario: Sync completes while on a different page
+    Given I am on the Records page
+    And I trigger a sync
+    And I navigate to the Books page
+    When the sync completes
+    Then I receive a notification that the sync completed
+    And the progress indicator is dismissed
+
+  Scenario: Sync fails while on a different page
+    Given I am on the Records page
+    And I trigger a sync
+    And I navigate to the Statistics page
+    When the sync fails
+    Then I receive a notification that the sync failed
+    And the error message is visible
+
+  Scenario: Progress indicator does not interfere with navigation
+    Given a sync is running in the background
+    When I use the navigation menu
+    Then navigation works normally
+    And the progress indicator remains visible but unobtrusive
+```
+
+---
+
+## [ABM-038] BoardGameGeek Collection Integration
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I want to see my board game collection from BoardGameGeek alongside my records (Discogs) and books (Hardcover) in a single unified dashboard. BoardGameGeek is the primary platform I use to track my board games, and having to visit a separate site to view that collection breaks the "all by myshelf" experience. By integrating with the BGG XML API, I can have a complete view of all my collections in one place.
+
+### Acceptance Criteria
+```gherkin
+Feature: BoardGameGeek collection integration
+
+  Scenario: Configure BGG username
+    Given I have a BoardGameGeek account with username "myusername"
+    When I configure my BGG username in the application settings
+    Then the application stores the username securely
+    And the username is available to the BGG sync service
+
+  Scenario: Sync board game collection from BoardGameGeek
+    Given my BGG username has been configured
+    And my BGG collection contains board games
+    When I trigger a BGG collection sync
+    Then the sync runs in the background
+    And I can see sync progress
+    And board games are imported into the local database
+
+  Scenario: View board games on the dashboard
+    Given my BGG collection has been synced
+    When I navigate to the Board Games page
+    Then I see a paginated list of my board games
+    And each game displays its name, year published, and thumbnail image
+    And I can sort and filter the list
+
+  Scenario: Board game detail view
+    Given my BGG collection has been synced
+    When I click on a board game in the list
+    Then I see the detail view for that game
+    And I see game information including player count, play time, and complexity rating
+
+  Scenario: BGG API is unavailable
+    Given my BGG username has been configured
+    When I trigger a sync
+    And the BGG API is unavailable
+    Then the sync fails gracefully
+    And I see an error message indicating the API is unavailable
+    And my existing local data is preserved
+
+  Scenario: BGG username is not configured
+    Given my BGG username has NOT been configured
+    When I navigate to the Board Games page
+    Then I see a message indicating that BGG integration needs to be configured
+    And I am prompted to enter my BGG username
 ```
