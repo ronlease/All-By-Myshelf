@@ -2761,3 +2761,55 @@ Feature: Dependency audit
     When the Angular application is built for production
     Then the output bundle size is equal to or smaller than before the audit
 ```
+
+---
+
+## [ABM-045] Refactor Backend to Vertical Slice Architecture
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The backend is currently organized by layer (Controllers/, Services/, Repositories/, Models/), which requires jumping across 5+ folders to understand or modify a single feature. As new integrations are added (BoardGameGeek, future services), this becomes increasingly painful. The Angular frontend already follows feature-based organization (features/discogs/, features/hardcover/), so the backend should mirror this structure. Reorganizing by domain/feature (vertical slices) keeps all code for a given feature colocated, making it faster to navigate, easier to reason about, and simpler to add new integrations.
+
+### Acceptance Criteria
+```gherkin
+Feature: Vertical slice architecture refactor
+
+  Scenario: Discogs feature is self-contained
+    Given the refactor is complete
+    Then all Discogs-related code (controller, service, repository, sync service, DTOs, external client) lives under a single Discogs feature folder
+    And no Discogs-specific code exists outside that folder
+
+  Scenario: Hardcover feature is self-contained
+    Given the refactor is complete
+    Then all Hardcover-related code (controller, service, repository, sync service, DTOs, external client) lives under a single Hardcover feature folder
+    And no Hardcover-specific code exists outside that folder
+
+  Scenario: Statistics feature is self-contained
+    Given the refactor is complete
+    Then all Statistics-related code (controller, service, repository, DTOs) lives under a single Statistics feature folder
+
+  Scenario: Shared infrastructure remains in a common location
+    Given some code is cross-cutting (DbContext, entity configurations, auth middleware, config)
+    Then shared infrastructure lives in a clearly named Infrastructure or Common folder
+    And features reference shared infrastructure but not each other
+
+  Scenario: Adding a new integration is straightforward
+    Given a new integration (e.g. BoardGameGeek) needs to be added
+    When a developer creates a new feature folder
+    Then all code for that integration can be built within that single folder
+    And no existing feature folders need modification
+
+  Scenario: Frontend and backend mirror each other
+    Given the refactor is complete
+    Then the backend feature folder structure mirrors the Angular frontend's features/ structure
+    And a developer can navigate both layers using the same mental model
+
+  Scenario: No functional regressions
+    Given the refactor only moves and renames files
+    When the solution is built and all tests are run
+    Then the build succeeds
+    And all existing tests pass
+    And all API endpoints behave identically
+```
