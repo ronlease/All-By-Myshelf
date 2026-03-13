@@ -1470,7 +1470,7 @@ Feature: Code complexity audit and simplification
 
 ## [ABM-028] Enforce Authentication on All API Endpoints
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2222,7 +2222,7 @@ Feature: Unified statistics dashboard
 
 ## [ABM-035] Bug: Books Dashboard Shows "—" for Genre on All Books
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2257,7 +2257,7 @@ Feature: Books display genre from Hardcover
 
 ## [ABM-036] Make External API Integrations Optional
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem

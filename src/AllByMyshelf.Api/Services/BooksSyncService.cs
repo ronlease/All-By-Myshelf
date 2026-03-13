@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AllByMyshelf.Api.Configuration;
 using AllByMyshelf.Api.Infrastructure.ExternalApis;
 using AllByMyshelf.Api.Models.Entities;
@@ -73,8 +74,8 @@ public class BooksSyncService(
         foreach (var b in apiBooks)
         {
             var author = b.Contributions?.FirstOrDefault()?.Author?.Name;
-            string? genre = null; // cached_tags is a JSON blob; genre support to be added later
             var coverImageUrl = b.Image?.Url;
+            var genre = ParseGenre(b.CachedTags);
 
             int? year = null;
             if (!string.IsNullOrWhiteSpace(b.ReleaseDate) &&
@@ -100,6 +101,26 @@ public class BooksSyncService(
 
         await booksRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Hardcover sync completed successfully.");
+    }
+
+    private static string? ParseGenre(JsonElement? cachedTags)
+    {
+        if (cachedTags is null || cachedTags.Value.ValueKind != JsonValueKind.Object)
+            return null;
+
+        if (!cachedTags.Value.TryGetProperty("Genre", out var genreArray))
+            return null;
+
+        if (genreArray.ValueKind != JsonValueKind.Array)
+            return null;
+
+        foreach (var element in genreArray.EnumerateArray())
+        {
+            if (element.ValueKind == JsonValueKind.String)
+                return element.GetString();
+        }
+
+        return null;
     }
 
     /// <inheritdoc/>
