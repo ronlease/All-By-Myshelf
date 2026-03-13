@@ -3,16 +3,18 @@
 
 title System Context — All By Myshelf
 
-Person(user, "Owner", "Single authenticated user managing their record collection")
+Person(user, "Owner", "Single authenticated user managing their collections")
 
-System(app, "All By Myshelf", "Personal collection dashboard that stores and displays a local copy of a Discogs collection")
+System(app, "All By Myshelf", "Personal collection dashboard that aggregates data from external APIs (Discogs, Hardcover) into a single read-only view")
 
 System_Ext(auth0, "Auth0", "Identity provider. Issues JWT tokens for the single user.")
 System_Ext(discogs, "Discogs API", "Source of truth for the user's vinyl record collection. Queried during background sync.")
+System_Ext(hardcover, "Hardcover API", "Source of truth for the user's read books. Queried via GraphQL during background sync.")
 
-Rel(user, app, "Views collection, triggers sync", "HTTPS")
+Rel(user, app, "Views collections, triggers syncs", "HTTPS")
 Rel(app, auth0, "Validates JWT tokens", "HTTPS/OIDC")
 Rel(user, auth0, "Authenticates", "HTTPS/OIDC")
-Rel(app, discogs, "Fetches collection data using personal access token", "HTTPS/JSON")
+Rel(app, discogs, "Fetches vinyl collection using personal access token", "HTTPS/JSON")
+Rel(app, hardcover, "Fetches read books using API token", "HTTPS/GraphQL")
 
 @enduml
