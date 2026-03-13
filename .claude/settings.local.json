@@ -10,7 +10,17 @@
       "Bash(cd /c/Projects/All-By-Myshelf/src/AllByMyshelf.Web && npx ng build --configuration development 2>&1)",
       "Bash(cd \"C:\\\\Projects\\\\All-By-Myshelf\\\\src\\\\AllByMyshelf.Web\" && npx ng build --configuration development 2>&1 | tail -10)",
       "Skill(commit-commands:commit-push-pr)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:docs.hardcover.app)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(dotnet format:*)",
+      "Bash(npx ng:*)"
     ]
   }
 }

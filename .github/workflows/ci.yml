@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   # ── .NET: restore, build, and test (unit + integration) ───────────────────
   dotnet-build-test:
@@ -21,6 +24,13 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-
+
       - name: Restore dependencies
         run: dotnet restore AllByMyshelf.slnx
 
@@ -28,7 +38,42 @@ jobs:
         run: dotnet build AllByMyshelf.slnx --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test AllByMyshelf.slnx --no-build --configuration Release --verbosity normal
+        run: dotnet test AllByMyshelf.slnx --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: ./test-results/*.trx
+          retention-days: 7
+
+  # ── .NET: format check ────────────────────────────────────────────────────
+  dotnet-format:
+    name: .NET Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore AllByMyshelf.slnx
+
+      - name: Check formatting
+        run: dotnet format AllByMyshelf.slnx --verify-no-changes --verbosity diagnostic
 
   # ── .NET: dependency vulnerability scan ───────────────────────────────────
   dotnet-dependency-scan:
@@ -43,6 +88,13 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-
 
       - name: Restore dependencies
         run: dotnet restore AllByMyshelf.slnx
@@ -112,6 +164,71 @@ jobs:
 
       - name: Audit dependencies
         run: npm audit --audit-level=high
+
+  # ── Angular: lint ─────────────────────────────────────────────────────────
+  angular-lint:
+    name: Angular Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/AllByMyshelf.Web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx ng lint
+
+  # ── Angular: unit tests ────────────────────────────────────────────────────
+  angular-test:
+    name: Angular Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/AllByMyshelf.Web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create environment files
+        run: |
+          cp src/environments/environment.template.ts src/environments/environment.ts
+          cp src/environments/environment.template.ts src/environments/environment.prod.ts
+
+      - name: Run unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-coverage
+          path: src/AllByMyshelf.Web/coverage/
+          retention-days: 7
 
   # ── Secret scanning via Gitleaks ──────────────────────────────────────────
   secret-scan:
