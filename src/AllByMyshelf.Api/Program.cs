@@ -6,6 +6,8 @@ using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +72,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Audience = builder.Configuration["Auth0:Audience"];
     });
 
+// ── Health checks ──────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
@@ -90,6 +95,16 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "Personal collection dashboard API"
     });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Enter: Bearer {your Auth0 access token}",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+
+    options.OperationFilter<BearerSecurityOperationFilter>();
 });
 
 // ── Build & middleware ────────────────────────────────────────────────────────
@@ -109,6 +124,22 @@ app.UseCors("AllowAngularDev");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapHealthChecks("/health");
+app.MapControllers().RequireAuthorization();
 
 app.Run();
+
+/// <summary>Adds the Bearer security requirement to every Swagger operation.</summary>
+internal sealed class BearerSecurityOperationFilter : IOperationFilter
+{
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
+        operation.Security =
+        [
+            new OpenApiSecurityRequirement
+            {
+                { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
+            }
+        ];
+    }
+}
