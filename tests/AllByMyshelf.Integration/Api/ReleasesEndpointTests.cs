@@ -85,6 +85,32 @@
 //   Given some releases are complete and some are not
 //   When I request GET /api/v1/releases/maintenance
 //   Then only incomplete releases appear in the response
+//
+// Feature: Random release picker              (ABM-025)
+//
+// Scenario: GET /api/v1/releases/random returns a release when database has releases
+//   Given the database contains releases
+//   When I request GET /api/v1/releases/random
+//   Then the response is HTTP 200 OK
+//   And the response body contains a ReleaseDetailDto
+//
+// Scenario: GET /api/v1/releases/random returns 404 when database is empty
+//   Given the database contains no releases
+//   When I request GET /api/v1/releases/random
+//   Then the response is HTTP 404 Not Found
+//
+// Feature: Pagination validation
+//
+// Scenario: GET /api/v1/releases?page=-1 defaults invalid page to 1
+//   Given the database contains releases
+//   When I request GET /api/v1/releases?page=-1
+//   Then the response is HTTP 200 OK
+//   And the response indicates page 1
+//
+// Note: Search and filter tests (search, genre, artist, etc.) cannot be tested
+// with the EF Core in-memory provider because they rely on PostgreSQL-specific
+// EF.Functions.ILike. These features require integration tests against a real
+// PostgreSQL database or unit tests with mocked repositories.
 
 using System.Net;
 using System.Net.Http.Json;
@@ -233,6 +259,28 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ── GET /api/v1/releases?page=-1 — invalid page defaults to 1 ─────────────
+
+    [Fact]
+    public async Task GetReleases_InvalidPageNumber_DefaultsToPage1()
+    {
+        // Arrange
+        var releases = Enumerable.Range(1, 5)
+            .Select(i => MakeRelease(i, $"Artist {i}", $"Album {i}"))
+            .ToList();
+        var client = CreateClientWithSeededData(releases);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases?page=-1&pageSize=25");
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<ReleaseDto>>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.Should().NotBeNull();
+        body!.Page.Should().Be(1);
+        body.Items.Should().HaveCount(5);
+    }
+
     // ── GET /api/v1/releases — empty database ─────────────────────────────────
 
     [Fact]
@@ -360,6 +408,38 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         page2!.Items.Should().NotBeEmpty();
         var page1Titles = page1!.Items.Select(i => i.Title).ToHashSet();
         page2.Items.Select(i => i.Title).Should().NotIntersectWith(page1Titles);
+    }
+
+    // ── GET /api/v1/releases/random — random release ──────────────────────────
+
+    [Fact]
+    public async Task GetRandom_DatabaseHasReleases_Returns200WithRelease()
+    {
+        // Arrange
+        var release = MakeDetailedRelease(Guid.NewGuid(), 1001);
+        var client = CreateClientWithSeededData(new[] { release });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/random");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+        body.Should().NotBeNull();
+        body!.Artist.Should().Be("John Coltrane");
+    }
+
+    [Fact]
+    public async Task GetRandom_EmptyDatabase_Returns404()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/random");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     // ── GET /api/v1/releases/recent — recently added ──────────────────────────
@@ -547,17 +627,18 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         };
 
     private static Release MakeRelease(int discogsId, string artist, string title, int? year = 2000,
-        string format = "Vinyl", DateTimeOffset? addedAt = null) =>
+        string format = "Vinyl", DateTimeOffset? addedAt = null, string? genre = null) =>
         new()
         {
             AddedAt = addedAt,
-            Id = Guid.NewGuid(),
-            DiscogsId = discogsId,
             Artist = artist,
-            Title = title,
-            Year = year,
+            DiscogsId = discogsId,
             Format = format,
-            LastSyncedAt = DateTimeOffset.UtcNow
+            Genre = genre,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = title,
+            Year = year
         };
 
     /// <summary>
