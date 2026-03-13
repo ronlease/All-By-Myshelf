@@ -1,0 +1,149 @@
+import { inject, Injectable, signal } from '@angular/core';
+import { Subject } from 'rxjs';
+import { DiscogsService, SyncProgressDto } from '../../features/discogs/discogs.service';
+import { HardcoverService } from '../../features/hardcover/hardcover.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
+@Injectable({ providedIn: 'root' })
+export class SyncStateService {
+  private readonly discogsService = inject(DiscogsService);
+  private readonly hardcoverService = inject(HardcoverService);
+  private readonly snackBar = inject(MatSnackBar);
+
+  // ── Discogs sync state ─────────────────────────────────────────────────────
+  booksSyncing = signal(false);
+  discogsSyncProgress = signal<SyncProgressDto | null>(null);
+  discogsSyncing = signal(false);
+  private booksSyncTimer?: ReturnType<typeof setTimeout>;
+  private discogsSyncTimer?: ReturnType<typeof setTimeout>;
+  private pauseStartTime = 0;
+  private pauseTotalSeconds = 0;
+
+  // ── Completion events ──────────────────────────────────────────────────────
+  readonly booksSyncCompleted$ = new Subject<void>();
+  readonly discogsSyncCompleted$ = new Subject<void>();
+
+  // ── Computed ───────────────────────────────────────────────────────────────
+
+  get discogsSyncStatusLabel(): string {
+    const p = this.discogsSyncProgress();
+    if (!p) return 'Syncing...';
+    switch (p.status) {
+      case 'pausing': {
+        const elapsed = Math.floor((Date.now() - this.pauseStartTime) / 1000);
+        const remaining = Math.max(0, this.pauseTotalSeconds - Math.floor(elapsed / 5) * 5);
+        return `Pausing ${remaining}s (rate limit)`;
+      }
+      case 'resuming':
+        return 'Resuming…';
+      case 'saving':
+        return 'Saving…';
+      default:
+        return p.total > 0
+          ? `Syncing ${p.current} of ${p.total}…`
+          : 'Syncing…';
+    }
+  }
+
+  // ── Discogs sync ───────────────────────────────────────────────────────────
+
+  startDiscogsSync(): void {
+    if (this.discogsSyncing()) return;
+    this.discogsSyncing.set(true);
+    this.discogsService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
+          this.pollDiscogsSyncStatus();
+        } else {
+          this.discogsSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.discogsSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
+  }
+
+  // ── Books sync ─────────────────────────────────────────────────────────────
+
+  startBooksSync(): void {
+    if (this.booksSyncing()) return;
+    this.booksSyncing.set(true);
+    this.hardcoverService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Book sync started.', 'Dismiss', { duration: 3000 });
+          this.pollBooksSyncStatus();
+        } else {
+          this.booksSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.booksSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A book sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('Hardcover API key is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
+  }
+
+  // ── Polling ────────────────────────────────────────────────────────────────
+
+  private pollBooksSyncStatus(): void {
+    const poll = () => {
+      this.hardcoverService.getSyncStatus().subscribe({
+        next: (status) => {
+          if (status.isRunning) {
+            this.booksSyncTimer = setTimeout(poll, 2000);
+          } else {
+            this.booksSyncing.set(false);
+            this.snackBar.open('Book sync completed.', 'Dismiss', { duration: 3000 });
+            this.booksSyncCompleted$.next();
+          }
+        },
+        error: () => {
+          this.booksSyncTimer = setTimeout(poll, 3000);
+        },
+      });
+    };
+    poll();
+  }
+
+  private pollDiscogsSyncStatus(): void {
+    const poll = () => {
+      this.discogsService.getSyncStatus().subscribe({
+        next: (progress) => {
+          if (progress.status === 'pausing' && this.discogsSyncProgress()?.status !== 'pausing') {
+            this.pauseStartTime = Date.now();
+            this.pauseTotalSeconds = progress.retryAfterSeconds ?? 60;
+          }
+          this.discogsSyncProgress.set(progress);
+          if (progress.isRunning) {
+            this.discogsSyncTimer = setTimeout(poll, 1000);
+          } else {
+            this.discogsSyncing.set(false);
+            this.discogsSyncProgress.set(null);
+            this.snackBar.open('Collection sync completed.', 'Dismiss', { duration: 3000 });
+            this.discogsSyncCompleted$.next();
+          }
+        },
+        error: () => {
+          this.discogsSyncTimer = setTimeout(poll, 2000);
+        },
+      });
+    };
+    poll();
+  }
+}

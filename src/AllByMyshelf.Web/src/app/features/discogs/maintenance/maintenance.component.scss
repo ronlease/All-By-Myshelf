@@ -1,0 +1,17 @@
+.maintenance-summary {
+  margin: 16px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.discogs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #90caf9;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

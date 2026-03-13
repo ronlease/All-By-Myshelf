@@ -945,7 +945,7 @@ Feature: Collection value estimate
 
 ## [ABM-021] Recently Added Releases
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1559,7 +1559,7 @@ Feature: API authentication enforcement
 
 ## [ABM-029] Collection Maintenance View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2344,7 +2344,7 @@ Feature: Optional external API integrations
 
 ## [ABM-037] Global Sync Progress Indicator
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2452,4 +2452,268 @@ Feature: BoardGameGeek collection integration
     When I navigate to the Board Games page
     Then I see a message indicating that BGG integration needs to be configured
     And I am prompted to enter my BGG username
+```
+
+---
+
+## [ABM-039] Configuration & Settings Page
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+External API tokens (Discogs PAT, Discogs username, Hardcover API token, and future integrations like BoardGameGeek) are currently stored via `dotnet user-secrets`, which requires CLI access and makes the app harder to set up. Moving these to a database-backed configuration page lets me manage tokens through the UI. All sensitive values must be encrypted at rest using AES-256-GCM with a master key sourced from an environment variable (or AWS Secrets Manager in the future). Auth0 settings remain in dotnet user-secrets since they are required for the app to start. Additionally, the app currently follows the OS color scheme preference with no user override. A dark mode setting (Light / Dark / OS default) should be part of this configuration area.
+
+### Acceptance Criteria
+```gherkin
+Feature: Configuration & settings page
+
+  Scenario: User navigates to the settings page
+    Given the user is authenticated
+    When they navigate to the Settings page
+    Then they see fields for each external API token (Discogs PAT, Discogs Username, Hardcover API Token)
+    And they see a theme selector with options: Light, Dark, OS Default
+    And the current values are pre-populated (tokens masked)
+
+  Scenario: User saves an API token
+    Given the user enters a new Discogs personal access token
+    When they click Save
+    Then the token is encrypted with AES-256-GCM before being stored in the database
+    And the encryption master key is sourced from an environment variable
+    And a success confirmation is shown
+
+  Scenario: User updates the theme preference
+    Given the user selects "Dark" from the theme selector
+    When they click Save
+    Then the application immediately switches to dark mode
+    And the preference persists across sessions
+
+  Scenario: Theme is set to OS Default
+    Given the user selects "OS Default" from the theme selector
+    When they click Save
+    Then the application follows the operating system's color scheme preference
+
+  Scenario: Tokens are never exposed in plaintext
+    Given encrypted tokens are stored in the database
+    When the settings page loads
+    Then token fields display masked values (e.g., "••••••••abc")
+    And the full plaintext token is never sent to the frontend
+
+  Scenario: Application reads tokens from the database at runtime
+    Given tokens have been saved via the settings page
+    When a sync operation is triggered
+    Then the application decrypts the token from the database using the master key
+    And uses it to authenticate with the external API
+
+  Scenario: Fallback to dotnet user-secrets when no database token exists
+    Given no token has been saved via the settings page
+    And a token exists in dotnet user-secrets
+    When a sync operation is triggered
+    Then the application uses the user-secrets token
+
+  Scenario: Feature flags reflect configured services
+    Given the user has saved a Hardcover API token via settings
+    And no Discogs token is configured anywhere
+    When GET /api/v1/config/features is called
+    Then HardcoverEnabled is true
+    And DiscogsEnabled is false
+```
+
+---
+
+## [ABM-040] Sync Dropdown Button with Multi-Service Support
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The current toolbar has separate "Sync Records" and "Sync Books" buttons, which doesn't scale as more integrations are added (e.g., BoardGameGeek). A single dropdown sync button consolidates sync actions and dynamically shows only the services that are configured. The dropdown defaults to syncing the current service based on context (Records page → Discogs, Books page → Hardcover), with a "Sync All" option available.
+
+### Acceptance Criteria
+```gherkin
+Feature: Sync dropdown button with multi-service support
+
+  Scenario: Sync button displays as a dropdown
+    Given the user is on any page
+    When they look at the toolbar
+    Then they see a single "Sync" dropdown button instead of separate sync buttons
+
+  Scenario: Dropdown shows only configured services
+    Given the Discogs token is configured
+    And the Hardcover token is not configured
+    When the user opens the sync dropdown
+    Then "Sync Records" is shown
+    And "Sync Books" is not shown
+    And "Sync All" is shown
+
+  Scenario: Dropdown shows all configured services
+    Given both Discogs and Hardcover tokens are configured
+    When the user opens the sync dropdown
+    Then "Sync Records", "Sync Books", and "Sync All" are shown
+
+  Scenario: Default sync action on Records page
+    Given the user is on the Records collection page
+    When they click the sync button (not the dropdown arrow)
+    Then a Discogs sync is triggered
+
+  Scenario: Default sync action on Books page
+    Given the user is on the Books page
+    When they click the sync button (not the dropdown arrow)
+    Then a Hardcover sync is triggered
+
+  Scenario: Default sync action on non-service pages
+    Given the user is on the Statistics, Pick, Maintenance, or Store Finder page
+    When they click the sync button (not the dropdown arrow)
+    Then a "Sync All" operation is triggered (syncing all configured services)
+
+  Scenario: Sync All triggers all configured services
+    Given both Discogs and Hardcover are configured
+    When the user selects "Sync All" from the dropdown
+    Then both Discogs and Hardcover syncs are triggered concurrently
+
+  Scenario: Progress indicator during sync
+    Given a sync is in progress for one or more services
+    Then the sync button shows a spinner
+    And the dropdown indicates which services are currently syncing
+
+  Scenario: Service options update after configuration change
+    Given the user adds a new API token via the settings page
+    When they open the sync dropdown
+    Then the newly configured service appears as a sync option
+```
+
+Note: This item depends on the Configuration & Settings Page backlog item (for dynamic service detection based on configured tokens). The dropdown options are driven by the existing GET /api/v1/config/features endpoint.
+
+---
+
+## [ABM-041] Display Marketplace Pricing on Release Detail View
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The release detail view already stores three marketplace price fields (lowest, median, highest) from Discogs, but they are not displayed anywhere in the UI. Showing the pricing gives a quick sense of a record's market value. The format should be concise: show the median price prominently with the range in parentheses, e.g., "$38 ($37 - $45)". Drop decimal places using standard rounding rules (e.g., $37.50 rounds to $38, $37.49 rounds to $37).
+
+### Acceptance Criteria
+```gherkin
+Feature: Display marketplace pricing on release detail view
+
+  Scenario: Release has all three price fields populated
+    Given a release has lowestPrice, medianPrice, and highestPrice
+    When I view the release detail page
+    Then I see a "Marketplace Pricing" section
+    And the pricing is displayed as "{median} ({low} - {high})"
+    For example: "$38 ($37 - $45)"
+
+  Scenario: Prices are displayed as whole dollars
+    Given a release has medianPrice 37.50, lowestPrice 19.99, highestPrice 44.51
+    When I view the release detail page
+    Then the pricing is displayed as "$38 ($20 - $45)"
+    And decimals are dropped using standard rounding rules
+
+  Scenario: Release has no pricing data
+    Given a release has null lowestPrice, medianPrice, and highestPrice
+    When I view the release detail page
+    Then the "Marketplace Pricing" section is not shown
+
+  Scenario: Release has partial pricing data
+    Given a release has some price fields null and others populated
+    When I view the release detail page
+    Then the "Marketplace Pricing" section is not shown
+    Because all three values are required to display the range format
+```
+
+---
+
+## [ABM-042] Context-Aware Random Picker
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The "Pick" (random) button currently appears in the global toolbar on every page, but it only picks a random vinyl record from the Discogs collection. When the user is on the Books page, they'd expect "Pick" to choose a random book from Hardcover, not a random record. The random picker should be context-aware: on the Records page it picks a random record, on the Books page it picks a random book, and on non-service pages it picks from any collection randomly. This requires adding a random book endpoint on the backend and updating the random picker component to be service-aware.
+
+### Acceptance Criteria
+```gherkin
+Feature: Context-aware random picker
+
+  Scenario: Random pick from Records page
+    Given the user is on the Records collection page
+    When they click the Pick button
+    Then a random record from the Discogs collection is displayed
+
+  Scenario: Random pick from Books page
+    Given the user is on the Books page
+    When they click the Pick button
+    Then a random book from the Hardcover collection is displayed
+
+  Scenario: Random pick from a non-service page
+    Given the user is on the Statistics, Maintenance, or Store Finder page
+    When they click the Pick button
+    Then a random item is picked from any configured collection
+
+  Scenario: Random book endpoint exists
+    Given the Hardcover collection contains books
+    When GET /api/v1/books/random is called
+    Then a randomly selected book is returned with full detail
+
+  Scenario: Random book with no books in collection
+    Given the Hardcover collection is empty
+    When GET /api/v1/books/random is called
+    Then the response is HTTP 404 Not Found
+
+  Scenario: Random pick only considers configured services
+    Given only Discogs is configured (no Hardcover token)
+    When the user clicks Pick from a non-service page
+    Then a random record is picked (books are not considered)
+
+  Scenario: Pick button hidden when no services configured
+    Given no external API tokens are configured
+    Then the Pick button is not shown in the toolbar
+```
+
+---
+
+## [ABM-043] Maintenance Page Shows Too Many Records (Overly Aggressive Incomplete Filter)
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+The maintenance page is meant to surface records with genuinely incomplete data that the user should fix on Discogs, but it currently lists nearly every record. The root cause is that the "incomplete" filter checks for null on six fields: CoverImageUrl, Genre, HighestPrice, LowestPrice, MedianPrice, and Year. Since marketplace pricing data (HighestPrice, LowestPrice, MedianPrice) is frequently unavailable from Discogs — even for records with otherwise complete data — almost every record matches the filter. Pricing availability is outside the user's control, so it should not flag a record as needing attention. The filter should only consider fields the user can actually fix on Discogs: Genre, Year, and CoverImageUrl. Pricing fields should be excluded from the incomplete check (though they can still appear as informational "missing" chips if desired).
+
+### Acceptance Criteria
+```gherkin
+Feature: Maintenance page incomplete filter fix
+
+  Scenario: Record with complete user-editable fields is not shown
+    Given a release has Genre, Year, and CoverImageUrl populated
+    And HighestPrice, LowestPrice, and MedianPrice are null
+    When I view the maintenance page
+    Then the release is NOT listed as incomplete
+
+  Scenario: Record missing Genre is shown
+    Given a release has null Genre
+    When I view the maintenance page
+    Then the release is listed with "Genre" in its missing fields
+
+  Scenario: Record missing Year is shown
+    Given a release has null Year
+    When I view the maintenance page
+    Then the release is listed with "Year" in its missing fields
+
+  Scenario: Record missing CoverImageUrl is shown
+    Given a release has null CoverImageUrl
+    When I view the maintenance page
+    Then the release is listed with "Cover Art" in its missing fields
+
+  Scenario: All records have user-editable fields complete
+    Given all releases have Genre, Year, and CoverImageUrl populated
+    When I view the maintenance page
+    Then the empty state message "All records have complete data." is shown
+
+  Scenario: Missing pricing is shown as informational only
+    Given a release has null pricing fields but Genre, Year, and CoverImageUrl are populated
+    When I view the maintenance page
+    Then the release is NOT listed as incomplete
 ```

@@ -16,6 +16,11 @@ public interface IReleasesRepository
     Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Returns all releases that have at least one missing data field.
+    /// </summary>
+    Task<IReadOnlyList<Release>> GetIncompleteReleasesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns a paginated slice of releases ordered by artist then title,
     /// optionally filtered by the criteria in <paramref name="filter"/>.
     /// </summary>
@@ -33,6 +38,11 @@ public interface IReleasesRepository
     /// <param name="filter">Optional filter criteria; null means any release.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<Release?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the most recently added releases within the specified time window.
+    /// </summary>
+    Task<IReadOnlyList<Release>> GetRecentlyAddedAsync(int count, int days, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replaces the entire collection with <paramref name="releases"/>.

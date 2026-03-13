@@ -58,6 +58,21 @@
 //   Given the Discogs release detail API returns 429 on the first attempt
 //   When GetReleaseDetailAsync is called
 //   Then the client retries and returns the detail on the subsequent success response
+//
+// Scenario: GetMarketplaceStatsAsync returns all price fields correctly
+//   Given the Discogs marketplace stats API returns a full response with highest, lowest, and median prices
+//   When GetMarketplaceStatsAsync is called
+//   Then all three price values are mapped correctly
+//
+// Scenario: GetMarketplaceStatsAsync returns null on a non-success HTTP response
+//   Given the Discogs marketplace stats API returns a 500 server error
+//   When GetMarketplaceStatsAsync is called
+//   Then null is returned and no exception is thrown
+//
+// Scenario: GetMarketplaceStatsAsync retries on 429 rate limit before succeeding
+//   Given the Discogs marketplace stats API returns 429 on the first attempt
+//   When GetMarketplaceStatsAsync is called
+//   Then the client retries and returns the stats on the subsequent success response
 
 using System.Net;
 using System.Net.Http.Json;
@@ -482,6 +497,98 @@ public class DiscogsClientTests
         // Assert
         result.Should().NotBeNull();
         result!.Genres.Should().ContainSingle(g => g == "Jazz");
+        handler.CallCount.Should().Be(2); // one 429 + one success
+    }
+
+    // ── GetMarketplaceStatsAsync — happy path ─────────────────────────────────
+
+    [Fact]
+    public async Task GetMarketplaceStatsAsync_FullResponse_MapsAllPrices()
+    {
+        // Arrange
+        var payload = new
+        {
+            lowest_price = new { currency = "USD", value = 15.99m },
+            median_price = new { currency = "USD", value = 25.50m },
+            highest_price = new { currency = "USD", value = 49.99m }
+        };
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.OK, content));
+
+        // Act
+        var result = await sut.GetMarketplaceStatsAsync(12345, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.LowestPrice.Should().NotBeNull();
+        result.LowestPrice!.Currency.Should().Be("USD");
+        result.LowestPrice.Value.Should().Be(15.99m);
+        result!.MedianPrice.Should().NotBeNull();
+        result.MedianPrice!.Currency.Should().Be("USD");
+        result.MedianPrice.Value.Should().Be(25.50m);
+        result!.HighestPrice.Should().NotBeNull();
+        result.HighestPrice!.Currency.Should().Be("USD");
+        result.HighestPrice.Value.Should().Be(49.99m);
+    }
+
+    // ── GetMarketplaceStatsAsync — non-success response ───────────────────────
+
+    [Fact]
+    public async Task GetMarketplaceStatsAsync_ServerError_ReturnsNull()
+    {
+        // Arrange
+        var sut = CreateClient(new StaticResponseHandler(HttpStatusCode.InternalServerError,
+            new StringContent(string.Empty)));
+
+        // Act
+        Func<Task> act = () => sut.GetMarketplaceStatsAsync(1, CancellationToken.None);
+
+        // Assert — must not throw; must return null
+        await act.Should().NotThrowAsync();
+        var result = await sut.GetMarketplaceStatsAsync(1, CancellationToken.None);
+        result.Should().BeNull();
+    }
+
+    // ── GetMarketplaceStatsAsync — rate-limit retry ───────────────────────────
+
+    [Fact]
+    public async Task GetMarketplaceStatsAsync_RateLimited_RetriesAndReturnsStats()
+    {
+        // Arrange — first response is 429, second is success
+        var rateLimitResponse = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        rateLimitResponse.Headers.RetryAfter =
+            new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(0));
+
+        var statsPayload = new
+        {
+            lowest_price = new { currency = "USD", value = 10.00m },
+            median_price = new { currency = "USD", value = 20.00m },
+            highest_price = new { currency = "USD", value = 30.00m }
+        };
+        var successResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(statsPayload),
+                System.Text.Encoding.UTF8,
+                "application/json")
+        };
+
+        var responses = new Queue<HttpResponseMessage>(new[] { rateLimitResponse, successResponse });
+        var handler = new QueuedResponseHandler(responses);
+        var sut = CreateClient(handler);
+
+        // Act
+        var result = await sut.GetMarketplaceStatsAsync(99, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.LowestPrice!.Value.Should().Be(10.00m);
+        result.MedianPrice!.Value.Should().Be(20.00m);
+        result.HighestPrice!.Value.Should().Be(30.00m);
         handler.CallCount.Should().Be(2); // one 429 + one success
     }
 }

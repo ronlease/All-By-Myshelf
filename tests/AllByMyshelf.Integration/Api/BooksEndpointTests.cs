@@ -48,6 +48,19 @@
 //   When I send POST /api/v1/books/sync
 //   Then the response is HTTP 503 Service Unavailable
 //   And the response body explains that the Hardcover token is not configured
+//
+// Feature: Pagination validation
+//
+// Scenario: GET /api/v1/books?page=-1 defaults invalid page to 1
+//   Given the database contains books
+//   When I request GET /api/v1/books?page=-1
+//   Then the response is HTTP 200 OK
+//   And the response indicates page 1
+//
+// Note: Filter tests (author, genre, etc.) cannot be tested with the EF Core
+// in-memory provider because they rely on PostgreSQL-specific EF.Functions.ILike.
+// These features require integration tests against a real PostgreSQL database
+// or unit tests with mocked repositories.
 
 using System.Net;
 using System.Net.Http.Json;
@@ -176,6 +189,28 @@ public class BooksEndpointTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── GET /api/v1/books?page=-1 — invalid page defaults to 1 ────────────────
+
+    [Fact]
+    public async Task GetBooks_InvalidPageNumber_DefaultsToPage1()
+    {
+        // Arrange
+        var books = Enumerable.Range(1, 5)
+            .Select(i => MakeBook(i, $"Author {i}", $"Book {i}"))
+            .ToList();
+        var client = CreateClientWithSeededData(books);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/books?page=-1&pageSize=20");
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<BookDto>>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.Should().NotBeNull();
+        body!.Page.Should().Be(1);
+        body.Items.Should().HaveCount(5);
     }
 
     // ── GET /api/v1/books — page beyond data ──────────────────────────────────
