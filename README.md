@@ -107,7 +107,18 @@ dotnet test tests/AllByMyshelf.Integration
 ```
 All-By-Myshelf/
   src/
-    AllByMyshelf.Api/         # ASP.NET Core 10 Web API
+    AllByMyshelf.Api/
+      Common/                 # Shared types (PagedResult, SyncStartResult)
+      Features/
+        Config/               # GET /api/v1/config/features
+        Discogs/              # Releases, sync, Discogs API client
+        Hardcover/            # Books, sync, Hardcover API client
+        Statistics/           # Collection value statistics
+      Infrastructure/
+        Data/                 # EF Core DbContext, migrations
+      Models/
+        Entities/             # EF Core entity classes
+      Program.cs
     AllByMyshelf.Web/         # Angular 21 frontend
   tests/
     AllByMyshelf.Unit/        # xUnit unit tests

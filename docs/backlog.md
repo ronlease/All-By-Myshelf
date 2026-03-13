@@ -2523,7 +2523,7 @@ Feature: Configuration & settings page
 
 ## [ABM-040] Sync Dropdown Button with Multi-Service Support
 
-**Status:** Backlog
+**Status:** Superseded by ABM-046
 **Priority:** Medium
 
 ### Business Problem
@@ -2583,6 +2583,8 @@ Feature: Sync dropdown button with multi-service support
 ```
 
 Note: This item depends on the Configuration & Settings Page backlog item (for dynamic service detection based on configured tokens). The dropdown options are driven by the existing GET /api/v1/config/features endpoint.
+
+**Superseded:** This item has been folded into ABM-046 (Navigation Redesign — Side Drawer with Integrated Sync), which consolidates both the nav redesign and sync consolidation into a single cohesive solution.
 
 ---
 
@@ -2813,3 +2815,82 @@ Feature: Vertical slice architecture refactor
     And all existing tests pass
     And all API endpoints behave identically
 ```
+
+---
+
+## [ABM-046] Navigation Redesign — Side Drawer with Integrated Sync
+
+**Status:** Backlog
+**Priority:** Medium
+**Supersedes:** ABM-040
+
+### Business Problem
+The current horizontal toolbar is getting crowded with 6 nav buttons + 2 sync buttons inline. It doesn't scale as more integrations are added (e.g., ABM-038 BoardGameGeek, ABM-039 Settings page). The two separate sync buttons (Records, Books) also don't scale — discussed in ABM-040. This item combines the nav redesign with the sync consolidation from ABM-040.
+
+The solution is to replace the flat toolbar with Angular Material's `mat-sidenav` drawer pattern:
+- A hamburger icon in the toolbar toggles a side drawer
+- All navigation links move into the drawer
+- Sync actions are consolidated into a single section within the drawer, showing only configured services
+- The toolbar retains the app title and hamburger toggle
+- Feature-gated items (Records, Books, Pick, Maintenance) remain conditionally visible based on configured API tokens
+
+### Acceptance Criteria
+```gherkin
+Feature: Side drawer navigation with integrated sync
+
+  Scenario: Toolbar shows hamburger menu icon
+    Given the user is on any page
+    When they look at the toolbar
+    Then they see the app title and a hamburger menu icon
+    And no nav buttons are shown inline in the toolbar
+
+  Scenario: Hamburger icon toggles the side drawer
+    Given the drawer is closed
+    When the user clicks the hamburger icon
+    Then the side drawer opens with all navigation links
+
+  Scenario: Drawer shows feature-gated nav items
+    Given both Discogs and Hardcover tokens are configured
+    When the drawer is open
+    Then Records, Books, Pick, Maintenance, Stores, and Statistics links are visible
+
+  Scenario: Drawer hides nav items for unconfigured services
+    Given only the Discogs token is configured
+    When the drawer is open
+    Then Records, Pick, Maintenance, Stores, and Statistics links are visible
+    And the Books link is not visible
+
+  Scenario: Drawer includes sync section
+    Given both Discogs and Hardcover tokens are configured
+    When the drawer is open
+    Then a "Sync" section shows "Sync Records", "Sync Books", and "Sync All" options
+
+  Scenario: Sync section shows only configured services
+    Given only the Discogs token is configured
+    When the drawer is open
+    Then the Sync section shows only "Sync Records"
+    And "Sync Books" and "Sync All" are not shown
+
+  Scenario: Sync All triggers all configured services
+    Given both Discogs and Hardcover are configured
+    When the user clicks "Sync All"
+    Then both Discogs and Hardcover syncs are triggered concurrently
+
+  Scenario: Sync progress shown in drawer
+    Given a sync is in progress
+    When the drawer is open
+    Then the syncing service shows a spinner and progress label
+
+  Scenario: Clicking a nav link navigates and closes drawer
+    Given the drawer is open
+    When the user clicks a nav link
+    Then they are navigated to the selected page
+    And the drawer closes
+
+  Scenario: Active page is highlighted in drawer
+    Given the user is on the Books page
+    When the drawer is open
+    Then the Books link is visually highlighted as active
+```
+
+Note: This item supersedes ABM-040 (Sync Dropdown Button). All sync consolidation requirements from ABM-040 are incorporated here. The sync section in the drawer replaces both the separate toolbar sync buttons and the proposed dropdown approach.
