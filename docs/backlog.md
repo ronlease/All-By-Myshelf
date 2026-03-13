@@ -2622,3 +2622,52 @@ Feature: Display marketplace pricing on release detail view
     Then the "Marketplace Pricing" section is not shown
     Because all three values are required to display the range format
 ```
+
+---
+
+## [ABM-042] Context-Aware Random Picker
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The "Pick" (random) button currently appears in the global toolbar on every page, but it only picks a random vinyl record from the Discogs collection. When the user is on the Books page, they'd expect "Pick" to choose a random book from Hardcover, not a random record. The random picker should be context-aware: on the Records page it picks a random record, on the Books page it picks a random book, and on non-service pages it picks from any collection randomly. This requires adding a random book endpoint on the backend and updating the random picker component to be service-aware.
+
+### Acceptance Criteria
+```gherkin
+Feature: Context-aware random picker
+
+  Scenario: Random pick from Records page
+    Given the user is on the Records collection page
+    When they click the Pick button
+    Then a random record from the Discogs collection is displayed
+
+  Scenario: Random pick from Books page
+    Given the user is on the Books page
+    When they click the Pick button
+    Then a random book from the Hardcover collection is displayed
+
+  Scenario: Random pick from a non-service page
+    Given the user is on the Statistics, Maintenance, or Store Finder page
+    When they click the Pick button
+    Then a random item is picked from any configured collection
+
+  Scenario: Random book endpoint exists
+    Given the Hardcover collection contains books
+    When GET /api/v1/books/random is called
+    Then a randomly selected book is returned with full detail
+
+  Scenario: Random book with no books in collection
+    Given the Hardcover collection is empty
+    When GET /api/v1/books/random is called
+    Then the response is HTTP 404 Not Found
+
+  Scenario: Random pick only considers configured services
+    Given only Discogs is configured (no Hardcover token)
+    When the user clicks Pick from a non-service page
+    Then a random record is picked (books are not considered)
+
+  Scenario: Pick button hidden when no services configured
+    Given no external API tokens are configured
+    Then the Pick button is not shown in the toolbar
+```
