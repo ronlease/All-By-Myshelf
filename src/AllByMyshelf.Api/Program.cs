@@ -4,8 +4,10 @@ using AllByMyshelf.Api.Infrastructure.ExternalApis;
 using AllByMyshelf.Api.Repositories;
 using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +72,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Audience = builder.Configuration["Auth0:Audience"];
     });
 
+// ── Health checks ──────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
@@ -90,6 +95,29 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "Personal collection dashboard API"
     });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme",
+        Scheme = "bearer",
+        Type = SecuritySchemeType.Http
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 // ── Build & middleware ────────────────────────────────────────────────────────
@@ -109,6 +137,7 @@ app.UseCors("AllowAngularDev");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapHealthChecks("/health");
+app.MapControllers().RequireAuthorization();
 
 app.Run();

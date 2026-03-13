@@ -1,6 +1,24 @@
-@AllByMyshelf.Api_HostAddress = http://localhost:5187
+@AllByMyshelf.Api_HostAddress = https://localhost:7208
+@token = PASTE_TOKEN_HERE
 
-GET {{AllByMyshelf.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+GET {{AllByMyshelf.Api_HostAddress}}/health
 
 ###
+
+GET {{AllByMyshelf.Api_HostAddress}}/api/v1/releases
+Authorization: Bearer {{token}}
+
+###
+
+GET {{AllByMyshelf.Api_HostAddress}}/api/v1/books
+Authorization: Bearer {{token}}
+
+###
+
+GET {{AllByMyshelf.Api_HostAddress}}/api/v1/sync/status
+Authorization: Bearer {{token}}
+
+###
+
+GET {{AllByMyshelf.Api_HostAddress}}/api/v1/statistics/collection-value
+Authorization: Bearer {{token}}

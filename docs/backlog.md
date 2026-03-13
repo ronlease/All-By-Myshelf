@@ -1253,7 +1253,7 @@ Feature: Format emoji icons
 
 ## [ABM-026] GitHub Workflow Audit and Hardening
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
