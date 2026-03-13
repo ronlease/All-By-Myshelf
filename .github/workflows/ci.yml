@@ -165,6 +165,71 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
+  # ── Angular: lint ─────────────────────────────────────────────────────────
+  angular-lint:
+    name: Angular Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/AllByMyshelf.Web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx ng lint
+
+  # ── Angular: unit tests ────────────────────────────────────────────────────
+  angular-test:
+    name: Angular Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/AllByMyshelf.Web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create environment files
+        run: |
+          cp src/environments/environment.template.ts src/environments/environment.ts
+          cp src/environments/environment.template.ts src/environments/environment.prod.ts
+
+      - name: Run unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-coverage
+          path: src/AllByMyshelf.Web/coverage/
+          retention-days: 7
+
   # ── Secret scanning via Gitleaks ──────────────────────────────────────────
   secret-scan:
     name: Secret Scan

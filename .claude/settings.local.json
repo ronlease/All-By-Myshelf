@@ -19,7 +19,8 @@
       "Bash(gh pr:*)",
       "Bash(git stash:*)",
       "Bash(git checkout:*)",
-      "Bash(dotnet format:*)"
+      "Bash(dotnet format:*)",
+      "Bash(npx ng:*)"
     ]
   }
 }

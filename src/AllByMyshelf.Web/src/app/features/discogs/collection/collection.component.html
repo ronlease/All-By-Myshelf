@@ -108,7 +108,7 @@
 
       <ng-container matColumnDef="artist">
         <th mat-header-cell *matHeaderCellDef>
-          <div class="col-header-row" (click)="$event.stopPropagation()">
+          <div class="col-header-row" tabindex="0" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <span [class.filter-active]="hasActiveFilter('artist')">Artist</span>
             <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
               <mat-select multiple panelClass="col-filter-panel" [value]="artistFilter()" (selectionChange)="onColumnFilterChange('artist', $event.value)">
@@ -130,7 +130,7 @@
 
       <ng-container matColumnDef="genre">
         <th mat-header-cell *matHeaderCellDef>
-          <div class="col-header-row" (click)="$event.stopPropagation()">
+          <div class="col-header-row" tabindex="0" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <span [class.filter-active]="hasActiveFilter('genre')">Genre</span>
             <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
               <mat-select multiple panelClass="col-filter-panel" [value]="genreFilter()" (selectionChange)="onColumnFilterChange('genre', $event.value)">
@@ -147,7 +147,7 @@
 
       <ng-container matColumnDef="year">
         <th mat-header-cell *matHeaderCellDef>
-          <div class="col-header-row" (click)="$event.stopPropagation()">
+          <div class="col-header-row" tabindex="0" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <span [class.filter-active]="hasActiveFilter('year')">Year</span>
             <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
               <mat-select multiple panelClass="col-filter-panel" [value]="yearFilter()" (selectionChange)="onColumnFilterChange('year', $event.value)">
@@ -164,7 +164,7 @@
 
       <ng-container matColumnDef="format">
         <th mat-header-cell *matHeaderCellDef>
-          <div class="col-header-row" (click)="$event.stopPropagation()">
+          <div class="col-header-row" tabindex="0" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <span [class.filter-active]="hasActiveFilter('format')">Format</span>
             <mat-form-field class="col-filter-field" appearance="outline" subscriptSizing="dynamic">
               <mat-select multiple panelClass="col-filter-panel" [value]="formatFilter()" (selectionChange)="onColumnFilterChange('format', $event.value)">
