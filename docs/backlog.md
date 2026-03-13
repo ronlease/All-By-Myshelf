@@ -2397,3 +2397,59 @@ Feature: Global sync progress indicator
     Then navigation works normally
     And the progress indicator remains visible but unobtrusive
 ```
+
+---
+
+## [ABM-038] BoardGameGeek Collection Integration
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+I want to see my board game collection from BoardGameGeek alongside my records (Discogs) and books (Hardcover) in a single unified dashboard. BoardGameGeek is the primary platform I use to track my board games, and having to visit a separate site to view that collection breaks the "all by myshelf" experience. By integrating with the BGG XML API, I can have a complete view of all my collections in one place.
+
+### Acceptance Criteria
+```gherkin
+Feature: BoardGameGeek collection integration
+
+  Scenario: Configure BGG username
+    Given I have a BoardGameGeek account with username "myusername"
+    When I configure my BGG username in the application settings
+    Then the application stores the username securely
+    And the username is available to the BGG sync service
+
+  Scenario: Sync board game collection from BoardGameGeek
+    Given my BGG username has been configured
+    And my BGG collection contains board games
+    When I trigger a BGG collection sync
+    Then the sync runs in the background
+    And I can see sync progress
+    And board games are imported into the local database
+
+  Scenario: View board games on the dashboard
+    Given my BGG collection has been synced
+    When I navigate to the Board Games page
+    Then I see a paginated list of my board games
+    And each game displays its name, year published, and thumbnail image
+    And I can sort and filter the list
+
+  Scenario: Board game detail view
+    Given my BGG collection has been synced
+    When I click on a board game in the list
+    Then I see the detail view for that game
+    And I see game information including player count, play time, and complexity rating
+
+  Scenario: BGG API is unavailable
+    Given my BGG username has been configured
+    When I trigger a sync
+    And the BGG API is unavailable
+    Then the sync fails gracefully
+    And I see an error message indicating the API is unavailable
+    And my existing local data is preserved
+
+  Scenario: BGG username is not configured
+    Given my BGG username has NOT been configured
+    When I navigate to the Board Games page
+    Then I see a message indicating that BGG integration needs to be configured
+    And I am prompted to enter my BGG username
+```
