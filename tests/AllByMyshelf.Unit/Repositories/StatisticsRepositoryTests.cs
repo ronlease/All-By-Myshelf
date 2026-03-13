@@ -28,9 +28,9 @@
 //   And IncludedCount is 0
 //   And ExcludedCount is 0
 
+using AllByMyshelf.Api.Features.Statistics;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 

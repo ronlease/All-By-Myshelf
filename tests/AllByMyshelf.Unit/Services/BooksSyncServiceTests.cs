@@ -78,11 +78,9 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using AllByMyshelf.Api.Configuration;
-using AllByMyshelf.Api.Infrastructure.ExternalApis;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Repositories;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

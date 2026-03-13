@@ -43,9 +43,9 @@
 // Note: Filter tests (author, genre, title, year) require PostgreSQL ILike function
 // and are covered by integration tests in BooksEndpointTests.cs
 
+using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 

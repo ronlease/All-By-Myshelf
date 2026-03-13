@@ -32,9 +32,11 @@
 
 using System.Net;
 using System.Net.Http.Json;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Config;
+using AllByMyshelf.Api.Features.Discogs;
+using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Infrastructure.Data;
-using AllByMyshelf.Api.Models.DTOs;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;

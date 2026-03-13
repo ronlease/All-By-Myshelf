@@ -37,8 +37,7 @@
 
 using System.Net;
 using System.Text.Json;
-using AllByMyshelf.Api.Configuration;
-using AllByMyshelf.Api.Infrastructure.ExternalApis;
+using AllByMyshelf.Api.Features.Hardcover;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

@@ -2523,7 +2523,7 @@ Feature: Configuration & settings page
 
 ## [ABM-040] Sync Dropdown Button with Multi-Service Support
 
-**Status:** Backlog
+**Status:** Superseded by ABM-046
 **Priority:** Medium
 
 ### Business Problem
@@ -2583,6 +2583,8 @@ Feature: Sync dropdown button with multi-service support
 ```
 
 Note: This item depends on the Configuration & Settings Page backlog item (for dynamic service detection based on configured tokens). The dropdown options are driven by the existing GET /api/v1/config/features endpoint.
+
+**Superseded:** This item has been folded into ABM-046 (Navigation Redesign — Side Drawer with Integrated Sync), which consolidates both the nav redesign and sync consolidation into a single cohesive solution.
 
 ---
 
@@ -2717,3 +2719,178 @@ Feature: Maintenance page incomplete filter fix
     When I view the maintenance page
     Then the release is NOT listed as incomplete
 ```
+
+---
+
+## [ABM-044] Audit Dependencies and Remove Unused Packages
+
+**Status:** Done
+**Priority:** Low
+
+### Business Problem
+As the project has evolved, dependencies may have been added that are no longer needed, or transitive dependencies may have been pulled in unnecessarily. Unused packages increase build times, bundle sizes, and attack surface. A full audit of both backend (.NET NuGet packages) and frontend (npm packages) dependencies should verify that every dependency is actively used and required. Any unused or redundant packages should be removed.
+
+### Acceptance Criteria
+```gherkin
+Feature: Dependency audit
+
+  Scenario: All NuGet packages are verified as required
+    Given the API project references NuGet packages
+    When each package is reviewed
+    Then every package has at least one direct usage in the codebase
+    And any unused packages are removed from the .csproj files
+
+  Scenario: All npm packages are verified as required
+    Given the Angular project references npm packages in package.json
+    When each package is reviewed
+    Then every package has at least one direct usage in the codebase
+    And any unused packages are removed from package.json
+
+  Scenario: Test project dependencies are verified
+    Given the unit and integration test projects reference NuGet packages
+    When each package is reviewed
+    Then every package has at least one direct usage in the test code
+    And any unused packages are removed
+
+  Scenario: No build or runtime regressions after cleanup
+    Given unused dependencies have been removed
+    When the solution is built and all tests are run
+    Then the build succeeds with no errors
+    And all existing tests pass
+
+  Scenario: Bundle size is reviewed after frontend cleanup
+    Given unused npm packages have been removed
+    When the Angular application is built for production
+    Then the output bundle size is equal to or smaller than before the audit
+```
+
+---
+
+## [ABM-045] Refactor Backend to Vertical Slice Architecture
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The backend is currently organized by layer (Controllers/, Services/, Repositories/, Models/), which requires jumping across 5+ folders to understand or modify a single feature. As new integrations are added (BoardGameGeek, future services), this becomes increasingly painful. The Angular frontend already follows feature-based organization (features/discogs/, features/hardcover/), so the backend should mirror this structure. Reorganizing by domain/feature (vertical slices) keeps all code for a given feature colocated, making it faster to navigate, easier to reason about, and simpler to add new integrations.
+
+### Acceptance Criteria
+```gherkin
+Feature: Vertical slice architecture refactor
+
+  Scenario: Discogs feature is self-contained
+    Given the refactor is complete
+    Then all Discogs-related code (controller, service, repository, sync service, DTOs, external client) lives under a single Discogs feature folder
+    And no Discogs-specific code exists outside that folder
+
+  Scenario: Hardcover feature is self-contained
+    Given the refactor is complete
+    Then all Hardcover-related code (controller, service, repository, sync service, DTOs, external client) lives under a single Hardcover feature folder
+    And no Hardcover-specific code exists outside that folder
+
+  Scenario: Statistics feature is self-contained
+    Given the refactor is complete
+    Then all Statistics-related code (controller, service, repository, DTOs) lives under a single Statistics feature folder
+
+  Scenario: Shared infrastructure remains in a common location
+    Given some code is cross-cutting (DbContext, entity configurations, auth middleware, config)
+    Then shared infrastructure lives in a clearly named Infrastructure or Common folder
+    And features reference shared infrastructure but not each other
+
+  Scenario: Adding a new integration is straightforward
+    Given a new integration (e.g. BoardGameGeek) needs to be added
+    When a developer creates a new feature folder
+    Then all code for that integration can be built within that single folder
+    And no existing feature folders need modification
+
+  Scenario: Frontend and backend mirror each other
+    Given the refactor is complete
+    Then the backend feature folder structure mirrors the Angular frontend's features/ structure
+    And a developer can navigate both layers using the same mental model
+
+  Scenario: No functional regressions
+    Given the refactor only moves and renames files
+    When the solution is built and all tests are run
+    Then the build succeeds
+    And all existing tests pass
+    And all API endpoints behave identically
+```
+
+---
+
+## [ABM-046] Navigation Redesign — Side Drawer with Integrated Sync
+
+**Status:** Backlog
+**Priority:** Medium
+**Supersedes:** ABM-040
+
+### Business Problem
+The current horizontal toolbar is getting crowded with 6 nav buttons + 2 sync buttons inline. It doesn't scale as more integrations are added (e.g., ABM-038 BoardGameGeek, ABM-039 Settings page). The two separate sync buttons (Records, Books) also don't scale — discussed in ABM-040. This item combines the nav redesign with the sync consolidation from ABM-040.
+
+The solution is to replace the flat toolbar with Angular Material's `mat-sidenav` drawer pattern:
+- A hamburger icon in the toolbar toggles a side drawer
+- All navigation links move into the drawer
+- Sync actions are consolidated into a single section within the drawer, showing only configured services
+- The toolbar retains the app title and hamburger toggle
+- Feature-gated items (Records, Books, Pick, Maintenance) remain conditionally visible based on configured API tokens
+
+### Acceptance Criteria
+```gherkin
+Feature: Side drawer navigation with integrated sync
+
+  Scenario: Toolbar shows hamburger menu icon
+    Given the user is on any page
+    When they look at the toolbar
+    Then they see the app title and a hamburger menu icon
+    And no nav buttons are shown inline in the toolbar
+
+  Scenario: Hamburger icon toggles the side drawer
+    Given the drawer is closed
+    When the user clicks the hamburger icon
+    Then the side drawer opens with all navigation links
+
+  Scenario: Drawer shows feature-gated nav items
+    Given both Discogs and Hardcover tokens are configured
+    When the drawer is open
+    Then Records, Books, Pick, Maintenance, Stores, and Statistics links are visible
+
+  Scenario: Drawer hides nav items for unconfigured services
+    Given only the Discogs token is configured
+    When the drawer is open
+    Then Records, Pick, Maintenance, Stores, and Statistics links are visible
+    And the Books link is not visible
+
+  Scenario: Drawer includes sync section
+    Given both Discogs and Hardcover tokens are configured
+    When the drawer is open
+    Then a "Sync" section shows "Sync Records", "Sync Books", and "Sync All" options
+
+  Scenario: Sync section shows only configured services
+    Given only the Discogs token is configured
+    When the drawer is open
+    Then the Sync section shows only "Sync Records"
+    And "Sync Books" and "Sync All" are not shown
+
+  Scenario: Sync All triggers all configured services
+    Given both Discogs and Hardcover are configured
+    When the user clicks "Sync All"
+    Then both Discogs and Hardcover syncs are triggered concurrently
+
+  Scenario: Sync progress shown in drawer
+    Given a sync is in progress
+    When the drawer is open
+    Then the syncing service shows a spinner and progress label
+
+  Scenario: Clicking a nav link navigates and closes drawer
+    Given the drawer is open
+    When the user clicks a nav link
+    Then they are navigated to the selected page
+    And the drawer closes
+
+  Scenario: Active page is highlighted in drawer
+    Given the user is on the Books page
+    When the drawer is open
+    Then the Books link is visually highlighted as active
+```
+
+Note: This item supersedes ABM-040 (Sync Dropdown Button). All sync consolidation requirements from ABM-040 are incorporated here. The sync section in the drawer replaces both the separate toolbar sync buttons and the proposed dropdown approach.

@@ -1,8 +1,7 @@
-using AllByMyshelf.Api.Configuration;
+using AllByMyshelf.Api.Features.Discogs;
+using AllByMyshelf.Api.Features.Hardcover;
+using AllByMyshelf.Api.Features.Statistics;
 using AllByMyshelf.Api.Infrastructure.Data;
-using AllByMyshelf.Api.Infrastructure.ExternalApis;
-using AllByMyshelf.Api.Repositories;
-using AllByMyshelf.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +40,6 @@ builder.Services.AddScoped<IBooksService, BooksService>();
 builder.Services.AddScoped<IReleasesRepository, ReleasesRepository>();
 builder.Services.AddScoped<IReleasesService, ReleasesService>();
 builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
-builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // BooksSyncService is a singleton BackgroundService; also exposed as IBooksSyncService.
 builder.Services.AddSingleton<BooksSyncService>();

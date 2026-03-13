@@ -20,9 +20,10 @@
 //   Then the response status code is 200
 
 using System.Net;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Discogs;
+using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Infrastructure.Data;
-using AllByMyshelf.Api.Models.DTOs;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

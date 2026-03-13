@@ -77,8 +77,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AllByMyshelf.Api.Configuration;
-using AllByMyshelf.Api.Infrastructure.ExternalApis;
+using AllByMyshelf.Api.Features.Discogs;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
