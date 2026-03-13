@@ -1,33 +1,24 @@
 @AllByMyshelf.Api_HostAddress = https://localhost:7208
-
-# Paste your Auth0 access token below (get it from the Angular app's Network tab)
 @token = PASTE_TOKEN_HERE
 
-### Health check (no auth required)
 GET {{AllByMyshelf.Api_HostAddress}}/health
 
 ###
 
-### Releases
 GET {{AllByMyshelf.Api_HostAddress}}/api/v1/releases
 Authorization: Bearer {{token}}
 
 ###
 
-### Books
 GET {{AllByMyshelf.Api_HostAddress}}/api/v1/books
 Authorization: Bearer {{token}}
 
 ###
 
-### Sync status
 GET {{AllByMyshelf.Api_HostAddress}}/api/v1/sync/status
 Authorization: Bearer {{token}}
 
 ###
 
-### Collection value
 GET {{AllByMyshelf.Api_HostAddress}}/api/v1/statistics/collection-value
 Authorization: Bearer {{token}}
-
-###
