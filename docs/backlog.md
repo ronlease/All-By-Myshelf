@@ -2671,3 +2671,49 @@ Feature: Context-aware random picker
     Given no external API tokens are configured
     Then the Pick button is not shown in the toolbar
 ```
+
+---
+
+## [ABM-043] Maintenance Page Shows Too Many Records (Overly Aggressive Incomplete Filter)
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+The maintenance page is meant to surface records with genuinely incomplete data that the user should fix on Discogs, but it currently lists nearly every record. The root cause is that the "incomplete" filter checks for null on six fields: CoverImageUrl, Genre, HighestPrice, LowestPrice, MedianPrice, and Year. Since marketplace pricing data (HighestPrice, LowestPrice, MedianPrice) is frequently unavailable from Discogs — even for records with otherwise complete data — almost every record matches the filter. Pricing availability is outside the user's control, so it should not flag a record as needing attention. The filter should only consider fields the user can actually fix on Discogs: Genre, Year, and CoverImageUrl. Pricing fields should be excluded from the incomplete check (though they can still appear as informational "missing" chips if desired).
+
+### Acceptance Criteria
+```gherkin
+Feature: Maintenance page incomplete filter fix
+
+  Scenario: Record with complete user-editable fields is not shown
+    Given a release has Genre, Year, and CoverImageUrl populated
+    And HighestPrice, LowestPrice, and MedianPrice are null
+    When I view the maintenance page
+    Then the release is NOT listed as incomplete
+
+  Scenario: Record missing Genre is shown
+    Given a release has null Genre
+    When I view the maintenance page
+    Then the release is listed with "Genre" in its missing fields
+
+  Scenario: Record missing Year is shown
+    Given a release has null Year
+    When I view the maintenance page
+    Then the release is listed with "Year" in its missing fields
+
+  Scenario: Record missing CoverImageUrl is shown
+    Given a release has null CoverImageUrl
+    When I view the maintenance page
+    Then the release is listed with "Cover Art" in its missing fields
+
+  Scenario: All records have user-editable fields complete
+    Given all releases have Genre, Year, and CoverImageUrl populated
+    When I view the maintenance page
+    Then the empty state message "All records have complete data." is shown
+
+  Scenario: Missing pricing is shown as informational only
+    Given a release has null pricing fields but Genre, Year, and CoverImageUrl are populated
+    When I view the maintenance page
+    Then the release is NOT listed as incomplete
+```
