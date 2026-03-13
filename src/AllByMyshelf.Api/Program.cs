@@ -1,6 +1,7 @@
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Features.Statistics;
+using AllByMyshelf.Api.Infrastructure.Configuration;
 using AllByMyshelf.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Database-backed configuration ─────────────────────────────────────────
+// Add DB configuration provider LAST so database values override user-secrets
+((IConfigurationBuilder)builder.Configuration).Add(new DbConfigurationSource(
+    builder.Configuration.GetConnectionString("Default")!));
+builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 
 // ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AllByMyshelfDbContext>(options =>

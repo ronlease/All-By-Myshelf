@@ -641,12 +641,13 @@ public class BooksSyncServiceTests
         // Register HardcoverClient with the mocked IHttpClientFactory
         services.AddScoped<HardcoverClient>(sp =>
         {
-            var options = Options.Create(new HardcoverOptions
+            var optionsSnapshot = new Mock<IOptionsSnapshot<HardcoverOptions>>();
+            optionsSnapshot.Setup(o => o.Value).Returns(new HardcoverOptions
             {
                 ApiToken = "test-token"
             });
             var logger = NullLogger<HardcoverClient>.Instance;
-            return new HardcoverClient(httpClientFactory, options, logger);
+            return new HardcoverClient(httpClientFactory, optionsSnapshot.Object, logger);
         });
 
         // Register the repository

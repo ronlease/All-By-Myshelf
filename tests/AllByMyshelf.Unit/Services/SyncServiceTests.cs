@@ -496,13 +496,14 @@ public class SyncServiceTests
             {
                 BaseAddress = new Uri("https://api.discogs.com")
             };
-            var options = Options.Create(new DiscogsOptions
+            var optionsSnapshot = new Mock<IOptionsSnapshot<DiscogsOptions>>();
+            optionsSnapshot.Setup(o => o.Value).Returns(new DiscogsOptions
             {
                 PersonalAccessToken = "test-token",
                 Username = "test-user"
             });
             var logger = NullLogger<DiscogsClient>.Instance;
-            return new DiscogsClient(httpClient, options, logger);
+            return new DiscogsClient(httpClient, optionsSnapshot.Object, logger);
         });
 
         // Register the repository

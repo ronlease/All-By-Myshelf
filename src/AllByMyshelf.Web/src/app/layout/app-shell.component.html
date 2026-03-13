@@ -25,6 +25,9 @@
   <button mat-raised-button routerLink="/statistics" routerLinkActive="active-link" style="margin-right: 8px;">
     📊 Statistics
   </button>
+  <button mat-icon-button routerLink="/settings" routerLinkActive="active-link" matTooltip="Settings" style="margin-right: 8px;">
+    <mat-icon>settings</mat-icon>
+  </button>
   @if (features()?.discogsEnabled) {
     <button mat-raised-button color="accent" [disabled]="syncState.discogsSyncing()" (click)="syncState.startDiscogsSync()">
       @if (syncState.discogsSyncing()) {

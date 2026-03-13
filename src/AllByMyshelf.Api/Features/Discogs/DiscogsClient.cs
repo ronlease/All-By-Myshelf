@@ -8,7 +8,7 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// Typed HTTP client for the Discogs API.
 /// Handles authentication, pagination, and rate-limit back-off.
 /// </summary>
-public class DiscogsClient(HttpClient httpClient, IOptions<DiscogsOptions> options, ILogger<DiscogsClient> logger)
+public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOptions> options, ILogger<DiscogsClient> logger)
 {
     private readonly DiscogsOptions _options = options.Value;
 

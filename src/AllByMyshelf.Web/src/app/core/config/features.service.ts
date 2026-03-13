@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, ReplaySubject, shareReplay, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface FeaturesDto {
@@ -13,11 +13,24 @@ export class FeaturesService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
 
-  private readonly features$: Observable<FeaturesDto> = this.http
-    .get<FeaturesDto>(`${this.baseUrl}/api/v1/config/features`)
-    .pipe(shareReplay(1));
+  private readonly refreshTrigger$ = new ReplaySubject<void>(1);
+  private readonly features$: Observable<FeaturesDto> = this.refreshTrigger$.pipe(
+    switchMap(() =>
+      this.http
+        .get<FeaturesDto>(`${this.baseUrl}/api/v1/config/features`)
+    ),
+    shareReplay(1),
+  );
+
+  constructor() {
+    this.refreshTrigger$.next();
+  }
 
   getFeatures(): Observable<FeaturesDto> {
     return this.features$;
+  }
+
+  refresh(): void {
+    this.refreshTrigger$.next();
   }
 }

@@ -58,14 +58,15 @@ public class HardcoverClientTests
             .Setup(f => f.CreateClient("Hardcover"))
             .Returns(new HttpClient(handler));
 
-        var options = Options.Create(new HardcoverOptions
+        var optionsSnapshot = new Mock<IOptionsSnapshot<HardcoverOptions>>();
+        optionsSnapshot.Setup(o => o.Value).Returns(new HardcoverOptions
         {
             ApiToken = apiToken
         });
 
         return new HardcoverClient(
             mockFactory.Object,
-            options,
+            optionsSnapshot.Object,
             NullLogger<HardcoverClient>.Instance);
     }
 

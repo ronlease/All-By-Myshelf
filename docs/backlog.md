@@ -2462,7 +2462,9 @@ Feature: BoardGameGeek collection integration
 **Priority:** High
 
 ### Business Problem
-External API tokens (Discogs PAT, Discogs username, Hardcover API token, and future integrations like BoardGameGeek) are currently stored via `dotnet user-secrets`, which requires CLI access and makes the app harder to set up. Moving these to a database-backed configuration page lets me manage tokens through the UI. All sensitive values must be encrypted at rest using AES-256-GCM with a master key sourced from an environment variable (or AWS Secrets Manager in the future). Auth0 settings remain in dotnet user-secrets since they are required for the app to start. Additionally, the app currently follows the OS color scheme preference with no user override. A dark mode setting (Light / Dark / OS default) should be part of this configuration area.
+External API tokens (Discogs PAT, Discogs username, Hardcover API token, and future integrations like BoardGameGeek) are currently stored via `dotnet user-secrets`, which requires CLI access and makes the app harder to set up. Moving these to a database-backed configuration page lets me manage tokens through the UI. Auth0 settings remain in dotnet user-secrets since they are required for the app to start. Additionally, the app currently follows the OS color scheme preference with no user override. A dark mode setting (Light / Dark / OS default) should be part of this configuration area.
+
+**Note:** For this single-user application, tokens may be stored as plaintext in the database since the database is local and access-controlled. If the application is ever hosted publicly as a multi-user SaaS, encryption at rest (AES-256-GCM) becomes mandatory. This requirement is tracked in `docs/backlog-public-hosting.md` as [PUB-001].
 
 ### Acceptance Criteria
 ```gherkin
@@ -2478,8 +2480,7 @@ Feature: Configuration & settings page
   Scenario: User saves an API token
     Given the user enters a new Discogs personal access token
     When they click Save
-    Then the token is encrypted with AES-256-GCM before being stored in the database
-    And the encryption master key is sourced from an environment variable
+    Then the token is stored in the database
     And a success confirmation is shown
 
   Scenario: User updates the theme preference
@@ -2493,16 +2494,16 @@ Feature: Configuration & settings page
     When they click Save
     Then the application follows the operating system's color scheme preference
 
-  Scenario: Tokens are never exposed in plaintext
-    Given encrypted tokens are stored in the database
+  Scenario: Tokens are masked in the UI
+    Given tokens are stored in the database
     When the settings page loads
     Then token fields display masked values (e.g., "••••••••abc")
-    And the full plaintext token is never sent to the frontend
+    And the full token value is never sent to the frontend
 
   Scenario: Application reads tokens from the database at runtime
     Given tokens have been saved via the settings page
     When a sync operation is triggered
-    Then the application decrypts the token from the database using the master key
+    Then the application retrieves the token from the database
     And uses it to authenticate with the external API
 
   Scenario: Fallback to dotnet user-secrets when no database token exists
@@ -2894,3 +2895,46 @@ Feature: Side drawer navigation with integrated sync
 ```
 
 Note: This item supersedes ABM-040 (Sync Dropdown Button). All sync consolidation requirements from ABM-040 are incorporated here. The sync section in the drawer replaces both the separate toolbar sync buttons and the proposed dropdown approach.
+
+---
+
+## [ABM-047] Context-Aware Local Store Finder
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The current "Locate Local Store" feature (ABM-013) always searches for record stores regardless of which collection I am viewing. When I am browsing my Books collection, I want the store finder to search for local bookstores instead of record stores. Making the feature context-aware ensures the results are relevant to whatever collection type I am currently viewing.
+
+### Acceptance Criteria
+```gherkin
+Feature: Context-aware local store finder
+
+  Scenario: Store finder searches for record stores when viewing Records
+    Given I am on the Records collection page
+    When I open the store finder
+    Then the search queries OpenStreetMap for shop=music
+    And the results display local record stores
+
+  Scenario: Store finder searches for bookstores when viewing Books
+    Given I am on the Books collection page
+    When I open the store finder
+    Then the search queries OpenStreetMap for shop=books
+    And the results display local bookstores
+
+  Scenario: Store finder label reflects current collection context
+    Given I am on the Records collection page
+    When I view the store finder UI
+    Then the heading or label indicates "Find Local Record Stores"
+
+  Scenario: Store finder label updates for Books context
+    Given I am on the Books collection page
+    When I view the store finder UI
+    Then the heading or label indicates "Find Local Bookstores"
+
+  Scenario: Store finder accessed from non-collection page uses default
+    Given I am on a page not associated with a specific collection (e.g., Statistics)
+    When I open the store finder
+    Then the search defaults to record stores (shop=music)
+    And the label indicates "Find Local Record Stores"
+```
