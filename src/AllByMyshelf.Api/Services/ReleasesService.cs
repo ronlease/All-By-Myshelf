@@ -11,6 +11,29 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
     private const int MaxPageSize = 10000;
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<MaintenanceReleaseDto>> GetIncompleteReleasesAsync(CancellationToken cancellationToken)
+    {
+        var releases = await repository.GetIncompleteReleasesAsync(cancellationToken);
+        return releases.Select(r =>
+        {
+            var missing = new List<string>();
+            if (r.CoverImageUrl is null) missing.Add("Cover Art");
+            if (r.Genre is null) missing.Add("Genre");
+            if (r.HighestPrice is null || r.LowestPrice is null || r.MedianPrice is null) missing.Add("Pricing");
+            if (r.Year is null) missing.Add("Year");
+            return new MaintenanceReleaseDto
+            {
+                Artist = r.Artist,
+                DiscogsId = r.DiscogsId,
+                Id = r.Id,
+                MissingFields = missing,
+                ThumbnailUrl = r.ThumbnailUrl,
+                Title = r.Title,
+            };
+        }).ToList();
+    }
+
+    /// <inheritdoc/>
     public async Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var release = await repository.GetByIdAsync(id, cancellationToken);
@@ -53,6 +76,22 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Title = release.Title,
             Year = release.Year,
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<ReleaseDto>> GetRecentlyAddedAsync(CancellationToken cancellationToken)
+    {
+        var releases = await repository.GetRecentlyAddedAsync(10, 30, cancellationToken);
+        return releases.Select(r => new ReleaseDto
+        {
+            Artist = r.Artist,
+            Format = r.Format,
+            Genre = r.Genre,
+            Id = r.Id,
+            ThumbnailUrl = r.ThumbnailUrl,
+            Title = r.Title,
+            Year = r.Year,
+        }).ToList();
     }
 
     /// <inheritdoc/>

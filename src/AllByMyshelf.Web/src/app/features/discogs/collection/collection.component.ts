@@ -1,6 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FeaturesDto, FeaturesService } from '../../../core/config/features.service';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,10 +13,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { HttpErrorResponse } from '@angular/common/http';
-import { DiscogsService, ReleaseDto, SyncProgressDto } from '../discogs.service';
+import { Subscription } from 'rxjs';
+import { DiscogsService, ReleaseDto } from '../discogs.service';
 import { FormatIconPipe } from '../format-icon.pipe';
+import { SyncStateService } from '../../../core/sync/sync-state.service';
 
 @Component({
   selector: 'app-collection',
@@ -25,30 +24,27 @@ import { FormatIconPipe } from '../format-icon.pipe';
   imports: [
     CommonModule,
     FormatIconPipe,
-    MatIconModule,
     FormsModule,
     MatButtonModule,
     MatCardModule,
     MatExpansionModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSnackBarModule,
     MatTableModule,
-    MatToolbarModule,
     RouterModule,
   ],
   templateUrl: './collection.component.html',
 })
-export class CollectionComponent implements OnInit {
+export class CollectionComponent implements OnInit, OnDestroy {
   allReleases = signal<ReleaseDto[]>([]);
   artistFilter = signal<string[]>([]);
   currentPage = signal(1);
   private readonly discogsService = inject(DiscogsService);
-  features = signal<FeaturesDto | null>(null);
-  private readonly featuresService = inject(FeaturesService);
   readonly displayedColumns = ['thumbnail', 'artist', 'title', 'genre', 'year', 'format'];
   expandedGroups = signal<Set<string>>(new Set());
   formatFilter = signal<string[]>([]);
@@ -64,38 +60,16 @@ export class CollectionComponent implements OnInit {
   groupByField = signal('');
   loading = signal(true);
   readonly pageSize = 20;
+  recentReleases = signal<ReleaseDto[]>([]);
   private readonly router = inject(Router);
-  searchTerm = signal('');
-  private pauseStartTime = 0;
-  private pauseTotalSeconds = 0;
   private searchTimer?: ReturnType<typeof setTimeout>;
+  searchTerm = signal('');
   private readonly snackBar = inject(MatSnackBar);
-  syncProgress = signal<SyncProgressDto | null>(null);
-  private syncTimer?: ReturnType<typeof setTimeout>;
-  syncing = signal(false);
+  private subscription?: Subscription;
+  private readonly syncState = inject(SyncStateService);
   yearFilter = signal<string[]>([]);
 
   // ── Computed ────────────────────────────────────────────────────────────────
-
-  get syncStatusLabel(): string {
-    const p = this.syncProgress();
-    if (!p) return 'Syncing...';
-    switch (p.status) {
-      case 'pausing': {
-        const elapsed = Math.floor((Date.now() - this.pauseStartTime) / 1000);
-        const remaining = Math.max(0, this.pauseTotalSeconds - Math.floor(elapsed / 5) * 5);
-        return `Pausing ${remaining}s (rate limit)`;
-      }
-      case 'resuming':
-        return 'Resuming…';
-      case 'saving':
-        return 'Saving…';
-      default:
-        return p.total > 0
-          ? `Syncing ${p.current} of ${p.total}…`
-          : 'Syncing…';
-    }
-  }
 
   get filteredReleases(): ReleaseDto[] {
     let releases = this.allReleases();
@@ -200,21 +174,31 @@ export class CollectionComponent implements OnInit {
       next: (result) => {
         this.allReleases.set(result.items);
         this.loading.set(false);
-        this.syncing.set(false);
       },
       error: () => {
         this.loading.set(false);
-        this.syncing.set(false);
         this.snackBar.open('Failed to load collection.', 'Dismiss', { duration: 5000 });
       },
     });
   }
 
-  ngOnInit(): void {
-    this.featuresService.getFeatures().subscribe({
-      next: (f) => this.features.set(f),
+  private loadRecentlyAdded(): void {
+    this.discogsService.getRecentlyAdded().subscribe({
+      next: (releases) => this.recentReleases.set(releases),
     });
+  }
+
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+  }
+
+  ngOnInit(): void {
     this.loadAll();
+    this.loadRecentlyAdded();
+    this.subscription = this.syncState.discogsSyncCompleted$.subscribe(() => {
+      this.loadAll();
+      this.loadRecentlyAdded();
+    });
   }
 
   // ── Event handlers ───────────────────────────────────────────────────────────
@@ -254,56 +238,5 @@ export class CollectionComponent implements OnInit {
   onSearchChange(): void {
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.currentPage.set(1), 300);
-  }
-
-  onSyncClick(): void {
-    if (this.syncing()) return;
-    this.syncing.set(true);
-    this.discogsService.triggerSync().subscribe({
-      next: (response) => {
-        if (response.status === 202) {
-          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
-          this.pollSyncStatus();
-        } else {
-          this.syncing.set(false);
-        }
-      },
-      error: (err: HttpErrorResponse) => {
-        this.syncing.set(false);
-        if (err.status === 409) {
-          this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
-        } else if (err.status === 503) {
-          this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
-        } else {
-          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
-        }
-      },
-    });
-  }
-
-  private pollSyncStatus(): void {
-    const poll = () => {
-      this.discogsService.getSyncStatus().subscribe({
-        next: (progress) => {
-          if (progress.status === 'pausing' && this.syncProgress()?.status !== 'pausing') {
-            this.pauseStartTime = Date.now();
-            this.pauseTotalSeconds = progress.retryAfterSeconds ?? 60;
-          }
-          this.syncProgress.set(progress);
-          if (progress.isRunning) {
-            this.syncTimer = setTimeout(poll, 1000);
-          } else {
-            this.syncing.set(false);
-            this.syncProgress.set(null);
-            this.loadAll();
-          }
-        },
-        error: () => {
-          // On error, keep polling — a transient failure shouldn't stop the progress display
-          this.syncTimer = setTimeout(poll, 2000);
-        },
-      });
-    };
-    poll();
   }
 }

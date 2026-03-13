@@ -5,6 +5,9 @@ namespace AllByMyshelf.Api.Models.Entities;
 /// </summary>
 public class Release
 {
+    /// <summary>UTC timestamp of when this release was first added to the local database.</summary>
+    public DateTimeOffset? AddedAt { get; set; }
+
     /// <summary>Artist name as returned by Discogs.</summary>
     public string Artist { get; set; } = string.Empty;
 

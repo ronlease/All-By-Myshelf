@@ -24,6 +24,15 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     /// <returns>A randomly selected release matching the specified criteria.</returns>
     /// <response code="200">Returns a randomly selected release.</response>
     /// <response code="404">No releases match the specified criteria.</response>
+    [HttpGet("maintenance")]
+    [ProducesResponseType(typeof(IReadOnlyList<MaintenanceReleaseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<MaintenanceReleaseDto>>> GetMaintenanceReleases(
+        CancellationToken cancellationToken = default)
+    {
+        var result = await releasesService.GetIncompleteReleasesAsync(cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("random")]
     [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -53,6 +62,15 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     /// <returns>Full release detail including label, country, genre, styles, and notes.</returns>
     /// <response code="200">Returns the release detail.</response>
     /// <response code="404">No release with the specified ID was found.</response>
+    [HttpGet("recent")]
+    [ProducesResponseType(typeof(IReadOnlyList<ReleaseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ReleaseDto>>> GetRecentlyAdded(
+        CancellationToken cancellationToken = default)
+    {
+        var result = await releasesService.GetRecentlyAddedAsync(cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

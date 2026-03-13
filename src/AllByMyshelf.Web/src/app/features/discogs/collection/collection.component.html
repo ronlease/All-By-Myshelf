@@ -1,26 +1,22 @@
-<mat-toolbar color="primary">
-  <span>All By Myshelf</span>
-  <span class="toolbar-spacer"></span>
-  @if (features()?.hardcoverEnabled) {
-    <button mat-raised-button routerLink="/books" style="margin-right: 8px;">
-      📚 Books
-    </button>
-  }
-  <button mat-raised-button routerLink="/pick" style="margin-right: 8px;">
-    🎲 What should I listen to?
-  </button>
-  <button mat-raised-button routerLink="/stores" style="margin-right: 8px;">
-    🏪 Record Stores
-  </button>
-  <button mat-raised-button routerLink="/statistics" style="margin-right: 8px;">
-    📊 Statistics
-  </button>
-  <button mat-raised-button color="accent" [disabled]="syncing()" (click)="onSyncClick()">
-    @if (syncing()) { {{ syncStatusLabel }} } @else { Sync Collection }
-  </button>
-</mat-toolbar>
-
 <div class="page-content">
+  @if (recentReleases().length > 0) {
+    <div class="recently-added">
+      <h3>Recently Added</h3>
+      <div class="recently-added-row">
+        @for (release of recentReleases(); track release.id) {
+          <mat-card class="recent-card mat-elevation-z2" (click)="onRowClick(release)" tabindex="0" (keydown.enter)="onRowClick(release)">
+            @if (release.thumbnailUrl) {
+              <img [src]="release.thumbnailUrl" [alt]="release.title + ' thumbnail'" class="recent-thumbnail" />
+            }
+            <mat-card-content>
+              <div class="recent-title">{{ release.title }}</div>
+              <div class="recent-artist">{{ release.artist }}</div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </div>
+  }
   <div class="collection-controls">
     <mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Search</mat-label>

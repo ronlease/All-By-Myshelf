@@ -41,6 +41,15 @@ export interface SyncProgressDto {
   total: number;
 }
 
+export interface MaintenanceReleaseDto {
+  artist: string;
+  discogsId: number;
+  id: string;
+  missingFields: string[];
+  thumbnailUrl: string | null;
+  title: string;
+}
+
 export interface CollectionFilter {
   artist?: string;
   format?: string;
@@ -63,6 +72,10 @@ export class DiscogsService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
 
+  getIncompleteReleases(): Observable<MaintenanceReleaseDto[]> {
+    return this.http.get<MaintenanceReleaseDto[]>(`${this.baseUrl}/api/v1/releases/maintenance`);
+  }
+
   getCollection(page: number, pageSize: number, filter?: CollectionFilter): Observable<PagedResult<ReleaseDto>> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -76,6 +89,10 @@ export class DiscogsService {
     if (filter?.year) params = params.set('year', filter.year);
 
     return this.http.get<PagedResult<ReleaseDto>>(`${this.baseUrl}/api/v1/releases`, { params });
+  }
+
+  getRecentlyAdded(): Observable<ReleaseDto[]> {
+    return this.http.get<ReleaseDto[]>(`${this.baseUrl}/api/v1/releases/recent`);
   }
 
   getRandomRelease(filter?: RandomReleaseFilter): Observable<ReleaseDetailDto> {

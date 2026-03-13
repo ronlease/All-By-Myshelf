@@ -945,7 +945,7 @@ Feature: Collection value estimate
 
 ## [ABM-021] Recently Added Releases
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1559,7 +1559,7 @@ Feature: API authentication enforcement
 
 ## [ABM-029] Collection Maintenance View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2344,7 +2344,7 @@ Feature: Optional external API integrations
 
 ## [ABM-037] Global Sync Progress Indicator
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem

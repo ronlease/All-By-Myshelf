@@ -45,6 +45,46 @@
 //   Given a release was synced with genre populated
 //   When I request GET /api/v1/releases/{id}
 //   Then the response body includes the detail field with its stored value
+//
+// Feature: Recently added releases          (ABM-021)
+//
+// Scenario: GET /api/v1/releases/recent returns releases added within the last 30 days
+//   Given releases were added at various dates
+//   When I request GET /api/v1/releases/recent
+//   Then the response is HTTP 200 OK
+//   And only releases with AddedAt within the last 30 days are returned
+//   And they are ordered by AddedAt descending (newest first)
+//
+// Scenario: GET /api/v1/releases/recent returns an empty array when no recent releases
+//   Given no releases have been added within the last 30 days
+//   When I request GET /api/v1/releases/recent
+//   Then the response is HTTP 200 OK
+//   And the response body is an empty array
+//
+// Scenario: GET /api/v1/releases/recent returns at most 10 releases
+//   Given more than 10 releases were added within the last 30 days
+//   When I request GET /api/v1/releases/recent
+//   Then the response is HTTP 200 OK
+//   And the response body contains at most 10 releases
+//
+// Feature: Collection maintenance view      (ABM-029)
+//
+// Scenario: GET /api/v1/releases/maintenance returns releases with incomplete data
+//   Given some releases have null Genre, Year, or price fields
+//   When I request GET /api/v1/releases/maintenance
+//   Then the response is HTTP 200 OK
+//   And each result includes the list of missing field names
+//
+// Scenario: GET /api/v1/releases/maintenance returns an empty array when all data is complete
+//   Given all releases have every field populated
+//   When I request GET /api/v1/releases/maintenance
+//   Then the response is HTTP 200 OK
+//   And the response body is an empty array
+//
+// Scenario: GET /api/v1/releases/maintenance does not include complete releases
+//   Given some releases are complete and some are not
+//   When I request GET /api/v1/releases/maintenance
+//   Then only incomplete releases appear in the response
 
 using System.Net;
 using System.Net.Http.Json;
@@ -322,7 +362,176 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         page2.Items.Select(i => i.Title).Should().NotIntersectWith(page1Titles);
     }
 
+    // ── GET /api/v1/releases/recent — recently added ──────────────────────────
+
+    [Fact]
+    public async Task GetRecentlyAdded_ReleasesAddedWithinLast30Days_ReturnsOnlyRecentReleases()
+    {
+        // Arrange
+        var recent = MakeRelease(1, "Artist A", "Recent Album", addedAt: DateTimeOffset.UtcNow.AddDays(-5));
+        var old = MakeRelease(2, "Artist B", "Old Album", addedAt: DateTimeOffset.UtcNow.AddDays(-60));
+        var client = CreateClientWithSeededData(new[] { recent, old });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/recent");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>();
+        body.Should().HaveCount(1);
+        body![0].Artist.Should().Be("Artist A");
+    }
+
+    [Fact]
+    public async Task GetRecentlyAdded_NoRecentReleases_ReturnsEmptyArray()
+    {
+        // Arrange — all releases added more than 30 days ago
+        var old = MakeRelease(1, "Artist", "Old Album", addedAt: DateTimeOffset.UtcNow.AddDays(-60));
+        var client = CreateClientWithSeededData(new[] { old });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/recent");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>();
+        body.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetRecentlyAdded_MoreThan10RecentReleases_ReturnsAtMost10()
+    {
+        // Arrange — 15 releases all added recently
+        var releases = Enumerable.Range(1, 15)
+            .Select(i => MakeRelease(i, $"Artist {i}", $"Album {i}",
+                addedAt: DateTimeOffset.UtcNow.AddDays(-i)))
+            .ToList();
+        var client = CreateClientWithSeededData(releases);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/recent");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>();
+        body.Should().HaveCountLessThanOrEqualTo(10);
+    }
+
+    [Fact]
+    public async Task GetRecentlyAdded_ReturnsNewestFirst()
+    {
+        // Arrange
+        var newest = MakeRelease(1, "Artist A", "Newest", addedAt: DateTimeOffset.UtcNow.AddDays(-1));
+        var middle = MakeRelease(2, "Artist B", "Middle", addedAt: DateTimeOffset.UtcNow.AddDays(-10));
+        var oldest = MakeRelease(3, "Artist C", "Oldest", addedAt: DateTimeOffset.UtcNow.AddDays(-20));
+        var client = CreateClientWithSeededData(new[] { oldest, newest, middle });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/recent");
+        var body = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>();
+
+        // Assert
+        body.Should().HaveCount(3);
+        body![0].Title.Should().Be("Newest");
+        body[1].Title.Should().Be("Middle");
+        body[2].Title.Should().Be("Oldest");
+    }
+
+    // ── GET /api/v1/releases/maintenance — incomplete releases ──────────────
+
+    [Fact]
+    public async Task GetMaintenance_ReleasesWithMissingFields_ReturnsIncompleteWithFieldNames()
+    {
+        // Arrange — release missing Genre and Year
+        var incomplete = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 100,
+            Artist = "Artist",
+            Format = "Vinyl",
+            Genre = null,
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = "Incomplete Album",
+            Year = null
+        };
+        var client = CreateClientWithSeededData(new[] { incomplete });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/maintenance");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<MaintenanceReleaseDto>>();
+        body.Should().HaveCount(1);
+        body![0].MissingFields.Should().Contain("Genre");
+        body[0].MissingFields.Should().Contain("Year");
+        body[0].MissingFields.Should().Contain("Pricing");
+        body[0].MissingFields.Should().Contain("Cover Art");
+    }
+
+    [Fact]
+    public async Task GetMaintenance_AllReleasesComplete_ReturnsEmptyArray()
+    {
+        // Arrange — fully populated release
+        var complete = MakeCompleteRelease(1);
+        var client = CreateClientWithSeededData(new[] { complete });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/maintenance");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<MaintenanceReleaseDto>>();
+        body.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetMaintenance_MixedReleases_ReturnsOnlyIncomplete()
+    {
+        // Arrange
+        var complete = MakeCompleteRelease(1);
+        var incomplete = new Release
+        {
+            Id = Guid.NewGuid(),
+            DiscogsId = 200,
+            Artist = "Incomplete Artist",
+            CoverImageUrl = null,
+            Format = "Vinyl",
+            Genre = "Rock",
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = "Missing Cover",
+            Year = 2020
+        };
+        var client = CreateClientWithSeededData(new[] { complete, incomplete });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/maintenance");
+        var body = await response.Content.ReadFromJsonAsync<List<MaintenanceReleaseDto>>();
+
+        // Assert
+        body.Should().HaveCount(1);
+        body![0].Artist.Should().Be("Incomplete Artist");
+        body[0].MissingFields.Should().Contain("Cover Art");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Release MakeCompleteRelease(int discogsId) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            CoverImageUrl = "https://example.com/cover.jpg",
+            DiscogsId = discogsId,
+            Artist = "Complete Artist",
+            Format = "Vinyl",
+            Genre = "Rock",
+            HighestPrice = 30m,
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            LowestPrice = 10m,
+            MedianPrice = 20m,
+            Title = "Complete Album",
+            Year = 2020
+        };
 
     private static Release MakeDetailedRelease(Guid id, int discogsId) =>
         new()
@@ -338,9 +547,10 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         };
 
     private static Release MakeRelease(int discogsId, string artist, string title, int? year = 2000,
-        string format = "Vinyl") =>
+        string format = "Vinyl", DateTimeOffset? addedAt = null) =>
         new()
         {
+            AddedAt = addedAt,
             Id = Guid.NewGuid(),
             DiscogsId = discogsId,
             Artist = artist,

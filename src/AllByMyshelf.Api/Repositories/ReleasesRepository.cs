@@ -19,6 +19,23 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<Release>> GetIncompleteReleasesAsync(CancellationToken cancellationToken)
+    {
+        return await db.Releases
+            .Where(r =>
+                r.CoverImageUrl == null ||
+                r.Genre == null ||
+                r.HighestPrice == null ||
+                r.LowestPrice == null ||
+                r.MedianPrice == null ||
+                r.Year == null)
+            .OrderBy(r => r.Artist)
+            .ThenBy(r => r.Title)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<(IReadOnlyList<Release> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null)
     {
@@ -64,6 +81,19 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Release>> GetRecentlyAddedAsync(
+        int count, int days, CancellationToken cancellationToken)
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-days);
+        return await db.Releases
+            .Where(r => r.AddedAt != null && r.AddedAt >= cutoff)
+            .OrderByDescending(r => r.AddedAt)
+            .Take(count)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -133,6 +163,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             }
             else
             {
+                release.AddedAt = DateTimeOffset.UtcNow;
                 await db.Releases.AddAsync(release, cancellationToken);
             }
         }
