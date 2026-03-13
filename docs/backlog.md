@@ -2717,3 +2717,47 @@ Feature: Maintenance page incomplete filter fix
     When I view the maintenance page
     Then the release is NOT listed as incomplete
 ```
+
+---
+
+## [ABM-044] Audit Dependencies and Remove Unused Packages
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+As the project has evolved, dependencies may have been added that are no longer needed, or transitive dependencies may have been pulled in unnecessarily. Unused packages increase build times, bundle sizes, and attack surface. A full audit of both backend (.NET NuGet packages) and frontend (npm packages) dependencies should verify that every dependency is actively used and required. Any unused or redundant packages should be removed.
+
+### Acceptance Criteria
+```gherkin
+Feature: Dependency audit
+
+  Scenario: All NuGet packages are verified as required
+    Given the API project references NuGet packages
+    When each package is reviewed
+    Then every package has at least one direct usage in the codebase
+    And any unused packages are removed from the .csproj files
+
+  Scenario: All npm packages are verified as required
+    Given the Angular project references npm packages in package.json
+    When each package is reviewed
+    Then every package has at least one direct usage in the codebase
+    And any unused packages are removed from package.json
+
+  Scenario: Test project dependencies are verified
+    Given the unit and integration test projects reference NuGet packages
+    When each package is reviewed
+    Then every package has at least one direct usage in the test code
+    And any unused packages are removed
+
+  Scenario: No build or runtime regressions after cleanup
+    Given unused dependencies have been removed
+    When the solution is built and all tests are run
+    Then the build succeeds with no errors
+    And all existing tests pass
+
+  Scenario: Bundle size is reviewed after frontend cleanup
+    Given unused npm packages have been removed
+    When the Angular application is built for production
+    Then the output bundle size is equal to or smaller than before the audit
+```
