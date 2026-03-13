@@ -1,0 +1,89 @@
+<div class="page-content">
+  <h2>Settings</h2>
+
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else {
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Appearance</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="section-description">Choose your preferred color theme</p>
+        <mat-button-toggle-group
+          [formControl]="themeControl"
+          (change)="onThemeChange($any($event).value)"
+          aria-label="Theme selection">
+          <mat-button-toggle value="light">
+            <mat-icon>light_mode</mat-icon>
+            Light
+          </mat-button-toggle>
+          <mat-button-toggle value="dark">
+            <mat-icon>dark_mode</mat-icon>
+            Dark
+          </mat-button-toggle>
+          <mat-button-toggle value="os-default">
+            <mat-icon>contrast</mat-icon>
+            OS Default
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>API Integrations</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="section-description">Configure your API tokens for external integrations</p>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Discogs Personal Access Token</mat-label>
+          <input
+            matInput
+            type="password"
+            [formControl]="discogsPersonalAccessTokenControl"
+            [placeholder]="settings()?.discogsPersonalAccessToken || 'Not configured'" />
+          <mat-hint>Required for syncing your Discogs record collection</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Discogs Username</mat-label>
+          <input
+            matInput
+            type="text"
+            [formControl]="discogsUsernameControl"
+            [placeholder]="settings()?.discogsUsername || 'Not configured'" />
+          <mat-hint>Your Discogs username</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Hardcover API Token</mat-label>
+          <input
+            matInput
+            type="password"
+            [formControl]="hardcoverApiTokenControl"
+            [placeholder]="settings()?.hardcoverApiToken || 'Not configured'" />
+          <mat-hint>Required for syncing your Hardcover book collection</mat-hint>
+        </mat-form-field>
+
+        <div class="actions">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="onSaveTokens()"
+            [disabled]="saving()">
+            @if (saving()) {
+              <mat-spinner diameter="20" style="display: inline-block; margin-right: 4px;"></mat-spinner>
+              Saving…
+            } @else {
+              Save
+            }
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

@@ -8,8 +8,8 @@ namespace AllByMyshelf.Api.Features.Config;
 [ApiController]
 [Route("api/v1/config")]
 public class ConfigController(
-    IOptions<DiscogsOptions> discogsOptions,
-    IOptions<HardcoverOptions> hardcoverOptions) : ControllerBase
+    IOptionsSnapshot<DiscogsOptions> discogsOptions,
+    IOptionsSnapshot<HardcoverOptions> hardcoverOptions) : ControllerBase
 {
     private readonly DiscogsOptions _discogs = discogsOptions.Value;
     private readonly HardcoverOptions _hardcover = hardcoverOptions.Value;

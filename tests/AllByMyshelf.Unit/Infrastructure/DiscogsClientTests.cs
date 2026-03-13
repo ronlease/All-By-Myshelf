@@ -81,6 +81,7 @@ using AllByMyshelf.Api.Features.Discogs;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace AllByMyshelf.Unit.Infrastructure;
 
@@ -98,13 +99,14 @@ public class DiscogsClientTests
             BaseAddress = new Uri("https://api.discogs.com")
         };
 
-        var options = Options.Create(new DiscogsOptions
+        var optionsSnapshot = new Mock<IOptionsSnapshot<DiscogsOptions>>();
+        optionsSnapshot.Setup(o => o.Value).Returns(new DiscogsOptions
         {
             PersonalAccessToken = token,
             Username = username
         });
 
-        return new DiscogsClient(httpClient, options, NullLogger<DiscogsClient>.Instance);
+        return new DiscogsClient(httpClient, optionsSnapshot.Object, NullLogger<DiscogsClient>.Instance);
     }
 
     private static StringContent EmptyPage() =>

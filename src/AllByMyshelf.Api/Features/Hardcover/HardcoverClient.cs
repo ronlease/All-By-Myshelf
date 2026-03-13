@@ -10,7 +10,7 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 /// </summary>
 public class HardcoverClient(
     IHttpClientFactory httpClientFactory,
-    IOptions<HardcoverOptions> options,
+    IOptionsSnapshot<HardcoverOptions> options,
     ILogger<HardcoverClient> logger)
 {
     private const string ApiUrl = "https://api.hardcover.app/v1/graphql";

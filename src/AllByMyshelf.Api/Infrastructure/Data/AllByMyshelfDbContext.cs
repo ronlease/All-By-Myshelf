@@ -6,6 +6,8 @@ namespace AllByMyshelf.Api.Infrastructure.Data;
 public class AllByMyshelfDbContext(DbContextOptions<AllByMyshelfDbContext> options)
     : DbContext(options)
 {
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
     public DbSet<Book> Books => Set<Book>();
 
     public DbSet<Release> Releases => Set<Release>();
