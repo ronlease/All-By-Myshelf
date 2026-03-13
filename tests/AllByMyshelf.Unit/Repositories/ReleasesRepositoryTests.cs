@@ -45,9 +45,9 @@
 //   When UpsertCollectionAsync is called
 //   Then the detail field is stored and retrievable via GetByIdAsync
 
+using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Repositories;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 

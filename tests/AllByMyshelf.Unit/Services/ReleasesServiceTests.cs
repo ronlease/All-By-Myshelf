@@ -94,10 +94,9 @@
 //   When the service calls the repository
 //   Then repository.GetPagedAsync is called with filter = null
 
-using AllByMyshelf.Api.Models.DTOs;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Repositories;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Moq;
 

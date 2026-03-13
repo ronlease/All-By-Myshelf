@@ -21,10 +21,11 @@
 
 using System.Net;
 using System.Net.Http.Json;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Discogs;
+using AllByMyshelf.Api.Features.Statistics;
 using AllByMyshelf.Api.Infrastructure.Data;
-using AllByMyshelf.Api.Models.DTOs;
 using AllByMyshelf.Api.Models.Entities;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;

@@ -22,9 +22,9 @@
 //   And the response body explains that the Discogs token is not configured
 
 using System.Net;
+using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Infrastructure.Data;
-using AllByMyshelf.Api.Models.DTOs;
-using AllByMyshelf.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
