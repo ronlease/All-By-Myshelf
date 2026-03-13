@@ -167,7 +167,7 @@ public class ReleasesRepositoryTests : IDisposable
         _db.Releases.AddRange(
             MakeRelease(1, artist: "Coltrane", title: "Ballads"),
             MakeRelease(2, artist: "Coltrane", title: "A Love Supreme"),
-            MakeRelease(3, artist: "Davis",    title: "Kind of Blue")
+            MakeRelease(3, artist: "Davis", title: "Kind of Blue")
         );
         await _db.SaveChangesAsync();
 
