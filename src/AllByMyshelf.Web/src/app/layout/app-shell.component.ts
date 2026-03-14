@@ -35,23 +35,25 @@ export class AppShellComponent implements OnInit {
   readonly syncState = inject(SyncStateService);
   themeIcon = computed(() => {
     const current = this.themeService.theme();
-    if (current === 'light') return 'light_mode';
-    if (current === 'dark') return 'dark_mode';
-    return 'contrast';
+    return current === 'dark' ? 'light_mode' : 'dark_mode';
   });
   readonly themeService = inject(ThemeService);
 
   cycleTheme(): void {
     const current = this.themeService.theme();
-    const nextTheme = current === 'light' ? 'dark' : current === 'dark' ? 'os-default' : 'light';
+    const nextTheme = current === 'dark' ? 'light' : 'dark';
     this.themeService.applyTheme(nextTheme);
   }
 
   ngOnInit(): void {
-    this.themeService.initialize();
+    this.themeService.initialize(this.detectOsTheme());
     this.featuresService.getFeatures().subscribe({
       next: (f) => this.features.set(f),
     });
+  }
+
+  private detectOsTheme(): 'light' | 'dark' {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
   syncAll(): void {
