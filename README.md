@@ -5,12 +5,17 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ## Features
 
 - **Records** — syncs your Discogs vinyl/CD collection; paginated table with search, column filters, grouping, and album art thumbnails
-- **Record detail** — cover art, format, genre, year, and Discogs marketplace pricing (low/median/high)
-- **Random picker** — suggests a random record from your collection, filterable by decade, format, and genre
-- **Record store finder** — locates independent record stores near a US zip code or city using OpenStreetMap
+- **Record detail** — cover art, format, genre, year, Discogs marketplace pricing (low/median/high), personal notes, and star rating
+- **Wantlist** — browse and sync your Discogs wantlist
+- **Duplicates** — detect duplicate releases in your collection
+- **Random picker** — suggests a random record or book, context-aware (defaults to last-viewed collection), filterable by decade, format, and genre
+- **Store finder** — locates independent record stores or bookstores near a US zip code or city using OpenStreetMap, context-aware (records vs books)
 - **Books** — syncs your read books from Hardcover; paginated table with cover thumbnails, author, title, year
 - **Collection value** — estimates total collection value from Discogs marketplace lowest-price data
+- **Maintenance** — maintenance view for collection upkeep
+- **Settings** — configuration page with theme switching
 - **Sync progress** — live progress indicator with rate-limit countdown during Discogs syncs
+- **Side drawer navigation** — all pages accessible from a slide-out drawer
 
 ## Tech Stack
 
@@ -111,9 +116,11 @@ All-By-Myshelf/
       Common/                 # Shared types (PagedResult, SyncStartResult)
       Features/
         Config/               # GET /api/v1/config/features
-        Discogs/              # Releases, sync, Discogs API client
+        Discogs/              # Releases, sync, duplicates, Discogs API client
         Hardcover/            # Books, sync, Hardcover API client
+        Settings/             # User settings (theme)
         Statistics/           # Collection value statistics
+        Wantlist/             # Discogs wantlist sync and browsing
       Infrastructure/
         Data/                 # EF Core DbContext, migrations
       Models/

@@ -47,6 +47,20 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
     }
 
     /// <inheritdoc/>
+    public async Task<Book?> GetRandomAsync(CancellationToken cancellationToken)
+    {
+        var count = await db.Books.CountAsync(cancellationToken);
+        if (count == 0) return null;
+
+        var skip = Random.Shared.Next(0, count);
+        return await db.Books
+            .OrderBy(b => b.Id)
+            .Skip(skip)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<Book> books, CancellationToken cancellationToken)
     {
         var incoming = books.ToList();

@@ -4,44 +4,58 @@
       <mat-spinner></mat-spinner>
     </div>
   } @else {
+    @if (discogsEnabled() && hardcoverEnabled()) {
+      <mat-button-toggle-group [ngModel]="context()" (ngModelChange)="context.set($event); result.set(null)" style="margin-bottom: 16px;">
+        <mat-button-toggle value="records">Records</mat-button-toggle>
+        <mat-button-toggle value="books">Books</mat-button-toggle>
+      </mat-button-toggle-group>
+    }
+
     <mat-card class="mat-elevation-z2" style="margin-bottom: 24px;">
-      <mat-card-header>
-        <mat-card-title>Narrow it down</mat-card-title>
-        <mat-card-subtitle>Leave all filters blank to pick from the full collection.</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content style="padding-top: 16px;">
-        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Format</mat-label>
-            <mat-select [ngModel]="formatFilter()" (ngModelChange)="formatFilter.set($event)">
-              <mat-option value="">Any</mat-option>
-              @for (f of distinctFormats; track f) {
-                <mat-option [value]="f"><mat-icon>{{ f | formatIcon }}</mat-icon> {{ f }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+      @if (context() === 'records') {
+        <mat-card-header>
+          <mat-card-title>Narrow it down</mat-card-title>
+          <mat-card-subtitle>Leave all filters blank to pick from the full collection.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content style="padding-top: 16px;">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Format</mat-label>
+              <mat-select [ngModel]="formatFilter()" (ngModelChange)="formatFilter.set($event)">
+                <mat-option value="">Any</mat-option>
+                @for (f of distinctFormats; track f) {
+                  <mat-option [value]="f"><mat-icon>{{ f | formatIcon }}</mat-icon> {{ f }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Genre</mat-label>
-            <mat-select [ngModel]="genreFilter()" (ngModelChange)="genreFilter.set($event)">
-              <mat-option value="">Any</mat-option>
-              @for (g of distinctGenres; track g) {
-                <mat-option [value]="g">{{ g }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Genre</mat-label>
+              <mat-select [ngModel]="genreFilter()" (ngModelChange)="genreFilter.set($event)">
+                <mat-option value="">Any</mat-option>
+                @for (g of distinctGenres; track g) {
+                  <mat-option [value]="g">{{ g }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Decade</mat-label>
-            <mat-select [ngModel]="decadeFilter()" (ngModelChange)="decadeFilter.set($event)">
-              <mat-option value="">Any</mat-option>
-              @for (d of distinctDecades; track d) {
-                <mat-option [value]="d">{{ d }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </mat-card-content>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Decade</mat-label>
+              <mat-select [ngModel]="decadeFilter()" (ngModelChange)="decadeFilter.set($event)">
+                <mat-option value="">Any</mat-option>
+                @for (d of distinctDecades; track d) {
+                  <mat-option [value]="d">{{ d }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      } @else {
+        <mat-card-header>
+          <mat-card-title>Pick a random book</mat-card-title>
+          <mat-card-subtitle>Get a random book from your collection.</mat-card-subtitle>
+        </mat-card-header>
+      }
       <mat-card-actions>
         <button mat-raised-button color="primary" [disabled]="picking()" (click)="onPickClick()">
           @if (picking()) { Picking… } @else { 🎲 Pick one! }
@@ -55,43 +69,51 @@
       </div>
     }
 
-    @if (result(); as release) {
+    @if (result(); as item) {
       <mat-card class="release-detail-card mat-elevation-z2">
         <div class="release-detail-layout">
-          @if (release.coverImageUrl) {
+          @if (isRelease(item) && item.coverImageUrl) {
             <img
-              [src]="release.coverImageUrl"
-              [alt]="release.title + ' cover art'"
+              [src]="item.coverImageUrl"
+              [alt]="item.title + ' cover art'"
+              class="release-art-image"
+            />
+          } @else if (isBook(item) && item.coverImageUrl) {
+            <img
+              [src]="item.coverImageUrl"
+              [alt]="item.title + ' cover'"
               class="release-art-image"
             />
           } @else {
-            <div class="release-art-placeholder" aria-label="Album art placeholder">
-              <mat-icon class="release-art-icon">album</mat-icon>
+            <div class="release-art-placeholder" [attr.aria-label]="isRelease(item) ? 'Album art placeholder' : 'Book cover placeholder'">
+              <mat-icon class="release-art-icon">{{ isRelease(item) ? 'album' : 'menu_book' }}</mat-icon>
             </div>
           }
 
           <div class="release-detail-content">
             <mat-card-header>
-              <mat-card-title>{{ release.title }}</mat-card-title>
-              <mat-card-subtitle>{{ release.artist }}</mat-card-subtitle>
+              <mat-card-title>{{ item.title }}</mat-card-title>
+              <mat-card-subtitle>{{ isRelease(item) ? item.artist : (item.author ?? 'Unknown Author') }}</mat-card-subtitle>
             </mat-card-header>
 
             <mat-card-content>
               <mat-list>
-                @if (release.year !== null) {
+                @if (item.year !== null) {
                   <mat-list-item>
                     <span matListItemTitle>Year</span>
-                    <span matListItemLine>{{ release.year }}</span>
+                    <span matListItemLine>{{ item.year }}</span>
                   </mat-list-item>
                 }
-                <mat-list-item>
-                  <span matListItemTitle>Format</span>
-                  <span matListItemLine><mat-icon>{{ release.format | formatIcon }}</mat-icon> {{ release.format }}</span>
-                </mat-list-item>
-                @if (release.genre !== null) {
+                @if (isRelease(item)) {
+                  <mat-list-item>
+                    <span matListItemTitle>Format</span>
+                    <span matListItemLine><mat-icon>{{ item.format | formatIcon }}</mat-icon> {{ item.format }}</span>
+                  </mat-list-item>
+                }
+                @if (item.genre !== null) {
                   <mat-list-item>
                     <span matListItemTitle>Genre</span>
-                    <span matListItemLine>{{ release.genre }}</span>
+                    <span matListItemLine>{{ item.genre }}</span>
                   </mat-list-item>
                 }
               </mat-list>
@@ -101,10 +123,12 @@
               <button mat-raised-button color="primary" (click)="onPickClick()">
                 🎲 Pick again!
               </button>
-              <button mat-button (click)="onViewDetailsClick()">
-                <mat-icon>open_in_new</mat-icon>
-                View Details
-              </button>
+              @if (isRelease(item)) {
+                <button mat-button (click)="onViewDetailsClick()">
+                  <mat-icon>open_in_new</mat-icon>
+                  View Details
+                </button>
+              }
             </mat-card-actions>
           </div>
         </div>

@@ -69,6 +69,13 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .HasColumnName("median_price")
             .HasPrecision(10, 2);
 
+        builder.Property(r => r.Notes)
+            .HasColumnName("notes")
+            .HasMaxLength(2000);
+
+        builder.Property(r => r.Rating)
+            .HasColumnName("rating");
+
         builder.Property(r => r.LastSyncedAt)
             .HasColumnName("last_synced_at")
             .IsRequired();

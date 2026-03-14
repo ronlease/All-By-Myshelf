@@ -27,6 +27,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'duplicates',
+        loadComponent: () =>
+          import('./features/discogs/duplicates/duplicates.component').then(
+            (m) => m.DuplicatesComponent,
+          ),
+      },
+      {
         path: 'maintenance',
         loadComponent: () =>
           import('./features/discogs/maintenance/maintenance.component').then(
@@ -66,6 +73,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/store-finder/store-finder.component').then(
             (m) => m.StoreFinderComponent,
+          ),
+      },
+      {
+        path: 'wantlist',
+        loadComponent: () =>
+          import('./features/discogs/wantlist/wantlist.component').then(
+            (m) => m.WantlistComponent,
           ),
       },
     ],

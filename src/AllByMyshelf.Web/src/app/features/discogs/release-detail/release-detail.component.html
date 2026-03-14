@@ -51,23 +51,46 @@
                   <span matListItemLine>{{ release()!.genre }}</span>
                 </mat-list-item>
               }
-              @if (release()!.lowestPrice !== null || release()!.medianPrice !== null || release()!.highestPrice !== null) {
-                <mat-list-item>
-                  <span matListItemTitle>Marketplace Pricing</span>
-                  <span matListItemLine>
-                    @if (release()!.lowestPrice !== null) {
-                      Low: {{ release()!.lowestPrice | currency:'USD' }}
-                    }
-                    @if (release()!.medianPrice !== null) {
-                      &nbsp; Median: {{ release()!.medianPrice | currency:'USD' }}
-                    }
-                    @if (release()!.highestPrice !== null) {
-                      &nbsp; High: {{ release()!.highestPrice | currency:'USD' }}
-                    }
-                  </span>
-                </mat-list-item>
-              }
             </mat-list>
+
+            @if (release()!.lowestPrice !== null || release()!.medianPrice !== null || release()!.highestPrice !== null) {
+              <div class="pricing-section">
+                <h3>Marketplace Pricing</h3>
+                <p class="pricing-display">
+                  @if (release()!.medianPrice !== null && release()!.lowestPrice !== null && release()!.highestPrice !== null) {
+                    ${{ Math.round(release()!.medianPrice!) }}
+                    (${{ Math.round(release()!.lowestPrice!) }} – ${{ Math.round(release()!.highestPrice!) }})
+                  } @else if (release()!.lowestPrice !== null) {
+                    From ${{ Math.round(release()!.lowestPrice!) }}
+                  } @else if (release()!.medianPrice !== null) {
+                    ~${{ Math.round(release()!.medianPrice!) }}
+                  }
+                </p>
+              </div>
+            }
+
+            <div class="notes-rating-section">
+              <h3>My Rating</h3>
+              <div class="rating-stars">
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <button mat-icon-button (click)="setRating(star)" [attr.aria-label]="'Rate ' + star + ' stars'">
+                    <mat-icon [class.filled]="rating() !== null && rating()! >= star">
+                      {{ rating() !== null && rating()! >= star ? 'star' : 'star_border' }}
+                    </mat-icon>
+                  </button>
+                }
+              </div>
+
+              <h3>My Notes</h3>
+              <mat-form-field appearance="outline" class="notes-field">
+                <mat-label>Notes</mat-label>
+                <textarea matInput [formControl]="notesControl" rows="5" placeholder="Add your listening notes..."></textarea>
+              </mat-form-field>
+
+              <button mat-raised-button color="accent" [disabled]="saving()" (click)="saveNotesAndRating()">
+                @if (saving()) { Saving... } @else { Save }
+              </button>
+            </div>
           </mat-card-content>
 
           <mat-card-actions>

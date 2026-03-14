@@ -996,7 +996,7 @@ Feature: Recently added releases
 
 ## [ABM-022] Wishlist Tracking
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1054,7 +1054,7 @@ Feature: Wishlist tracking
 
 ## [ABM-023] Listening Notes and Personal Ratings
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1121,7 +1121,7 @@ Feature: Listening notes and personal ratings
 
 ## [ABM-024] Duplicate Detection
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1352,7 +1352,7 @@ Feature: GitHub workflow audit and hardening
 
 ## [ABM-027] Code Complexity Audit and Simplification
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -2458,7 +2458,7 @@ Feature: BoardGameGeek collection integration
 
 ## [ABM-039] Configuration & Settings Page
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2591,7 +2591,7 @@ Note: This item depends on the Configuration & Settings Page backlog item (for d
 
 ## [ABM-041] Display Marketplace Pricing on Release Detail View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -2630,7 +2630,7 @@ Feature: Display marketplace pricing on release detail view
 
 ## [ABM-042] Context-Aware Random Picker
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2679,7 +2679,7 @@ Feature: Context-aware random picker
 
 ## [ABM-043] Maintenance Page Shows Too Many Records (Overly Aggressive Incomplete Filter)
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2769,7 +2769,7 @@ Feature: Dependency audit
 
 ## [ABM-045] Refactor Backend to Vertical Slice Architecture
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2821,7 +2821,7 @@ Feature: Vertical slice architecture refactor
 
 ## [ABM-046] Navigation Redesign — Side Drawer with Integrated Sync
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 **Supersedes:** ABM-040
 
@@ -2900,7 +2900,7 @@ Note: This item supersedes ABM-040 (Sync Dropdown Button). All sync consolidatio
 
 ## [ABM-047] Context-Aware Local Store Finder
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -2937,4 +2937,59 @@ Feature: Context-aware local store finder
     When I open the store finder
     Then the search defaults to record stores (shop=music)
     And the label indicates "Find Local Record Stores"
+```
+
+---
+
+## [ABM-048] Discogs OAuth 1.0a for Enhanced Marketplace Pricing
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The current Discogs integration uses a Personal Access Token (PAT), which only provides `lowest_price` from the `/marketplace/stats/{id}` endpoint. The `/marketplace/price_suggestions/{release_id}` endpoint returns richer condition-based pricing (Mint, Near Mint, Very Good Plus, etc.) but requires OAuth 1.0a authentication. Upgrading to OAuth would unlock more detailed pricing data on the release detail page.
+
+### Acceptance Criteria
+```gherkin
+Feature: Discogs OAuth 1.0a for enhanced marketplace pricing
+
+  Scenario: OAuth credentials are configured in app settings
+    Given the Discogs OAuth consumer key and consumer secret are stored in app_settings
+    When the application starts
+    Then the OAuth credentials are available to the Discogs API client
+    And the credentials are not exposed in logs or configuration files
+
+  Scenario: Fetch condition-based price suggestions via OAuth
+    Given OAuth 1.0a credentials are configured
+    And the user is viewing a release detail page
+    When the application requests pricing data from Discogs
+    Then the API client calls /marketplace/price_suggestions/{release_id}
+    And the response includes price suggestions per condition (Mint, Near Mint, Very Good Plus, Very Good, Good Plus, Good, Fair, Poor)
+
+  Scenario: Display condition-based pricing on release detail page
+    Given OAuth 1.0a credentials are configured
+    And the release has price suggestions available
+    When I view the release detail page
+    Then I see pricing for each condition (e.g., NM: $25, VG+: $18)
+    And the prices are displayed in a clear, readable format
+
+  Scenario: Fallback to PAT-based lowest_price when OAuth is not configured
+    Given OAuth credentials are not configured
+    And the Discogs PAT is configured
+    When I view the release detail page
+    Then the application uses the PAT to fetch /marketplace/stats/{id}
+    And only the lowest_price is displayed
+
+  Scenario: OAuth credentials stored securely
+    Given I need to configure OAuth credentials
+    When I store the consumer key and consumer secret
+    Then they are stored using the same secure pattern as the existing PAT (dotnet user-secrets locally)
+    And the credentials are never committed to source control
+
+  Scenario: Handle missing price suggestions gracefully
+    Given OAuth 1.0a credentials are configured
+    And the release has no price suggestions available from Discogs
+    When I view the release detail page
+    Then the pricing section indicates no pricing data is available
+    And no error is shown to the user
 ```

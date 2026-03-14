@@ -77,6 +77,7 @@ public class SyncService(
         await using var scope = scopeFactory.CreateAsyncScope();
         var discogsClient = scope.ServiceProvider.GetRequiredService<DiscogsClient>();
         var releasesRepository = scope.ServiceProvider.GetRequiredService<IReleasesRepository>();
+        var wantlistRepository = scope.ServiceProvider.GetRequiredService<Features.Wantlist.IWantlistRepository>();
 
         discogsClient.OnRateLimitPause += seconds =>
         {
@@ -144,6 +145,61 @@ public class SyncService(
 
         _status = "saving";
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
+        logger.LogInformation("Discogs collection sync completed. Starting wantlist sync...");
+
+        // Sync wantlist
+        var wantlistEntities = new List<Models.Entities.WantlistRelease>();
+        var wantlistPage = 1;
+        _status = "syncing wantlist";
+
+        while (true)
+        {
+            var pageData = await discogsClient.GetWantlistPageAsync(_options.Username!, wantlistPage, cancellationToken);
+            if (pageData?.Releases is null || pageData.Releases.Count == 0)
+                break;
+
+            foreach (var r in pageData.Releases)
+            {
+                var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
+                var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
+                var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
+
+                var wantlistRelease = new Models.Entities.WantlistRelease
+                {
+                    Artist = artist,
+                    CoverImageUrl = r.BasicInformation.CoverImage,
+                    DiscogsId = r.Id,
+                    Format = format,
+                    Id = Guid.NewGuid(),
+                    LastSyncedAt = now,
+                    ThumbnailUrl = r.BasicInformation.Thumb,
+                    Title = r.BasicInformation.Title,
+                    Year = year,
+                };
+
+                // Fetch extended detail for genre
+                var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
+                if (detail is not null)
+                {
+                    wantlistRelease.Genre = detail.Genres.FirstOrDefault();
+                }
+
+                wantlistEntities.Add(wantlistRelease);
+            }
+
+            if (wantlistPage >= pageData.Pagination.Pages)
+                break;
+
+            wantlistPage++;
+        }
+
+        _status = "saving wantlist";
+        await wantlistRepository.UpsertAsync(wantlistEntities, cancellationToken);
+
+        var activeWantlistIds = wantlistEntities.Select(w => w.DiscogsId).ToHashSet();
+        await wantlistRepository.RemoveAbsentAsync(activeWantlistIds, cancellationToken);
+
+        logger.LogInformation("Discogs wantlist sync completed. Synced {Count} wantlist items.", wantlistEntities.Count);
         logger.LogInformation("Discogs sync completed successfully.");
     }
 

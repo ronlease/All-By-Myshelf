@@ -15,6 +15,12 @@ public interface IReleasesService
     Task<ReleaseDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Returns groups of releases that share the same artist and title but have different Discogs IDs.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IReadOnlyList<DuplicateGroupDto>> GetDuplicatesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns all releases with at least one missing data field, with computed missing-field labels.
     /// </summary>
     Task<IReadOnlyList<MaintenanceReleaseDto>> GetIncompleteReleasesAsync(CancellationToken cancellationToken);
@@ -42,4 +48,14 @@ public interface IReleasesService
     /// <param name="filter">Optional filter criteria; null means no filtering.</param>
     Task<PagedResult<ReleaseDto>> GetReleasesAsync(
         int page, int pageSize, CancellationToken cancellationToken, ReleaseFilter? filter = null);
+
+    /// <summary>
+    /// Updates the notes and rating for a specific release.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="notes">The new notes value; null to clear.</param>
+    /// <param name="rating">The new rating value (1-5); null to clear.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the release was found and updated; false otherwise.</returns>
+    Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken);
 }

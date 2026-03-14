@@ -1,0 +1,11 @@
+.clickable-list-item {
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+mat-expansion-panel {
+  margin-bottom: 16px;
+}

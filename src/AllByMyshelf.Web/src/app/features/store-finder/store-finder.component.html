@@ -1,7 +1,12 @@
 <div class="page-content">
+  <mat-button-toggle-group [ngModel]="storeType()" (ngModelChange)="storeType.set($event); searched.set(false); stores.set([])" style="margin-bottom: 16px;">
+    <mat-button-toggle value="records">Record Stores</mat-button-toggle>
+    <mat-button-toggle value="books">Bookstores</mat-button-toggle>
+  </mat-button-toggle-group>
+
   <mat-card class="mat-elevation-z2">
     <mat-card-header>
-      <mat-card-title>Find Independent Record Stores</mat-card-title>
+      <mat-card-title>{{ pageTitle }}</mat-card-title>
     </mat-card-header>
 
     <mat-card-content>
@@ -42,7 +47,7 @@
   } @else if (searched() && stores().length === 0) {
     <mat-card class="mat-elevation-z2">
       <mat-card-content>
-        <p class="empty-state">No independent record stores found near that location.</p>
+        <p class="empty-state">No {{ storeType() === 'records' ? 'independent record stores' : 'bookstores' }} found near that location.</p>
       </mat-card-content>
     </mat-card>
   } @else if (stores().length > 0) {

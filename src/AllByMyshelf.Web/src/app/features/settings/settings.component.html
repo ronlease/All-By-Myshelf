@@ -44,8 +44,7 @@
           <input
             matInput
             type="password"
-            [formControl]="discogsPersonalAccessTokenControl"
-            [placeholder]="settings()?.discogsPersonalAccessToken || 'Not configured'" />
+            [formControl]="discogsPersonalAccessTokenControl" />
           <mat-hint>Required for syncing your Discogs record collection</mat-hint>
         </mat-form-field>
 
@@ -54,8 +53,7 @@
           <input
             matInput
             type="text"
-            [formControl]="discogsUsernameControl"
-            [placeholder]="settings()?.discogsUsername || 'Not configured'" />
+            [formControl]="discogsUsernameControl" />
           <mat-hint>Your Discogs username</mat-hint>
         </mat-form-field>
 
@@ -64,8 +62,7 @@
           <input
             matInput
             type="password"
-            [formControl]="hardcoverApiTokenControl"
-            [placeholder]="settings()?.hardcoverApiToken || 'Not configured'" />
+            [formControl]="hardcoverApiTokenControl" />
           <mat-hint>Required for syncing your Hardcover book collection</mat-hint>
         </mat-form-field>
 

@@ -56,6 +56,7 @@ export class BooksComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    localStorage.setItem('last-collection', 'books');
     this.loadBooks(this.currentPage());
     this.subscription = this.syncState.booksSyncCompleted$.subscribe(() => {
       this.loadBooks(this.currentPage());

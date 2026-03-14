@@ -1,3 +1,42 @@
-.toolbar-spacer {
-  flex: 1 1 auto;
+:host {
+  display: flex;
+  height: 100vh;
+}
+
+mat-sidenav-container {
+  flex: 1;
+}
+
+mat-sidenav {
+  width: 260px;
+}
+
+.active-link {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.drawer-section-header {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  padding: 16px 16px 4px;
+  text-transform: uppercase;
+}
+
+mat-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+html.dark-theme .active-link,
+html:not(.light-theme):not(.dark-theme) .active-link {
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+html.dark-theme .active-link {
+  background-color: rgba(255, 255, 255, 0.08);
 }

@@ -1,6 +1,7 @@
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Features.Statistics;
+using AllByMyshelf.Api.Features.Wantlist;
 using AllByMyshelf.Api.Infrastructure.Configuration;
 using AllByMyshelf.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -47,6 +48,7 @@ builder.Services.AddScoped<IBooksService, BooksService>();
 builder.Services.AddScoped<IReleasesRepository, ReleasesRepository>();
 builder.Services.AddScoped<IReleasesService, ReleasesService>();
 builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
+builder.Services.AddScoped<IWantlistRepository, WantlistRepository>();
 
 // BooksSyncService is a singleton BackgroundService; also exposed as IBooksSyncService.
 builder.Services.AddSingleton<BooksSyncService>();

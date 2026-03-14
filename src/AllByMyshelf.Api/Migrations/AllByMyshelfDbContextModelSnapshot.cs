@@ -146,6 +146,15 @@ namespace AllByMyshelf.Api.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("median_price");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<int?>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
                     b.Property<string>("ThumbnailUrl")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
@@ -168,6 +177,70 @@ namespace AllByMyshelf.Api.Migrations
                         .HasDatabaseName("ix_releases_discogs_id");
 
                     b.ToTable("releases", (string)null);
+                });
+
+            modelBuilder.Entity("AllByMyshelf.Api.Models.Entities.WantlistRelease", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at");
+
+                    b.Property<string>("Artist")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("artist");
+
+                    b.Property<string>("CoverImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("cover_image_url");
+
+                    b.Property<int>("DiscogsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("discogs_id");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("format");
+
+                    b.Property<string>("Genre")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("genre");
+
+                    b.Property<DateTimeOffset>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_synced_at");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("thumbnail_url");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscogsId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_wantlist_releases_discogs_id");
+
+                    b.ToTable("wantlist_releases", (string)null);
                 });
 #pragma warning restore 612, 618
         }

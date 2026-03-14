@@ -263,6 +263,39 @@ public class BooksEndpointTests
         page2.Items.Select(i => i.Title).Should().NotIntersectWith(page1Titles);
     }
 
+    // ── GET /api/v1/books/random — random book ───────────────────────────────
+
+    [Fact]
+    public async Task GetRandom_DatabaseHasBooks_Returns200WithBook()
+    {
+        // Arrange
+        var book = MakeBook(1, "Neil Gaiman", "American Gods", 2001, "Fantasy");
+        var client = CreateClientWithSeededData(new[] { book });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/books/random");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<BookDto>();
+        body.Should().NotBeNull();
+        body!.Author.Should().Be("Neil Gaiman");
+        body.Title.Should().Be("American Gods");
+    }
+
+    [Fact]
+    public async Task GetRandom_EmptyDatabase_Returns404()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Book>());
+
+        // Act
+        var response = await client.GetAsync("/api/v1/books/random");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     // ── POST /api/v1/books/sync — 202 Accepted ───────────────────────────────
 
     [Fact]

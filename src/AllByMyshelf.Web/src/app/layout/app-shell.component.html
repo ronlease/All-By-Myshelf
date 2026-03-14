@@ -1,53 +1,97 @@
-<mat-toolbar color="primary">
-  <span>All By Myshelf</span>
-  <span class="toolbar-spacer"></span>
-  @if (features()?.discogsEnabled) {
-    <button mat-raised-button routerLink="/" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }" style="margin-right: 8px;">
-      💿 Records
-    </button>
-  }
-  @if (features()?.hardcoverEnabled) {
-    <button mat-raised-button routerLink="/books" routerLinkActive="active-link" style="margin-right: 8px;">
-      📚 Books
-    </button>
-  }
-  @if (features()?.discogsEnabled) {
-    <button mat-raised-button routerLink="/pick" routerLinkActive="active-link" style="margin-right: 8px;">
-      🎲 Pick
-    </button>
-    <button mat-raised-button routerLink="/maintenance" routerLinkActive="active-link" style="margin-right: 8px;">
-      🔧 Maintenance
-    </button>
-  }
-  <button mat-raised-button routerLink="/stores" routerLinkActive="active-link" style="margin-right: 8px;">
-    🏪 Stores
-  </button>
-  <button mat-raised-button routerLink="/statistics" routerLinkActive="active-link" style="margin-right: 8px;">
-    📊 Statistics
-  </button>
-  <button mat-icon-button routerLink="/settings" routerLinkActive="active-link" matTooltip="Settings" style="margin-right: 8px;">
-    <mat-icon>settings</mat-icon>
-  </button>
-  @if (features()?.discogsEnabled) {
-    <button mat-raised-button color="accent" [disabled]="syncState.discogsSyncing()" (click)="syncState.startDiscogsSync()">
-      @if (syncState.discogsSyncing()) {
-        <mat-spinner diameter="20" style="display: inline-block; margin-right: 4px;"></mat-spinner>
-        {{ syncState.discogsSyncStatusLabel }}
-      } @else {
-        Sync Records
+<mat-sidenav-container>
+  <mat-sidenav #drawer mode="over" (click)="drawer.close()">
+    <mat-nav-list>
+      <!-- Navigation section -->
+      @if (features()?.discogsEnabled) {
+        <a mat-list-item routerLink="/" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon matListItemIcon>album</mat-icon>
+          <span>Records</span>
+        </a>
       }
-    </button>
-  }
-  @if (features()?.hardcoverEnabled) {
-    <button mat-raised-button color="accent" [disabled]="syncState.booksSyncing()" (click)="syncState.startBooksSync()" style="margin-left: 8px;">
-      @if (syncState.booksSyncing()) {
-        <mat-spinner diameter="20" style="display: inline-block; margin-right: 4px;"></mat-spinner>
-        Syncing Books…
-      } @else {
-        Sync Books
+      @if (features()?.hardcoverEnabled) {
+        <a mat-list-item routerLink="/books" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>menu_book</mat-icon>
+          <span>Books</span>
+        </a>
       }
-    </button>
-  }
-</mat-toolbar>
+      @if (features()?.discogsEnabled || features()?.hardcoverEnabled) {
+        <a mat-list-item routerLink="/pick" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>casino</mat-icon>
+          <span>Pick</span>
+        </a>
+      }
+      @if (features()?.discogsEnabled) {
+        <a mat-list-item routerLink="/maintenance" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>build</mat-icon>
+          <span>Maintenance</span>
+        </a>
+        <a mat-list-item routerLink="/wantlist" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>favorite</mat-icon>
+          <span>Wantlist</span>
+        </a>
+      }
+      <a mat-list-item routerLink="/duplicates" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>content_copy</mat-icon>
+        <span>Duplicates</span>
+      </a>
+      <a mat-list-item routerLink="/stores" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>store</mat-icon>
+        <span>Stores</span>
+      </a>
+      <a mat-list-item routerLink="/statistics" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>bar_chart</mat-icon>
+        <span>Statistics</span>
+      </a>
+      <a mat-list-item routerLink="/settings" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span>Settings</span>
+      </a>
 
-<router-outlet />
+      <!-- Divider before sync section -->
+      <mat-divider></mat-divider>
+
+      <!-- Sync section -->
+      @if (features()?.discogsEnabled || features()?.hardcoverEnabled) {
+        <div class="drawer-section-header">Sync</div>
+      }
+      @if (features()?.discogsEnabled) {
+        <a mat-list-item (click)="syncState.startDiscogsSync(); $event.stopPropagation()" (keyup.enter)="syncState.startDiscogsSync()" [disabled]="syncState.discogsSyncing()">
+          <mat-icon matListItemIcon>album</mat-icon>
+          @if (syncState.discogsSyncing()) {
+            <mat-spinner diameter="18" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+            <span>{{ syncState.discogsSyncStatusLabel }}</span>
+          } @else {
+            <span>Sync Records</span>
+          }
+        </a>
+      }
+      @if (features()?.hardcoverEnabled) {
+        <a mat-list-item (click)="syncState.startBooksSync(); $event.stopPropagation()" (keyup.enter)="syncState.startBooksSync()" [disabled]="syncState.booksSyncing()">
+          <mat-icon matListItemIcon>menu_book</mat-icon>
+          @if (syncState.booksSyncing()) {
+            <mat-spinner diameter="18" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+            <span>Syncing Books…</span>
+          } @else {
+            <span>Sync Books</span>
+          }
+        </a>
+      }
+      @if (features()?.discogsEnabled && features()?.hardcoverEnabled) {
+        <a mat-list-item (click)="syncAll(); $event.stopPropagation()" (keyup.enter)="syncAll()" [disabled]="syncState.discogsSyncing() || syncState.booksSyncing()">
+          <mat-icon matListItemIcon>sync</mat-icon>
+          <span>Sync All</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="drawer.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span style="margin-left: 8px;">All By Myshelf</span>
+    </mat-toolbar>
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

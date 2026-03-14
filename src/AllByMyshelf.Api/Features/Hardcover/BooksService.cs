@@ -34,4 +34,22 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
             TotalCount = totalCount
         };
     }
+
+    /// <inheritdoc/>
+    public async Task<BookDto?> GetRandomAsync(CancellationToken cancellationToken)
+    {
+        var book = await booksRepository.GetRandomAsync(cancellationToken);
+        if (book is null)
+            return null;
+
+        return new BookDto(
+            Author: book.Author,
+            CoverImageUrl: book.CoverImageUrl,
+            Genre: book.Genre,
+            HardcoverId: book.HardcoverId,
+            Id: book.Id,
+            Title: book.Title,
+            Year: book.Year
+        );
+    }
 }

@@ -50,19 +50,20 @@ export class SettingsComponent implements OnInit {
     this.saving.set(true);
 
     const dto: UpdateSettingsDto = {};
+    const current = this.settings();
 
     const discogsToken = this.discogsPersonalAccessTokenControl.value?.trim();
-    if (discogsToken) {
+    if (discogsToken && discogsToken !== current?.discogsPersonalAccessToken) {
       dto.discogsPersonalAccessToken = discogsToken;
     }
 
     const discogsUsername = this.discogsUsernameControl.value?.trim();
-    if (discogsUsername) {
+    if (discogsUsername && discogsUsername !== current?.discogsUsername) {
       dto.discogsUsername = discogsUsername;
     }
 
     const hardcoverToken = this.hardcoverApiTokenControl.value?.trim();
-    if (hardcoverToken) {
+    if (hardcoverToken && hardcoverToken !== current?.hardcoverApiToken) {
       dto.hardcoverApiToken = hardcoverToken;
     }
 
@@ -102,6 +103,9 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getSettings().subscribe({
       next: (s) => {
         this.settings.set(s);
+        this.discogsPersonalAccessTokenControl.setValue(s.discogsPersonalAccessToken || '');
+        this.discogsUsernameControl.setValue(s.discogsUsername || '');
+        this.hardcoverApiTokenControl.setValue(s.hardcoverApiToken || '');
         this.themeControl.setValue(s.theme || 'os-default', { emitEvent: false });
         this.loading.set(false);
       },

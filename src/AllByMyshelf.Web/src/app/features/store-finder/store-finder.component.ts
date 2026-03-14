@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,11 +13,15 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RecordStore, StoreFinderService } from './store-finder.service';
 
+type StoreType = 'records' | 'books';
+
 @Component({
   selector: 'app-store-finder',
   standalone: true,
   imports: [
+    FormsModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatFormFieldModule,
     MatIconModule,
@@ -27,19 +33,31 @@ import { RecordStore, StoreFinderService } from './store-finder.service';
   ],
   templateUrl: './store-finder.component.html',
 })
-export class StoreFinderComponent {
-  private readonly fb = inject(FormBuilder);
-  private readonly router = inject(Router);
-  private readonly storeFinderService = inject(StoreFinderService);
-
+export class StoreFinderComponent implements OnInit {
   error = signal(false);
+  private readonly fb = inject(FormBuilder);
   loading = signal(false);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   searched = signal(false);
+  private readonly storeFinderService = inject(StoreFinderService);
   stores = signal<RecordStore[]>([]);
+  storeType = signal<StoreType>('records');
+
+  get pageTitle(): string {
+    return this.storeType() === 'records' ? 'Find Local Record Stores' : 'Find Local Bookstores';
+  }
 
   locationForm = this.fb.group({
     location: ['', [Validators.required, this.usLocationValidator]],
   });
+
+  ngOnInit(): void {
+    const typeParam = this.route.snapshot.queryParamMap.get('type');
+    if (typeParam === 'books') {
+      this.storeType.set('books');
+    }
+  }
 
   onBackClick(): void {
     this.router.navigate(['/']);
@@ -57,7 +75,8 @@ export class StoreFinderComponent {
     this.searched.set(true);
     this.stores.set([]);
 
-    this.storeFinderService.findStores(location).subscribe({
+    const shopType = this.storeType() === 'records' ? 'music' : 'books';
+    this.storeFinderService.findStores(location, shopType).subscribe({
       next: (stores) => {
         this.stores.set(stores);
         this.loading.set(false);

@@ -13,6 +13,8 @@ export interface ReleaseDetailDto {
   id: string;
   lowestPrice: number | null;
   medianPrice: number | null;
+  notes: string | null;
+  rating: number | null;
   title: string;
   year: number | null;
 }
@@ -61,20 +63,34 @@ export interface CollectionFilter {
 
 export interface PagedResult<T> {
   items: T[];
-  totalCount: number;
   page: number;
   pageSize: number;
+  totalCount: number;
   totalPages: number;
+}
+
+export interface DuplicateGroupDto {
+  artist: string;
+  releases: DuplicateReleaseDto[];
+  title: string;
+}
+
+export interface DuplicateReleaseDto {
+  discogsId: number;
+  format: string;
+  id: string;
+  year: number | null;
+}
+
+export interface UpdateNotesRatingDto {
+  notes: string | null;
+  rating: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class DiscogsService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
-
-  getIncompleteReleases(): Observable<MaintenanceReleaseDto[]> {
-    return this.http.get<MaintenanceReleaseDto[]>(`${this.baseUrl}/api/v1/releases/maintenance`);
-  }
 
   getCollection(page: number, pageSize: number, filter?: CollectionFilter): Observable<PagedResult<ReleaseDto>> {
     let params = new HttpParams()
@@ -91,8 +107,13 @@ export class DiscogsService {
     return this.http.get<PagedResult<ReleaseDto>>(`${this.baseUrl}/api/v1/releases`, { params });
   }
 
-  getRecentlyAdded(): Observable<ReleaseDto[]> {
-    return this.http.get<ReleaseDto[]>(`${this.baseUrl}/api/v1/releases/recent`);
+
+  getDuplicates(): Observable<DuplicateGroupDto[]> {
+    return this.http.get<DuplicateGroupDto[]>(`${this.baseUrl}/api/v1/releases/duplicates`);
+  }
+
+  getIncompleteReleases(): Observable<MaintenanceReleaseDto[]> {
+    return this.http.get<MaintenanceReleaseDto[]>(`${this.baseUrl}/api/v1/releases/maintenance`);
   }
 
   getRandomRelease(filter?: RandomReleaseFilter): Observable<ReleaseDetailDto> {
@@ -101,6 +122,10 @@ export class DiscogsService {
     if (filter?.format) params = params.set('format', filter.format);
     if (filter?.genre) params = params.set('genre', filter.genre);
     return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/random`, { params });
+  }
+
+  getRecentlyAdded(): Observable<ReleaseDto[]> {
+    return this.http.get<ReleaseDto[]>(`${this.baseUrl}/api/v1/releases/recent`);
   }
 
   getRelease(id: string): Observable<ReleaseDetailDto> {
@@ -113,5 +138,9 @@ export class DiscogsService {
 
   triggerSync(): Observable<HttpResponse<unknown>> {
     return this.http.post<unknown>(`${this.baseUrl}/api/v1/sync`, null, { observe: 'response' });
+  }
+
+  updateNotesAndRating(id: string, data: UpdateNotesRatingDto): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/api/v1/releases/${id}/notes-rating`, data);
   }
 }

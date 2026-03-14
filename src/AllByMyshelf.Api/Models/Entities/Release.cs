@@ -38,6 +38,12 @@ public class Release
     /// <summary>Median marketplace price from Discogs; null when unavailable.</summary>
     public decimal? MedianPrice { get; set; }
 
+    /// <summary>User-provided listening notes; up to 2000 characters.</summary>
+    public string? Notes { get; set; }
+
+    /// <summary>User-provided rating on a scale of 1-5; null when unrated.</summary>
+    public int? Rating { get; set; }
+
     /// <summary>Release title as returned by Discogs.</summary>
     public string Title { get; set; } = string.Empty;
 

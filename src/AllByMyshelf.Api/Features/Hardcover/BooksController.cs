@@ -55,6 +55,36 @@ public class BooksController(
     }
 
     /// <summary>
+    /// Returns a randomly selected book.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A randomly selected book.</returns>
+    /// <response code="200">Returns a randomly selected book.</response>
+    /// <response code="404">No books exist in the collection.</response>
+    [HttpGet("random")]
+    [ProducesResponseType(typeof(BookDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookDto>> GetRandom(
+        CancellationToken cancellationToken = default)
+    {
+        var result = await booksService.GetRandomAsync(cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns whether a Hardcover sync is currently running.
+    /// </summary>
+    /// <returns>An object containing the sync running status.</returns>
+    /// <response code="200">Returns the current sync status.</response>
+    [HttpGet("sync/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetSyncStatus() =>
+        Ok(new { isRunning = booksSyncService.IsSyncRunning });
+
+    /// <summary>
     /// Triggers a manual sync of the Hardcover read books collection.
     /// </summary>
     /// <returns>
@@ -65,15 +95,6 @@ public class BooksController(
     /// <response code="202">Sync started. The operation runs asynchronously in the background.</response>
     /// <response code="409">A sync is already in progress.</response>
     /// <response code="503">The Hardcover API token is not configured.</response>
-    /// <summary>Returns whether a Hardcover sync is currently running.</summary>
-    [HttpGet("sync/status")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetSyncStatus() =>
-        Ok(new { isRunning = booksSyncService.IsSyncRunning });
-
-    /// <summary>
-    /// Triggers a manual sync of the Hardcover read books collection.
-    /// </summary>
     [HttpPost("sync")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
