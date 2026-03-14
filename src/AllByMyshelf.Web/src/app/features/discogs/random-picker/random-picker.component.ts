@@ -39,11 +39,15 @@ type PickResult = ReleaseDetailDto | BookDto | null;
   templateUrl: './random-picker.component.html',
 })
 export class RandomPickerComponent implements OnInit {
+  allBooks = signal<BookDto[]>([]);
   allReleases = signal<ReleaseDto[]>([]);
+  bookAuthorFilter = signal('');
+  bookGenreFilter = signal('');
   context = signal<PickContext>('records');
   decadeFilter = signal('');
   private readonly discogsService = inject(DiscogsService);
   discogsEnabled = signal(false);
+  private readonly featuresService = inject(FeaturesService);
   formatFilter = signal('');
   genreFilter = signal('');
   hardcoverEnabled = signal(false);
@@ -52,7 +56,22 @@ export class RandomPickerComponent implements OnInit {
   picking = signal(false);
   result = signal<PickResult>(null);
   private readonly router = inject(Router);
-  private readonly featuresService = inject(FeaturesService);
+
+  get distinctBookAuthors(): string[] {
+    const seen = new Set<string>();
+    for (const b of this.allBooks()) {
+      if (b.author) seen.add(b.author);
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }
+
+  get distinctBookGenres(): string[] {
+    const seen = new Set<string>();
+    for (const b of this.allBooks()) {
+      if (b.genre) seen.add(b.genre);
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }
 
   get distinctDecades(): string[] {
     const seen = new Set<string>();
@@ -106,6 +125,13 @@ export class RandomPickerComponent implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+
+    this.hardcoverService.getBooks(1, 10000).subscribe({
+      next: (res) => {
+        this.allBooks.set(res.items);
+      },
+      error: () => {},
+    });
   }
 
   onBackClick(): void {
@@ -129,13 +155,22 @@ export class RandomPickerComponent implements OnInit {
         error: () => this.picking.set(false),
       });
     } else {
-      this.hardcoverService.getRandomBook().subscribe({
-        next: (book) => {
-          this.result.set(book);
-          this.picking.set(false);
-        },
-        error: () => this.picking.set(false),
-      });
+      let filtered = this.allBooks();
+      const authorFilter = this.bookAuthorFilter();
+      const genreFilter = this.bookGenreFilter();
+
+      if (authorFilter) {
+        filtered = filtered.filter(b => b.author === authorFilter);
+      }
+      if (genreFilter) {
+        filtered = filtered.filter(b => b.genre === genreFilter);
+      }
+
+      if (filtered.length > 0) {
+        const randomIndex = Math.floor(Math.random() * filtered.length);
+        this.result.set(filtered[randomIndex]);
+      }
+      this.picking.set(false);
     }
   }
 

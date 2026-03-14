@@ -52,9 +52,32 @@
         </mat-card-content>
       } @else {
         <mat-card-header>
-          <mat-card-title>Pick a random book</mat-card-title>
-          <mat-card-subtitle>Get a random book from your collection.</mat-card-subtitle>
+          <mat-card-title>Narrow it down</mat-card-title>
+          <mat-card-subtitle>Leave all filters blank to pick from the full collection.</mat-card-subtitle>
         </mat-card-header>
+        <mat-card-content style="padding-top: 16px;">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Author</mat-label>
+              <mat-select [ngModel]="bookAuthorFilter()" (ngModelChange)="bookAuthorFilter.set($event)">
+                <mat-option value="">Any</mat-option>
+                @for (a of distinctBookAuthors; track a) {
+                  <mat-option [value]="a">{{ a }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Genre</mat-label>
+              <mat-select [ngModel]="bookGenreFilter()" (ngModelChange)="bookGenreFilter.set($event)">
+                <mat-option value="">Any</mat-option>
+                @for (g of distinctBookGenres; track g) {
+                  <mat-option [value]="g">{{ g }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
       }
       <mat-card-actions>
         <button mat-raised-button color="primary" [disabled]="picking()" (click)="onPickClick()">
