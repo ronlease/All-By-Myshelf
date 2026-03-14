@@ -25,4 +25,18 @@ public class StatisticsController(IStatisticsRepository statisticsRepository) : 
         var result = await statisticsRepository.GetCollectionValueAsync(cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Returns unified statistics for both records and books collections.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Unified statistics including breakdowns by format, genre, and decade.</returns>
+    /// <response code="200">Returns the unified statistics.</response>
+    [HttpGet]
+    [ProducesResponseType(typeof(UnifiedStatisticsDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUnifiedStatistics(CancellationToken cancellationToken)
+    {
+        var result = await statisticsRepository.GetUnifiedStatisticsAsync(cancellationToken);
+        return Ok(result);
+    }
 }

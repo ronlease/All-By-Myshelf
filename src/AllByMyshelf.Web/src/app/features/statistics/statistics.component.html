@@ -6,37 +6,108 @@
   } @else if (error()) {
     <mat-card>
       <mat-card-content>
-        <p class="empty-state">Unable to load statistics. Please go back and try again.</p>
+        <p class="empty-state">Unable to load statistics.</p>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button (click)="onBackClick()">Back to Collection</button>
-      </mat-card-actions>
-    </mat-card>
-  } @else if (collectionValue()) {
-    <mat-card class="mat-elevation-z2">
-      <mat-card-header>
-        <mat-card-title>Collection Value</mat-card-title>
-        <mat-card-subtitle>Based on lowest marketplace price from Discogs</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        @if (collectionValue()!.includedCount === 0) {
-          <p class="empty-state">Pricing data is unavailable. Trigger a sync to fetch marketplace prices.</p>
-        } @else {
-          <p class="collection-value-total">{{ collectionValue()!.totalValue | currency:'USD' }}</p>
-          <p class="collection-value-meta">
-            Based on {{ collectionValue()!.includedCount }} release{{ collectionValue()!.includedCount === 1 ? '' : 's' }} with pricing data.
-            @if (collectionValue()!.excludedCount > 0) {
-              {{ collectionValue()!.excludedCount }} release{{ collectionValue()!.excludedCount === 1 ? '' : 's' }} excluded (no pricing data available).
-            }
-          </p>
-        }
-      </mat-card-content>
-      <mat-card-actions>
-        <button mat-button (click)="onBackClick()">
-          <mat-icon>arrow_back</mat-icon>
-          Back to Collection
+        <button mat-button (click)="retry()">
+          <mat-icon>refresh</mat-icon>
+          Retry
         </button>
       </mat-card-actions>
     </mat-card>
+  } @else if (statistics()) {
+    <div class="statistics-grid">
+      <!-- Records Section -->
+      <mat-card class="mat-elevation-z2">
+        <mat-card-header>
+          <mat-icon matCardAvatar>album</mat-icon>
+          <mat-card-title>Records</mat-card-title>
+          <mat-card-subtitle>{{ statistics()!.records.totalCount }} total</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (statistics()!.records.totalCount === 0) {
+            <p class="empty-state">No records in your collection yet.</p>
+          } @else {
+            <div class="stat-section">
+              <h3>Collection Value</h3>
+              <p class="stat-value">{{ statistics()!.records.totalValue | currency:'USD' }}</p>
+              @if (statistics()!.records.excludedFromValueCount > 0) {
+                <p class="stat-note">{{ statistics()!.records.excludedFromValueCount }} record{{ statistics()!.records.excludedFromValueCount === 1 ? '' : 's' }} without pricing data</p>
+              }
+            </div>
+
+            @if (statistics()!.records.formatBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Format</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.records.formatBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+
+            @if (statistics()!.records.genreBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Genre</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.records.genreBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+
+            @if (statistics()!.records.decadeBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Decade</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.records.decadeBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Books Section -->
+      <mat-card class="mat-elevation-z2">
+        <mat-card-header>
+          <mat-icon matCardAvatar>menu_book</mat-icon>
+          <mat-card-title>Books</mat-card-title>
+          <mat-card-subtitle>{{ statistics()!.books.totalCount }} total</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (statistics()!.books.totalCount === 0) {
+            <p class="empty-state">No books in your collection yet.</p>
+          } @else {
+            @if (statistics()!.books.genreBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Genre</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.books.genreBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
   }
 </div>

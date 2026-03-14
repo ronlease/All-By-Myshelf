@@ -1,12 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { CollectionValueDto, StatisticsService } from './statistics.service';
+import { StatisticsService, UnifiedStatisticsDto } from './statistics.service';
 
 @Component({
   selector: 'app-statistics',
@@ -16,23 +15,22 @@ import { CollectionValueDto, StatisticsService } from './statistics.service';
     MatButtonModule,
     MatCardModule,
     MatIconModule,
+    MatListModule,
     MatProgressSpinnerModule,
-    MatToolbarModule,
   ],
   templateUrl: './statistics.component.html',
+  styleUrl: './statistics.component.scss',
 })
 export class StatisticsComponent implements OnInit {
-  private readonly router = inject(Router);
-  private readonly statisticsService = inject(StatisticsService);
-
-  collectionValue = signal<CollectionValueDto | null>(null);
   error = signal(false);
   loading = signal(true);
+  statistics = signal<UnifiedStatisticsDto | null>(null);
+  private readonly statisticsService = inject(StatisticsService);
 
   ngOnInit(): void {
-    this.statisticsService.getCollectionValue().subscribe({
+    this.statisticsService.getAll().subscribe({
       next: (data) => {
-        this.collectionValue.set(data);
+        this.statistics.set(data);
         this.loading.set(false);
       },
       error: () => {
@@ -42,7 +40,9 @@ export class StatisticsComponent implements OnInit {
     });
   }
 
-  onBackClick(): void {
-    this.router.navigate(['/']);
+  retry(): void {
+    this.error.set(false);
+    this.loading.set(true);
+    this.ngOnInit();
   }
 }

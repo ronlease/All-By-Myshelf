@@ -18,6 +18,30 @@
 // Scenario: Returns 401 when request is unauthenticated
 //   When GET /api/v1/statistics/collection-value is called without an auth token
 //   Then the response status is 401
+//
+// Feature: Unified statistics endpoint (ABM-034)
+//
+// Scenario: Returns 200 with both records and books statistics
+//   Given 2 releases and 3 books exist in the database
+//   When GET /api/v1/statistics is called with a valid auth token
+//   Then the response status is 200
+//   And Records.TotalCount is 2
+//   And Books.TotalCount is 3
+//
+// Scenario: Returns 200 with zero counts when database is empty
+//   Given no releases or books exist
+//   When GET /api/v1/statistics is called with a valid auth token
+//   Then the response status is 200
+//   And Records.TotalCount is 0
+//   And Books.TotalCount is 0
+//
+// Scenario: Returns 200 with correct breakdowns for records
+//   Given releases with various formats, genres, and years
+//   When GET /api/v1/statistics is called with a valid auth token
+//   Then the response status is 200
+//   And Records.FormatBreakdown is populated
+//   And Records.GenreBreakdown is populated
+//   And Records.DecadeBreakdown is populated
 
 using System.Net;
 using System.Net.Http.Json;
@@ -61,19 +85,61 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
         return client;
     }
 
+    /// <summary>Seeds the in-memory database with the given releases and books, returns a fresh client.</summary>
+    private HttpClient CreateClientWithSeededData(IEnumerable<Release> releases, IEnumerable<Book> books)
+    {
+        var client = _factory.CreateClient();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AllByMyshelfDbContext>();
+        // Clear any data from a previous test in the same factory instance.
+        db.Releases.RemoveRange(db.Releases);
+        db.Books.RemoveRange(db.Books);
+        db.Releases.AddRange(releases);
+        db.Books.AddRange(books);
+        db.SaveChanges();
+
+        return client;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Book MakeBook(int hardcoverId, string title, string? genre = null) =>
+        new()
+        {
+            Author = "Author",
+            Genre = genre,
+            HardcoverId = hardcoverId,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = title
+        };
+
+    private static Release MakeRelease(int discogsId, string? format = null, string? genre = null, int? year = null) =>
+        new()
+        {
+            Artist = $"Artist {discogsId}",
+            DiscogsId = discogsId,
+            Format = format ?? "Vinyl",
+            Genre = genre,
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            LowestPrice = null,
+            Title = $"Title {discogsId}",
+            Year = year
+        };
 
     private static Release MakeReleaseWithPrice(int discogsId, decimal? lowestPrice) =>
         new()
         {
-            Id = Guid.NewGuid(),
-            DiscogsId = discogsId,
             Artist = $"Artist {discogsId}",
-            Title = $"Title {discogsId}",
-            Year = 2000,
+            DiscogsId = discogsId,
             Format = "Vinyl",
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
             LowestPrice = lowestPrice,
-            LastSyncedAt = DateTimeOffset.UtcNow
+            Title = $"Title {discogsId}",
+            Year = 2000
         };
 
     // ── GET /api/v1/statistics/collection-value — 200 with pricing ───────────
@@ -184,6 +250,84 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    // ── GET /api/v1/statistics — empty database ───────────────────────────────
+
+    [Fact]
+    public async Task GetUnifiedStatistics_EmptyDatabase_Returns200WithZeroCounts()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Release>(), Array.Empty<Book>());
+
+        // Act
+        var response = await client.GetAsync("/api/v1/statistics");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<UnifiedStatisticsDto>();
+        body.Should().NotBeNull();
+        body!.Records.TotalCount.Should().Be(0);
+        body.Books.TotalCount.Should().Be(0);
+    }
+
+    // ── GET /api/v1/statistics — records with breakdowns ──────────────────────
+
+    [Fact]
+    public async Task GetUnifiedStatistics_RecordsWithBreakdowns_ReturnsCorrectBreakdowns()
+    {
+        // Arrange
+        var releases = new[]
+        {
+            MakeRelease(1, format: "LP", genre: "Rock", year: 1975),
+            MakeRelease(2, format: "LP", genre: "Jazz", year: 1978),
+            MakeRelease(3, format: "CD", genre: "Rock", year: 1992)
+        };
+        var client = CreateClientWithSeededData(releases, Array.Empty<Book>());
+
+        // Act
+        var response = await client.GetAsync("/api/v1/statistics");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<UnifiedStatisticsDto>();
+        body.Should().NotBeNull();
+        body!.Records.FormatBreakdown.Should().NotBeEmpty();
+        body.Records.GenreBreakdown.Should().NotBeEmpty();
+        body.Records.DecadeBreakdown.Should().NotBeEmpty();
+    }
+
+    // ── GET /api/v1/statistics — with releases and books ──────────────────────
+
+    [Fact]
+    public async Task GetUnifiedStatistics_WithReleasesAndBooks_Returns200WithBothSections()
+    {
+        // Arrange
+        var releases = new[]
+        {
+            MakeRelease(1),
+            MakeRelease(2)
+        };
+        var books = new[]
+        {
+            MakeBook(1, "Book 1"),
+            MakeBook(2, "Book 2"),
+            MakeBook(3, "Book 3")
+        };
+        var client = CreateClientWithSeededData(releases, books);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/statistics");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<UnifiedStatisticsDto>();
+        body.Should().NotBeNull();
+        body!.Records.TotalCount.Should().Be(2);
+        body.Books.TotalCount.Should().Be(3);
+    }
+
     // ── WebApplicationFactory ─────────────────────────────────────────────────
 
     /// <summary>
@@ -232,8 +376,9 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
                         .UseInternalServiceProvider(inMemoryServiceProvider)
                         .UseInMemoryDatabase(_dbName));
 
-                // Remove all SyncService registrations, then register the per-scenario stub
+                // Remove all SyncService and BooksSyncService registrations
                 ReleasesEndpointTests.RemoveSyncServiceDescriptors(services);
+                BooksEndpointTests.RemoveBooksSyncServiceDescriptors(services);
                 services.AddSingleton<ISyncService>(new NoOpSyncService());
 
                 // Replace JWT bearer with a test scheme that always authenticates
