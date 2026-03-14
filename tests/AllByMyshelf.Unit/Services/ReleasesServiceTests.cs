@@ -199,6 +199,55 @@ public class ReleasesServiceTests
         result.Genre.Should().BeNull();
     }
 
+    // ── GetDuplicatesAsync — with duplicates ──────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_WithDuplicates_ReturnsMappedDuplicateGroupDtos()
+    {
+        // Arrange
+        var releases = new List<Release>
+        {
+            MakeRelease(100, "John Coltrane", "A Love Supreme"),
+            MakeRelease(200, "John Coltrane", "A Love Supreme")
+        };
+        var duplicates = new List<(string Artist, string Title, List<Release> Releases)>
+        {
+            ("John Coltrane", "A Love Supreme", releases)
+        };
+
+        _repositoryMock
+            .Setup(r => r.GetDuplicatesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(duplicates);
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Artist.Should().Be("John Coltrane");
+        result[0].Title.Should().Be("A Love Supreme");
+        result[0].Releases.Should().HaveCount(2);
+        result[0].Releases[0].DiscogsId.Should().Be(100);
+        result[0].Releases[1].DiscogsId.Should().Be(200);
+    }
+
+    // ── GetDuplicatesAsync — no duplicates ────────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_NoDuplicates_ReturnsEmptyList()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.GetDuplicatesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<(string, string, List<Release>)>());
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
     // ── GetByIdAsync — not found ──────────────────────────────────────────────
 
     [Fact]
@@ -488,6 +537,62 @@ public class ReleasesServiceTests
 
         // Assert
         result.Items.Single().Genre.Should().BeNull();
+    }
+
+    // ── UpdateNotesAndRatingAsync — success ───────────────────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_ExistingRelease_ReturnsTrue()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.UpdateNotesAndRatingAsync(id, "Great album!", 5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _sut.UpdateNotesAndRatingAsync(id, "Great album!", 5, CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    // ── UpdateNotesAndRatingAsync — not found ─────────────────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_NonexistentRelease_ReturnsFalse()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.UpdateNotesAndRatingAsync(id, It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _sut.UpdateNotesAndRatingAsync(id, "Notes", 4, CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    // ── UpdateNotesAndRatingAsync — pass-through ──────────────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_PassesParametersToRepository()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.UpdateNotesAndRatingAsync(id, "Test notes", 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        await _sut.UpdateNotesAndRatingAsync(id, "Test notes", 3, CancellationToken.None);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.UpdateNotesAndRatingAsync(id, "Test notes", 3, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     // ── GetReleasesAsync — filter pass-through (ABM-015 + ABM-016) ───────────

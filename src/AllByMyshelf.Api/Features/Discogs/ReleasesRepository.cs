@@ -20,21 +20,21 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     /// <inheritdoc/>
     public async Task<IReadOnlyList<(string Artist, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken)
     {
-        var duplicates = await db.Releases
+        var allReleases = await db.Releases
             .AsNoTracking()
-            .GroupBy(r => new { Artist = r.Artist.ToLower(), Title = r.Title.ToLower() })
-            .Where(g => g.Count() > 1)
-            .Select(g => new
-            {
-                Artist = g.First().Artist,
-                Title = g.First().Title,
-                Releases = g.OrderBy(r => r.Year).ThenBy(r => r.DiscogsId).ToList()
-            })
-            .OrderBy(g => g.Artist)
-            .ThenBy(g => g.Title)
             .ToListAsync(cancellationToken);
 
-        return duplicates.Select(d => (d.Artist, d.Title, d.Releases)).ToList();
+        return allReleases
+            .GroupBy(r => new { Artist = r.Artist.ToLower(), Title = r.Title.ToLower() })
+            .Where(g => g.Count() > 1)
+            .OrderBy(g => g.First().Artist)
+            .ThenBy(g => g.First().Title)
+            .Select(g => (
+                g.First().Artist,
+                g.First().Title,
+                g.OrderBy(r => r.Year).ThenBy(r => r.DiscogsId).ToList()
+            ))
+            .ToList();
     }
 
     /// <inheritdoc/>

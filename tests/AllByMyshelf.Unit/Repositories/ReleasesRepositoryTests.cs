@@ -106,6 +106,115 @@ public class ReleasesRepositoryTests : IDisposable
         result.Title.Should().Be("The Black Saint");
     }
 
+    // ── GetDuplicatesAsync — no duplicates ────────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_NoDuplicates_ReturnsEmptyList()
+    {
+        // Arrange — all releases have unique artist/title
+        _db.Releases.AddRange(
+            MakeRelease(1, "Artist A", "Album A"),
+            MakeRelease(2, "Artist B", "Album B")
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    // ── GetDuplicatesAsync — with duplicates ──────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_WithDuplicates_ReturnsGroupedReleases()
+    {
+        // Arrange — two releases with same artist and title
+        _db.Releases.AddRange(
+            MakeRelease(100, "John Coltrane", "A Love Supreme", 1964),
+            MakeRelease(200, "John Coltrane", "A Love Supreme", 1965)
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Artist.Should().Be("John Coltrane");
+        result[0].Title.Should().Be("A Love Supreme");
+        result[0].Releases.Should().HaveCount(2);
+    }
+
+    // ── GetDuplicatesAsync — ordering ─────────────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_MultipleGroups_OrdersByArtistThenTitle()
+    {
+        // Arrange — two duplicate groups
+        _db.Releases.AddRange(
+            MakeRelease(1, "Zebra", "First Album", 2000),
+            MakeRelease(2, "Zebra", "First Album", 2001),
+            MakeRelease(3, "Alpha", "Second Album", 2000),
+            MakeRelease(4, "Alpha", "Second Album", 2001)
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].Artist.Should().Be("Alpha");
+        result[1].Artist.Should().Be("Zebra");
+    }
+
+    [Fact]
+    public async Task GetDuplicatesAsync_ReleasesWithinGroup_OrderedByYearThenDiscogsId()
+    {
+        // Arrange — same artist/title, different years and Discogs IDs
+        _db.Releases.AddRange(
+            MakeRelease(300, "Artist", "Album", 1965),
+            MakeRelease(100, "Artist", "Album", 1964),
+            MakeRelease(200, "Artist", "Album", 1964)
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Releases.Should().HaveCount(3);
+        result[0].Releases[0].Year.Should().Be(1964);
+        result[0].Releases[0].DiscogsId.Should().Be(100);
+        result[0].Releases[1].Year.Should().Be(1964);
+        result[0].Releases[1].DiscogsId.Should().Be(200);
+        result[0].Releases[2].Year.Should().Be(1965);
+        result[0].Releases[2].DiscogsId.Should().Be(300);
+    }
+
+    // ── GetDuplicatesAsync — case-insensitive ─────────────────────────────────
+
+    [Fact]
+    public async Task GetDuplicatesAsync_CaseInsensitive_GroupsTogetherDifferentCases()
+    {
+        // Arrange — same artist/title in different cases
+        _db.Releases.AddRange(
+            MakeRelease(1, "John Coltrane", "A Love Supreme"),
+            MakeRelease(2, "john coltrane", "a love supreme")
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Releases.Should().HaveCount(2);
+    }
+
     // ── GetByIdAsync — not found ──────────────────────────────────────────────
 
     [Fact]
@@ -438,6 +547,85 @@ public class ReleasesRepositoryTests : IDisposable
         var stored = await _db.Releases.ToListAsync();
         stored.Should().HaveCount(1);
         stored.Single().DiscogsId.Should().Be(701);
+    }
+
+    // ── UpdateNotesAndRatingAsync — existing release ──────────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_ExistingRelease_UpdatesNotesAndRating()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        release.Notes = "Old notes";
+        release.Rating = 3;
+        _db.Releases.Add(release);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.UpdateNotesAndRatingAsync(id, "New notes", 5, CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+        var updated = await _db.Releases.FindAsync(id);
+        updated!.Notes.Should().Be("New notes");
+        updated.Rating.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_ExistingRelease_ReturnsTrue()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        _db.Releases.Add(release);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.UpdateNotesAndRatingAsync(id, "Notes", 4, CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    // ── UpdateNotesAndRatingAsync — nonexistent release ───────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_NonexistentRelease_ReturnsFalse()
+    {
+        // Arrange
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var result = await _sut.UpdateNotesAndRatingAsync(unknownId, "Notes", 4, CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    // ── UpdateNotesAndRatingAsync — null values ───────────────────────────────
+
+    [Fact]
+    public async Task UpdateNotesAndRatingAsync_NullValues_UpdatesWithNulls()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        release.Notes = "Old notes";
+        release.Rating = 3;
+        _db.Releases.Add(release);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _sut.UpdateNotesAndRatingAsync(id, null, null, CancellationToken.None);
+
+        // Assert
+        var updated = await _db.Releases.FindAsync(id);
+        updated!.Notes.Should().BeNull();
+        updated.Rating.Should().BeNull();
     }
 
     // ── UpsertCollectionAsync — detail fields persisted and retrieved ──────────

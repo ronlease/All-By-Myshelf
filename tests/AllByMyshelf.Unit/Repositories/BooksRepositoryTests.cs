@@ -174,6 +174,56 @@ public class BooksRepositoryTests : IDisposable
         result.TotalCount.Should().Be(2);
     }
 
+    // ── GetRandomAsync — empty database ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetRandomAsync_EmptyDatabase_ReturnsNull()
+    {
+        // Act
+        var result = await _sut.GetRandomAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── GetRandomAsync — with data ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetRandomAsync_WithData_ReturnsBook()
+    {
+        // Arrange
+        _db.Books.AddRange(
+            MakeBook(1, "Author A", "Book A"),
+            MakeBook(2, "Author B", "Book B"),
+            MakeBook(3, "Author C", "Book C")
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetRandomAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.HardcoverId.Should().BeOneOf(1, 2, 3);
+    }
+
+    [Fact]
+    public async Task GetRandomAsync_SingleBook_ReturnsThatBook()
+    {
+        // Arrange
+        var book = MakeBook(42, "Single Author", "Single Book");
+        _db.Books.Add(book);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetRandomAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.HardcoverId.Should().Be(42);
+        result.Title.Should().Be("Single Book");
+    }
+
     // ── GetPagedAsync — with pagination ───────────────────────────────────────
 
     [Fact]

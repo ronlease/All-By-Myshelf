@@ -517,6 +517,171 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body[2].Title.Should().Be("Oldest");
     }
 
+    // ── GET /api/v1/releases/duplicates — duplicate releases ─────────────────
+
+    [Fact]
+    public async Task GetDuplicates_ReleasesWithSameArtistAndTitle_ReturnsGroupedDuplicates()
+    {
+        // Arrange — two releases with same artist and title but different Discogs IDs
+        var release1 = new Release
+        {
+            Artist = "John Coltrane",
+            DiscogsId = 100,
+            Format = "Vinyl",
+            Genre = "Jazz",
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = "A Love Supreme",
+            Year = 1964
+        };
+        var release2 = new Release
+        {
+            Artist = "John Coltrane",
+            DiscogsId = 200,
+            Format = "CD",
+            Genre = "Jazz",
+            Id = Guid.NewGuid(),
+            LastSyncedAt = DateTimeOffset.UtcNow,
+            Title = "A Love Supreme",
+            Year = 1965
+        };
+        var client = CreateClientWithSeededData(new[] { release1, release2 });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/duplicates");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<DuplicateGroupDto>>();
+        body.Should().HaveCount(1);
+        body![0].Artist.Should().Be("John Coltrane");
+        body[0].Title.Should().Be("A Love Supreme");
+        body[0].Releases.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetDuplicates_NoDuplicates_ReturnsEmptyArray()
+    {
+        // Arrange — releases with different titles
+        var release1 = MakeRelease(1, "Artist A", "Album A");
+        var release2 = MakeRelease(2, "Artist B", "Album B");
+        var client = CreateClientWithSeededData(new[] { release1, release2 });
+
+        // Act
+        var response = await client.GetAsync("/api/v1/releases/duplicates");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<DuplicateGroupDto>>();
+        body.Should().BeEmpty();
+    }
+
+    // ── PUT /api/v1/releases/{id}/notes-rating — update notes and rating ─────
+
+    [Fact]
+    public async Task UpdateNotesAndRating_ValidData_Returns204()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        var client = CreateClientWithSeededData(new[] { release });
+        var dto = new { notes = "Great album!", rating = 5 };
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/v1/releases/{id}/notes-rating", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRating_ValidData_UpdatesDatabase()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        var factory = _factory; // Need to access factory to verify DB state
+        var client = CreateClientWithSeededData(new[] { release });
+        var dto = new { notes = "Great album!", rating = 5 };
+
+        // Act
+        await client.PutAsJsonAsync($"/api/v1/releases/{id}/notes-rating", dto);
+
+        // Assert — verify by reading back
+        var getResponse = await client.GetAsync($"/api/v1/releases/{id}");
+        var body = await getResponse.Content.ReadFromJsonAsync<ReleaseDetailDto>();
+        body!.Notes.Should().Be("Great album!");
+        body.Rating.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRating_InvalidRating_Returns400()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        var client = CreateClientWithSeededData(new[] { release });
+        var dto = new { notes = (string?)null, rating = 6 }; // rating > 5 is invalid
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/v1/releases/{id}/notes-rating", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRating_RatingZero_Returns400()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        var client = CreateClientWithSeededData(new[] { release });
+        var dto = new { notes = (string?)null, rating = 0 }; // rating < 1 is invalid
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/v1/releases/{id}/notes-rating", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRating_UnknownId_Returns404()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+        var unknownId = Guid.NewGuid();
+        var dto = new { notes = "Notes", rating = (int?)null };
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/v1/releases/{unknownId}/notes-rating", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateNotesAndRating_NullRating_Returns204()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeRelease(1, "Artist", "Album");
+        release.Id = id;
+        var client = CreateClientWithSeededData(new[] { release });
+        var dto = new { notes = "Just notes", rating = (int?)null };
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/api/v1/releases/{id}/notes-rating", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
     // ── GET /api/v1/releases/maintenance — incomplete releases ──────────────
 
     [Fact]

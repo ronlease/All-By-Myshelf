@@ -14,16 +14,6 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public class ReleasesController(IReleasesService releasesService) : ControllerBase
 {
     /// <summary>
-    /// Returns a randomly selected release, optionally filtered by format, genre, or decade.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <param name="decade">Optional decade filter in the form "1980s".</param>
-    /// <param name="format">Optional case-insensitive contains filter on the format.</param>
-    /// <param name="genre">Optional case-insensitive contains filter on the genre.</param>
-    /// <returns>A randomly selected release matching the specified criteria.</returns>
-    /// <response code="200">Returns a randomly selected release.</response>
-    /// <response code="404">No releases match the specified criteria.</response>
-    /// <summary>
     /// Returns groups of releases that share the same artist and title but have different Discogs IDs.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -38,6 +28,12 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
         return Ok(result);
     }
 
+    /// <summary>
+    /// Returns releases that have incomplete data and may need manual attention.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A list of releases with missing or incomplete data.</returns>
+    /// <response code="200">Returns the list of incomplete releases (may be empty).</response>
     [HttpGet("maintenance")]
     [ProducesResponseType(typeof(IReadOnlyList<MaintenanceReleaseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<MaintenanceReleaseDto>>> GetMaintenanceReleases(
@@ -47,6 +43,16 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
         return Ok(result);
     }
 
+    /// <summary>
+    /// Returns a randomly selected release, optionally filtered by format, genre, or decade.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="decade">Optional decade filter in the form "1980s".</param>
+    /// <param name="format">Optional case-insensitive contains filter on the format.</param>
+    /// <param name="genre">Optional case-insensitive contains filter on the genre.</param>
+    /// <returns>A randomly selected release matching the specified criteria.</returns>
+    /// <response code="200">Returns a randomly selected release.</response>
+    /// <response code="404">No releases match the specified criteria.</response>
     [HttpGet("random")]
     [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -69,13 +75,11 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     }
 
     /// <summary>
-    /// Returns the full detail for a single release.
+    /// Returns the most recently added releases.
     /// </summary>
-    /// <param name="id">The application-generated GUID for the release.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Full release detail including label, country, genre, styles, and notes.</returns>
-    /// <response code="200">Returns the release detail.</response>
-    /// <response code="404">No release with the specified ID was found.</response>
+    /// <returns>A list of recently added releases.</returns>
+    /// <response code="200">Returns the list of recently added releases (may be empty).</response>
     [HttpGet("recent")]
     [ProducesResponseType(typeof(IReadOnlyList<ReleaseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ReleaseDto>>> GetRecentlyAdded(
@@ -85,6 +89,14 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
         return Ok(result);
     }
 
+    /// <summary>
+    /// Returns the full detail for a single release.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Full release detail including label, country, genre, styles, and notes.</returns>
+    /// <response code="200">Returns the release detail.</response>
+    /// <response code="404">No release with the specified ID was found.</response>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
