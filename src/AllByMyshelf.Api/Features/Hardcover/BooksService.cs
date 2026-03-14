@@ -22,6 +22,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
             Genre: b.Genre,
             HardcoverId: b.HardcoverId,
             Id: b.Id,
+            Slug: b.Slug,
             Title: b.Title,
             Year: b.Year
         )).ToList();
@@ -49,6 +50,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
             Genre = book.Genre,
             HardcoverId = book.HardcoverId,
             Id = book.Id,
+            Slug = book.Slug,
             Title = book.Title,
             Year = book.Year
         };
@@ -67,6 +69,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
             Genre: book.Genre,
             HardcoverId: book.HardcoverId,
             Id: book.Id,
+            Slug: book.Slug,
             Title: book.Title,
             Year: book.Year
         );

@@ -11,6 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
@@ -35,6 +36,7 @@ import { SyncStateService } from '../../../core/sync/sync-state.service';
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSnackBarModule,
+    MatSortModule,
     MatTableModule,
     RouterModule,
   ],
@@ -66,6 +68,8 @@ export class CollectionComponent implements OnInit, OnDestroy {
   private searchTimer?: ReturnType<typeof setTimeout>;
   searchTerm = signal('');
   private readonly snackBar = inject(MatSnackBar);
+  sortActive = signal('title');
+  sortDirection = signal<'asc' | 'desc'>('asc');
   private subscription?: Subscription;
   private readonly syncState = inject(SyncStateService);
   yearFilter = signal<string[]>([]);
@@ -97,6 +101,15 @@ export class CollectionComponent implements OnInit, OnDestroy {
 
     const yf = this.yearFilter();
     if (yf.length) releases = releases.filter(r => yf.includes(this.columnValue(r, 'year')));
+
+    const sortCol = this.sortActive();
+    const sortDir = this.sortDirection();
+    releases = [...releases].sort((a, b) => {
+      const aVal = this.columnValue(a, sortCol);
+      const bVal = this.columnValue(b, sortCol);
+      const comparison = aVal.localeCompare(bVal);
+      return sortDir === 'asc' ? comparison : -comparison;
+    });
 
     return releases;
   }
@@ -251,5 +264,10 @@ export class CollectionComponent implements OnInit, OnDestroy {
   onSearchChange(): void {
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.currentPage.set(1), 300);
+  }
+
+  onSortChange(sort: Sort): void {
+    this.sortActive.set(sort.active);
+    this.sortDirection.set(sort.direction as 'asc' | 'desc' || 'asc');
   }
 }

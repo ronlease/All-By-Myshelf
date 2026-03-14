@@ -9,6 +9,7 @@ export interface BookDetailDto {
   genre: string | null;
   hardcoverId: number;
   id: string;
+  slug: string | null;
   title: string;
   year: number | null;
 }
@@ -19,6 +20,7 @@ export interface BookDto {
   genre: string | null;
   hardcoverId: number;
   id: string;
+  slug: string | null;
   title: string;
   year: number | null;
 }

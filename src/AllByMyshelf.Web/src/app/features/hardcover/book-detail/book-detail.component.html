@@ -56,7 +56,7 @@
             <a
               mat-raised-button
               color="primary"
-              [href]="'https://hardcover.app/books/' + book()!.hardcoverId"
+              [href]="'https://hardcover.app/books/' + (book()!.slug ?? book()!.hardcoverId)"
               target="_blank"
               rel="noopener noreferrer"
             >

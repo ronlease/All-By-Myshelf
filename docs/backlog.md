@@ -3075,7 +3075,7 @@ Feature: Book detail view
 
 ## [ABM-050] Books List Column Sorting
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3132,7 +3132,7 @@ Feature: Books list column sorting
 
 ## [ABM-051] Books List Grouping by Author and Decade
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3202,7 +3202,7 @@ Feature: Books list grouping
 
 ## [ABM-052] Books List Search
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3256,7 +3256,7 @@ Feature: Books list search
 
 ## [ABM-053] Store BGG Username in Settings
 
-**Status:** Backlog
+**Status:** In Progress (frontend done, backend pending)
 **Priority:** High
 
 ### Business Problem
@@ -3641,7 +3641,7 @@ Feature: Board games in unified statistics
 
 ## [ABM-059] Recategorize "Records" as "Music"
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -3698,7 +3698,7 @@ Feature: Recategorize Records as Music in UI
 
 ## [ABM-060] Quick Theme Toggle in App Bar
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3754,4 +3754,132 @@ Feature: Quick theme toggle in app bar
     Then the theme toggle is positioned without overlapping the sync button
     And the theme toggle is positioned without overlapping navigation elements
     And all app bar elements remain functional
+```
+
+---
+
+## [ABM-061] Random Picker History with Configurable Count
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+When using the random picker, I get one result at a time and it disappears when I pick again. I want to keep a visible history of recent picks so I can compare options. Each new pick should slide to the top of a list, keeping up to a configurable number of results on screen (controlled by a dropdown). This makes it easy to browse several random suggestions before deciding.
+
+### Acceptance Criteria
+```gherkin
+Feature: Random picker history with configurable count
+
+  Scenario: Configure pick history limit via dropdown
+    Given I am on a page with the random picker
+    When I view the random picker controls
+    Then a dropdown is available to select the number of picks to keep visible
+    And the dropdown options are 1, 3, 5, or 10
+    And the default selection is 1 (current behavior)
+
+  Scenario: New pick appears at top of history list
+    Given I have selected a pick history limit of 3
+    And I have already made 1 pick
+    When I click the random pick button
+    Then the new result appears at the top of the list
+    And the previous pick slides down to the second position
+
+  Scenario: Oldest picks are removed when limit is exceeded
+    Given I have selected a pick history limit of 3
+    And I have already made 3 picks
+    When I click the random pick button
+    Then the new result appears at the top of the list
+    And the oldest pick (previously at position 3) is removed
+    And only 3 picks remain visible
+
+  Scenario: Each pick in the list is clickable
+    Given I have made multiple picks
+    When I click on any pick in the history list
+    Then I am navigated to the detail page for that item
+
+  Scenario: Changing context resets the history
+    Given I am in the Music context with picks in my history
+    When I switch to the Books context
+    Then the pick history is cleared
+    And I start with an empty history list
+
+  Scenario: Clearing the list resets the history
+    Given I have picks in my history
+    When I click the clear history button
+    Then all picks are removed from the list
+    And I start with an empty history list
+
+  Scenario: Pick count preference persists across page visits
+    Given I have selected a pick history limit of 5
+    When I navigate away from the page and return
+    Then the pick history limit dropdown still shows 5
+    And the preference was stored in localStorage
+```
+
+---
+
+## [ABM-062] Support Multiple Authors and Artists for Collaborations
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+Some books have multiple authors (co-authored works, edited anthologies) and some music releases have multiple artists (collaborations, split releases, featuring artists). Currently the app stores a single author for books and a single artist for records. Supporting multiple creators would enable more accurate metadata, better filtering (find all books that include a specific author even in collaborations), and more meaningful statistics breakdowns.
+
+### Acceptance Criteria
+```gherkin
+Feature: Support multiple authors and artists for collaborations
+
+  Scenario: Books can store multiple authors
+    Given a book has multiple authors (e.g., "Good Omens" by Terry Pratchett and Neil Gaiman)
+    When the book is synced or imported
+    Then both authors are stored as separate entries linked to the book
+    And the data is stored as a normalized list (not a comma-separated string)
+
+  Scenario: Records can store multiple artists
+    Given a record has multiple artists (e.g., "Under Pressure" by David Bowie and Queen)
+    When the record is synced or imported
+    Then both artists are stored as separate entries linked to the record
+    And the data is stored as a normalized list (not a comma-separated string)
+
+  Scenario: Filtering by author matches any creator on a work
+    Given "Good Omens" has authors Terry Pratchett and Neil Gaiman
+    When I filter the books list by author "Neil Gaiman"
+    Then "Good Omens" appears in the results
+    When I filter the books list by author "Terry Pratchett"
+    Then "Good Omens" also appears in the results
+
+  Scenario: Filtering by artist matches any creator on a work
+    Given "Under Pressure" has artists David Bowie and Queen
+    When I filter the music list by artist "David Bowie"
+    Then "Under Pressure" appears in the results
+    When I filter the music list by artist "Queen"
+    Then "Under Pressure" also appears in the results
+
+  Scenario: Search matches any creator name
+    Given "Good Omens" has authors Terry Pratchett and Neil Gaiman
+    When I search for "Gaiman"
+    Then "Good Omens" appears in the search results
+    When I search for "Pratchett"
+    Then "Good Omens" appears in the search results
+
+  Scenario: Statistics count works per individual creator
+    Given "Good Omens" has authors Terry Pratchett and Neil Gaiman
+    When I view statistics broken down by author
+    Then "Good Omens" is counted once for Terry Pratchett
+    And "Good Omens" is counted once for Neil Gaiman
+    And the total book count is not inflated (collaboration counts as 1 book total)
+
+  Scenario: Detail view displays all creators
+    Given "Good Omens" has authors Terry Pratchett and Neil Gaiman
+    When I view the detail page for "Good Omens"
+    Then both authors are displayed
+    And each author name is visually distinct (e.g., comma-separated or listed)
+
+  Scenario: Existing single-author data migrates cleanly
+    Given existing books have a single author stored
+    When the migration runs
+    Then each existing author is converted to a single-entry list
+    And no data is lost
+    And the application continues to function correctly
 ```

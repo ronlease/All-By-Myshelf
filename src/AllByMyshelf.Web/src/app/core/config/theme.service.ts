@@ -25,10 +25,12 @@ export class ThemeService {
     }
   }
 
-  initialize(): void {
+  initialize(osDefault: 'light' | 'dark' = 'light'): void {
     const stored = localStorage.getItem(this.STORAGE_KEY) as Theme | null;
     if (stored && ['light', 'dark', 'os-default'].includes(stored)) {
       this.applyTheme(stored);
+    } else {
+      this.applyTheme(osDefault);
     }
   }
 }

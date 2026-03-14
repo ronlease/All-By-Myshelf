@@ -43,6 +43,10 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
             .HasColumnName("last_synced_at")
             .IsRequired();
 
+        builder.Property(b => b.Slug)
+            .HasColumnName("slug")
+            .HasMaxLength(500);
+
         builder.Property(b => b.Title)
             .HasColumnName("title")
             .HasMaxLength(1000)

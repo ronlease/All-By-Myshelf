@@ -23,6 +23,9 @@ public class Book
     /// <summary>UTC timestamp of the last sync that touched this record.</summary>
     public DateTimeOffset LastSyncedAt { get; set; }
 
+    /// <summary>URL slug used for Hardcover book page links.</summary>
+    public string? Slug { get; set; }
+
     /// <summary>Book title as returned by Hardcover.</summary>
     public string Title { get; set; } = string.Empty;
 
