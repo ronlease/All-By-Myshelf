@@ -30,6 +30,16 @@
 //
 // Feature: Statistics repository - unified statistics (ABM-034)
 //
+// Scenario: Books with authors
+//   Given 4 books: 3 by "Neil Gaiman" and 1 by "Terry Pratchett"
+//   When GetUnifiedStatisticsAsync is called
+//   Then Books.AuthorBreakdown has Neil Gaiman first with count 3
+//
+// Scenario: Books with decades
+//   Given 3 books with years 2001, 2005, 2019
+//   When GetUnifiedStatisticsAsync is called
+//   Then Books.DecadeBreakdown has "2000s" with count 2 and "2010s" with count 1
+//
 // Scenario: Books with genres
 //   Given 4 books: 3 with genre "Fiction" and 1 with genre "Biography"
 //   When GetUnifiedStatisticsAsync is called
@@ -89,15 +99,17 @@ public class StatisticsRepositoryTests : IDisposable
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static Book MakeBook(int hardcoverId, string title, string? genre = null) =>
+    private static Book MakeBook(int hardcoverId, string title, string? genre = null,
+        string? author = "Author", int? year = null) =>
         new()
         {
-            Author = "Author",
+            Author = author,
             Genre = genre,
             HardcoverId = hardcoverId,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
-            Title = title
+            Title = title,
+            Year = year
         };
 
     private static Release MakeRelease(int discogsId, string? format = null, string? genre = null, int? year = null) =>
@@ -208,6 +220,55 @@ public class StatisticsRepositoryTests : IDisposable
         result.ExcludedCount.Should().Be(2);
     }
 
+    // ── GetUnifiedStatisticsAsync — books with authors ────────────────────────
+
+    [Fact]
+    public async Task GetUnifiedStatisticsAsync_BooksWithAuthors_ReturnsAuthorBreakdownSortedByCountDesc()
+    {
+        // Arrange
+        _db.Books.AddRange(
+            MakeBook(1, "Book 1", author: "Neil Gaiman"),
+            MakeBook(2, "Book 2", author: "Neil Gaiman"),
+            MakeBook(3, "Book 3", author: "Neil Gaiman"),
+            MakeBook(4, "Book 4", author: "Terry Pratchett")
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetUnifiedStatisticsAsync(CancellationToken.None);
+
+        // Assert
+        result.Books.AuthorBreakdown.Should().HaveCount(2);
+        result.Books.AuthorBreakdown[0].Label.Should().Be("Neil Gaiman");
+        result.Books.AuthorBreakdown[0].Count.Should().Be(3);
+        result.Books.AuthorBreakdown[1].Label.Should().Be("Terry Pratchett");
+        result.Books.AuthorBreakdown[1].Count.Should().Be(1);
+    }
+
+    // ── GetUnifiedStatisticsAsync — books with decades ──────────────────────
+
+    [Fact]
+    public async Task GetUnifiedStatisticsAsync_BooksWithYears_ReturnsDecadeBreakdownSortedByLabel()
+    {
+        // Arrange
+        _db.Books.AddRange(
+            MakeBook(1, "Book 1", year: 2001),
+            MakeBook(2, "Book 2", year: 2005),
+            MakeBook(3, "Book 3", year: 2019)
+        );
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetUnifiedStatisticsAsync(CancellationToken.None);
+
+        // Assert
+        result.Books.DecadeBreakdown.Should().HaveCount(2);
+        result.Books.DecadeBreakdown[0].Label.Should().Be("2000s");
+        result.Books.DecadeBreakdown[0].Count.Should().Be(2);
+        result.Books.DecadeBreakdown[1].Label.Should().Be("2010s");
+        result.Books.DecadeBreakdown[1].Count.Should().Be(1);
+    }
+
     // ── GetUnifiedStatisticsAsync — books with genres ─────────────────────────
 
     [Fact]
@@ -249,6 +310,8 @@ public class StatisticsRepositoryTests : IDisposable
         result.Records.FormatBreakdown.Should().BeEmpty();
         result.Records.GenreBreakdown.Should().BeEmpty();
         result.Books.TotalCount.Should().Be(0);
+        result.Books.AuthorBreakdown.Should().BeEmpty();
+        result.Books.DecadeBreakdown.Should().BeEmpty();
         result.Books.GenreBreakdown.Should().BeEmpty();
     }
 

@@ -68,8 +68,23 @@ public class StatisticsRepository(AllByMyshelfDbContext dbContext) : IStatistics
         // --- Books ---
         var books = await dbContext.Books
             .AsNoTracking()
-            .Select(b => new { b.Genre })
+            .Select(b => new { b.Author, b.Genre, b.Year })
             .ToListAsync(cancellationToken);
+
+        var bookAuthorBreakdown = books
+            .Where(b => !string.IsNullOrWhiteSpace(b.Author))
+            .GroupBy(b => b.Author!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var bookDecadeBreakdown = books
+            .Where(b => b.Year.HasValue)
+            .GroupBy(b => (b.Year!.Value / 10) * 10)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = $"{g.Key}s" })
+            .OrderBy(b => b.Label)
+            .ToList();
 
         var bookGenreBreakdown = books
             .Where(b => !string.IsNullOrWhiteSpace(b.Genre))
@@ -81,6 +96,8 @@ public class StatisticsRepository(AllByMyshelfDbContext dbContext) : IStatistics
 
         var bookStats = new BookStatisticsDto
         {
+            AuthorBreakdown = bookAuthorBreakdown,
+            DecadeBreakdown = bookDecadeBreakdown,
             GenreBreakdown = bookGenreBreakdown,
             TotalCount = books.Count
         };

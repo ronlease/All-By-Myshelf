@@ -92,11 +92,39 @@
           @if (statistics()!.books.totalCount === 0) {
             <p class="empty-state">No books in your collection yet.</p>
           } @else {
+            @if (statistics()!.books.authorBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Author</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.books.authorBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+
             @if (statistics()!.books.genreBreakdown.length > 0) {
               <div class="stat-section">
                 <h3>By Genre</h3>
                 <mat-list dense>
                   @for (item of statistics()!.books.genreBreakdown; track item.label) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ item.label }}</span>
+                      <span matListItemMeta>{{ item.count }}</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              </div>
+            }
+
+            @if (statistics()!.books.decadeBreakdown.length > 0) {
+              <div class="stat-section">
+                <h3>By Decade</h3>
+                <mat-list dense>
+                  @for (item of statistics()!.books.decadeBreakdown; track item.label) {
                     <mat-list-item>
                       <span matListItemTitle>{{ item.label }}</span>
                       <span matListItemMeta>{{ item.count }}</span>
