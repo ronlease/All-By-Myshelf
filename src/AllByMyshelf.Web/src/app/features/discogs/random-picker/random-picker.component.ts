@@ -130,7 +130,7 @@ export class RandomPickerComponent implements OnInit {
       next: (res) => {
         this.allBooks.set(res.items);
       },
-      error: () => {},
+      error: () => this.loading.set(false),
     });
   }
 
