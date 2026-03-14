@@ -22,34 +22,35 @@
       </mat-card-content>
     </mat-card>
   } @else {
-    <mat-accordion multi>
-      @for (category of categories(); track category.name) {
-        <mat-expansion-panel expanded class="mat-elevation-z2">
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              <mat-icon class="category-icon">{{ category.icon }}</mat-icon>
-              {{ category.name }}
-            </mat-panel-title>
-            <mat-panel-description>{{ category.summary }}</mat-panel-description>
-          </mat-expansion-panel-header>
+    @for (category of categories(); track category.name) {
+      <mat-card class="category-card mat-elevation-z2">
+        <mat-card-header class="category-header" (click)="toggleCategory(category.name)">
+          <mat-icon matCardAvatar>{{ category.icon }}</mat-icon>
+          <mat-card-title>{{ category.name }}</mat-card-title>
+          <mat-card-subtitle>{{ category.summary }}</mat-card-subtitle>
+          <mat-icon class="expand-icon">{{ isCategoryExpanded(category.name) ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </mat-card-header>
 
-          <div class="breakdowns-row">
-            @for (breakdown of category.breakdowns; track breakdown.title) {
-              <div class="breakdown-column">
-                <h3>{{ breakdown.title }}</h3>
-                <mat-list dense>
-                  @for (item of breakdown.items; track item.label) {
-                    <mat-list-item class="clickable-item" (click)="onLabelClick(breakdown.route, breakdown.groupByField, item.label)">
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-          </div>
-        </mat-expansion-panel>
-      }
-    </mat-accordion>
+        @if (isCategoryExpanded(category.name)) {
+          <mat-card-content>
+            <div class="breakdowns-row">
+              @for (breakdown of category.breakdowns; track breakdown.title) {
+                <div class="breakdown-column">
+                  <h3>{{ breakdown.title }}</h3>
+                  <mat-list dense>
+                    @for (item of breakdown.items; track item.label) {
+                      <mat-list-item class="clickable-item" (click)="onLabelClick(breakdown.route, breakdown.groupByField, item.label)">
+                        <span matListItemTitle>{{ item.label }}</span>
+                        <span matListItemMeta>{{ item.count }}</span>
+                      </mat-list-item>
+                    }
+                  </mat-list>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        }
+      </mat-card>
+    }
   }
 </div>

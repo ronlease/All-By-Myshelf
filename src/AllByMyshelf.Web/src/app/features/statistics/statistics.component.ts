@@ -2,7 +2,6 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -22,7 +21,6 @@ export interface CategorySection {
   imports: [
     MatButtonModule,
     MatCardModule,
-    MatExpansionModule,
     MatIconModule,
     MatListModule,
     MatProgressSpinnerModule,
@@ -85,11 +83,16 @@ export class StatisticsComponent implements OnInit {
 
     return sections;
   });
+  collapsedCategories = signal<Set<string>>(new Set());
   error = signal(false);
   loading = signal(true);
   private readonly router = inject(Router);
   statistics = signal<UnifiedStatisticsDto | null>(null);
   private readonly statisticsService = inject(StatisticsService);
+
+  isCategoryExpanded(name: string): boolean {
+    return !this.collapsedCategories().has(name);
+  }
 
   ngOnInit(): void {
     this.statisticsService.getAll().subscribe({
@@ -112,5 +115,15 @@ export class StatisticsComponent implements OnInit {
     this.error.set(false);
     this.loading.set(true);
     this.ngOnInit();
+  }
+
+  toggleCategory(name: string): void {
+    const current = new Set(this.collapsedCategories());
+    if (current.has(name)) {
+      current.delete(name);
+    } else {
+      current.add(name);
+    }
+    this.collapsedCategories.set(current);
   }
 }

@@ -1,7 +1,7 @@
 .breakdowns-row {
   display: flex;
-  gap: 32px;
   flex-wrap: wrap;
+  gap: 32px;
 }
 
 .breakdown-column {
@@ -18,8 +18,12 @@
   }
 }
 
-.category-icon {
-  margin-right: 8px;
+.category-card {
+  margin-bottom: 16px;
+}
+
+.category-header {
+  cursor: pointer;
 }
 
 .clickable-item {
@@ -28,6 +32,10 @@
   &:hover {
     background: rgba(0, 0, 0, 0.04);
   }
+}
+
+.expand-icon {
+  margin-left: auto;
 }
 
 html.dark-theme .clickable-item:hover {
