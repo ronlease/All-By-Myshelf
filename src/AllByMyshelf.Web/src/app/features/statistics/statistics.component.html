@@ -24,7 +24,7 @@
   } @else {
     <mat-accordion multi>
       @for (category of categories(); track category.name) {
-        <mat-expansion-panel expanded>
+        <mat-expansion-panel expanded class="mat-elevation-z2">
           <mat-expansion-panel-header>
             <mat-panel-title>
               <mat-icon class="category-icon">{{ category.icon }}</mat-icon>
