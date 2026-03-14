@@ -2090,7 +2090,7 @@ Feature: Books dashboard
 
 ## [ABM-034] Unified Statistics Dashboard for Records and Books
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
