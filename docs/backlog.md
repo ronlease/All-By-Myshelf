@@ -3075,7 +3075,7 @@ Feature: Book detail view
 
 ## [ABM-050] Books List Column Sorting
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3132,7 +3132,7 @@ Feature: Books list column sorting
 
 ## [ABM-051] Books List Grouping by Author and Decade
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3202,7 +3202,7 @@ Feature: Books list grouping
 
 ## [ABM-052] Books List Search
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3256,7 +3256,7 @@ Feature: Books list search
 
 ## [ABM-053] Store BGG Username in Settings
 
-**Status:** Backlog
+**Status:** In Progress (frontend done, backend pending)
 **Priority:** High
 
 ### Business Problem
@@ -3641,7 +3641,7 @@ Feature: Board games in unified statistics
 
 ## [ABM-059] Recategorize "Records" as "Music"
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -3698,7 +3698,7 @@ Feature: Recategorize Records as Music in UI
 
 ## [ABM-060] Quick Theme Toggle in App Bar
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
