@@ -53,12 +53,18 @@
               }
             </mat-list>
 
-            @if (release()!.lowestPrice !== null && release()!.medianPrice !== null && release()!.highestPrice !== null) {
+            @if (release()!.lowestPrice !== null || release()!.medianPrice !== null || release()!.highestPrice !== null) {
               <div class="pricing-section">
                 <h3>Marketplace Pricing</h3>
                 <p class="pricing-display">
-                  ${{ Math.round(release()!.medianPrice!) }}
-                  (${{ Math.round(release()!.lowestPrice!) }} - ${{ Math.round(release()!.highestPrice!) }})
+                  @if (release()!.medianPrice !== null && release()!.lowestPrice !== null && release()!.highestPrice !== null) {
+                    ${{ Math.round(release()!.medianPrice!) }}
+                    (${{ Math.round(release()!.lowestPrice!) }} – ${{ Math.round(release()!.highestPrice!) }})
+                  } @else if (release()!.lowestPrice !== null) {
+                    From ${{ Math.round(release()!.lowestPrice!) }}
+                  } @else if (release()!.medianPrice !== null) {
+                    ~${{ Math.round(release()!.medianPrice!) }}
+                  }
                 </p>
               </div>
             }
