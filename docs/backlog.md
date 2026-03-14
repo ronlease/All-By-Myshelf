@@ -3256,7 +3256,7 @@ Feature: Books list search
 
 ## [ABM-053] Store BGG Username in Settings
 
-**Status:** In Progress (frontend done, backend pending)
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -3311,7 +3311,7 @@ Feature: BGG username configuration
 
 ## [ABM-054] BGG API Client and Background Sync Service
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 **Depends on:** ABM-053
 
@@ -3379,7 +3379,7 @@ Feature: BGG API client and background sync
 
 ## [ABM-055] Persist BGG Collection to Database
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 **Depends on:** ABM-054
 
@@ -3431,7 +3431,7 @@ Feature: Persist BGG collection to database
 
 ## [ABM-056] Paginated Board Games API Endpoint
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 **Depends on:** ABM-055
 
@@ -3529,7 +3529,7 @@ Feature: Board games API endpoints
 
 ## [ABM-057] Board Games Dashboard (Frontend)
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 **Depends on:** ABM-056
 
@@ -3593,7 +3593,7 @@ Feature: Board games dashboard
 
 ## [ABM-058] Add Board Games to Unified Statistics
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 **Depends on:** ABM-055, ABM-034
 
@@ -3760,7 +3760,7 @@ Feature: Quick theme toggle in app bar
 
 ## [ABM-061] Random Picker History with Configurable Count
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem

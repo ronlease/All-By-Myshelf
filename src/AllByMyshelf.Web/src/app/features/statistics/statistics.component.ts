@@ -35,6 +35,20 @@ export class StatisticsComponent implements OnInit {
 
     const sections: CategorySection[] = [];
 
+    if (stats.boardGames.totalCount > 0) {
+      const breakdowns: CategorySection['breakdowns'] = [];
+      if (stats.boardGames.genreBreakdown.length > 0) {
+        breakdowns.push({ groupByField: 'genre', items: stats.boardGames.genreBreakdown, route: '/board-games', title: 'By Genre' });
+      }
+      sections.push({
+        breakdowns,
+        icon: 'extension',
+        name: 'Board Games',
+        summary: `${stats.boardGames.totalCount} game${stats.boardGames.totalCount === 1 ? '' : 's'}`,
+        totalCount: stats.boardGames.totalCount,
+      });
+    }
+
     if (stats.books.totalCount > 0) {
       const breakdowns: CategorySection['breakdowns'] = [];
       if (stats.books.authorBreakdown.length > 0) {

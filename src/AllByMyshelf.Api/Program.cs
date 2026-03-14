@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Features.Bgg;
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Features.Statistics;
@@ -22,6 +23,17 @@ builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 builder.Services.AddDbContext<AllByMyshelfDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
+// ── BGG configuration ─────────────────────────────────────────────────────────
+builder.Services.AddOptions<BggOptions>()
+    .Bind(builder.Configuration.GetSection(BggOptions.SectionName));
+
+// ── BGG HTTP client ───────────────────────────────────────────────────────────
+builder.Services.AddHttpClient<BggClient>(client =>
+{
+    client.BaseAddress = new Uri("https://boardgamegeek.com");
+    client.DefaultRequestHeaders.Add("User-Agent", "AllByMyshelf/1.0");
+});
+
 // ── Discogs configuration ─────────────────────────────────────────────────────
 builder.Services.AddOptions<DiscogsOptions>()
     .Bind(builder.Configuration.GetSection(DiscogsOptions.SectionName));
@@ -43,12 +55,19 @@ builder.Services.AddHttpClient("Hardcover");
 builder.Services.AddScoped<HardcoverClient>();
 
 // ── Repositories & services ───────────────────────────────────────────────────
+builder.Services.AddScoped<IBoardGamesRepository, BoardGamesRepository>();
+builder.Services.AddScoped<IBoardGamesService, BoardGamesService>();
 builder.Services.AddScoped<IBooksRepository, BooksRepository>();
 builder.Services.AddScoped<IBooksService, BooksService>();
 builder.Services.AddScoped<IReleasesRepository, ReleasesRepository>();
 builder.Services.AddScoped<IReleasesService, ReleasesService>();
 builder.Services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 builder.Services.AddScoped<IWantlistRepository, WantlistRepository>();
+
+// BoardGamesSyncService is a singleton BackgroundService; also exposed as IBoardGamesSyncService.
+builder.Services.AddSingleton<BoardGamesSyncService>();
+builder.Services.AddSingleton<IBoardGamesSyncService>(sp => sp.GetRequiredService<BoardGamesSyncService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<BoardGamesSyncService>());
 
 // BooksSyncService is a singleton BackgroundService; also exposed as IBooksSyncService.
 builder.Services.AddSingleton<BooksSyncService>();

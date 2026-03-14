@@ -12,12 +12,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 import { DiscogsService, ReleaseDetailDto, ReleaseDto } from '../discogs.service';
+import { BoardGameDto, BggService } from '../../bgg/bgg.service';
 import { BookDto, HardcoverService } from '../../hardcover/hardcover.service';
 import { FeaturesService } from '../../../core/config/features.service';
 import { FormatIconPipe } from '../format-icon.pipe';
 
-type PickContext = 'records' | 'books';
-type PickResult = ReleaseDetailDto | BookDto | null;
+type PickContext = 'records' | 'books' | 'board-games';
+type PickResult = ReleaseDetailDto | BookDto | BoardGameDto;
 
 @Component({
   selector: 'app-random-picker',
@@ -39,8 +40,11 @@ type PickResult = ReleaseDetailDto | BookDto | null;
   templateUrl: './random-picker.component.html',
 })
 export class RandomPickerComponent implements OnInit {
+  allBoardGames = signal<BoardGameDto[]>([]);
   allBooks = signal<BookDto[]>([]);
   allReleases = signal<ReleaseDto[]>([]);
+  bggEnabled = signal(false);
+  private readonly bggService = inject(BggService);
   bookAuthorFilter = signal('');
   bookGenreFilter = signal('');
   context = signal<PickContext>('records');
@@ -53,8 +57,10 @@ export class RandomPickerComponent implements OnInit {
   hardcoverEnabled = signal(false);
   private readonly hardcoverService = inject(HardcoverService);
   loading = signal(true);
+  maxResults = signal(1);
+  readonly maxResultsOptions = [1, 3, 5, 10];
   picking = signal(false);
-  result = signal<PickResult>(null);
+  results = signal<PickResult[]>([]);
   private readonly router = inject(Router);
 
   get distinctBookAuthors(): string[] {
@@ -95,6 +101,10 @@ export class RandomPickerComponent implements OnInit {
     return Array.from(seen).sort((a, b) => a.localeCompare(b));
   }
 
+  isBoardGame(result: PickResult): result is BoardGameDto {
+    return result !== null && 'bggId' in result;
+  }
+
   isBook(result: PickResult): result is BookDto {
     return result !== null && 'hardcoverId' in result;
   }
@@ -105,18 +115,31 @@ export class RandomPickerComponent implements OnInit {
 
   ngOnInit(): void {
     this.featuresService.getFeatures().subscribe(features => {
+      this.bggEnabled.set(features.bggEnabled);
       this.discogsEnabled.set(features.discogsEnabled);
       this.hardcoverEnabled.set(features.hardcoverEnabled);
 
       const lastCollection = localStorage.getItem('last-collection');
-      if (lastCollection === 'books' && features.hardcoverEnabled) {
+      if (lastCollection === 'board-games' && features.bggEnabled) {
+        this.context.set('board-games');
+      } else if (lastCollection === 'books' && features.hardcoverEnabled) {
         this.context.set('books');
       } else if (features.discogsEnabled) {
         this.context.set('records');
       } else if (features.hardcoverEnabled) {
         this.context.set('books');
+      } else if (features.bggEnabled) {
+        this.context.set('board-games');
       }
     });
+
+    const savedMaxResults = localStorage.getItem('random-picker-max-results');
+    if (savedMaxResults) {
+      const parsed = parseInt(savedMaxResults, 10);
+      if (this.maxResultsOptions.includes(parsed)) {
+        this.maxResults.set(parsed);
+      }
+    }
 
     this.discogsService.getCollection(1, 10000).subscribe({
       next: (res) => {
@@ -132,15 +155,29 @@ export class RandomPickerComponent implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+
+    this.bggService.getBoardGames(1, 10000).subscribe({
+      next: (res) => {
+        this.allBoardGames.set(res.items);
+      },
+      error: () => this.loading.set(false),
+    });
   }
 
   onBackClick(): void {
     this.router.navigate(['/']);
   }
 
+  onContextChange(): void {
+    this.results.set([]);
+  }
+
+  onMaxResultsChange(): void {
+    localStorage.setItem('random-picker-max-results', this.maxResults().toString());
+  }
+
   onPickClick(): void {
     this.picking.set(true);
-    this.result.set(null);
 
     if (this.context() === 'records') {
       this.discogsService.getRandomRelease({
@@ -149,12 +186,14 @@ export class RandomPickerComponent implements OnInit {
         genre: this.genreFilter() || undefined,
       }).subscribe({
         next: (release) => {
-          this.result.set(release);
+          const current = this.results();
+          const updated = [release, ...current].slice(0, this.maxResults());
+          this.results.set(updated);
           this.picking.set(false);
         },
         error: () => this.picking.set(false),
       });
-    } else {
+    } else if (this.context() === 'books') {
       let filtered = this.allBooks();
       const authorFilter = this.bookAuthorFilter();
       const genreFilter = this.bookGenreFilter();
@@ -168,16 +207,32 @@ export class RandomPickerComponent implements OnInit {
 
       if (filtered.length > 0) {
         const randomIndex = Math.floor(Math.random() * filtered.length);
-        this.result.set(filtered[randomIndex]);
+        const picked = filtered[randomIndex];
+        const current = this.results();
+        const updated = [picked, ...current].slice(0, this.maxResults());
+        this.results.set(updated);
+      }
+      this.picking.set(false);
+    } else if (this.context() === 'board-games') {
+      const games = this.allBoardGames();
+      if (games.length > 0) {
+        const randomIndex = Math.floor(Math.random() * games.length);
+        const picked = games[randomIndex];
+        const current = this.results();
+        const updated = [picked, ...current].slice(0, this.maxResults());
+        this.results.set(updated);
       }
       this.picking.set(false);
     }
   }
 
-  onViewDetailsClick(): void {
-    const r = this.result();
-    if (this.isRelease(r)) {
-      this.router.navigate(['/releases', r.id]);
+  onViewDetailsClick(item: PickResult): void {
+    if (this.isRelease(item)) {
+      this.router.navigate(['/releases', item.id]);
+    } else if (this.isBook(item)) {
+      this.router.navigate(['/books', item.id]);
+    } else if (this.isBoardGame(item)) {
+      this.router.navigate(['/board-games', item.id]);
     }
   }
 }

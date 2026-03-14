@@ -8,6 +8,8 @@ public class AllByMyshelfDbContext(DbContextOptions<AllByMyshelfDbContext> optio
 {
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
+    public DbSet<BoardGame> BoardGames => Set<BoardGame>();
+
     public DbSet<Book> Books => Set<Book>();
 
     public DbSet<Release> Releases => Set<Release>();

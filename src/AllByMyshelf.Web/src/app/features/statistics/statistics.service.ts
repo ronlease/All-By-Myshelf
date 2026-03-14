@@ -3,6 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface BoardGameStatisticsDto {
+  genreBreakdown: BreakdownItemDto[];
+  totalCount: number;
+}
+
 export interface BookStatisticsDto {
   authorBreakdown: BreakdownItemDto[];
   decadeBreakdown: BreakdownItemDto[];
@@ -31,6 +36,7 @@ export interface RecordStatisticsDto {
 }
 
 export interface UnifiedStatisticsDto {
+  boardGames: BoardGameStatisticsDto;
   books: BookStatisticsDto;
   records: RecordStatisticsDto;
 }

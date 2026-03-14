@@ -20,6 +20,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'board-games',
+        loadComponent: () =>
+          import('./features/bgg/board-games/board-games.component').then(
+            (m) => m.BoardGamesComponent,
+          ),
+      },
+      {
+        path: 'board-games/:id',
+        loadComponent: () =>
+          import('./features/bgg/board-game-detail/board-game-detail.component').then(
+            (m) => m.BoardGameDetailComponent,
+          ),
+      },
+      {
         path: 'books',
         loadComponent: () =>
           import('./features/hardcover/books/books.component').then(

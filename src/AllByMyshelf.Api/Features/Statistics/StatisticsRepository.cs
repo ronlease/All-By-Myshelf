@@ -102,8 +102,29 @@ public class StatisticsRepository(AllByMyshelfDbContext dbContext) : IStatistics
             TotalCount = books.Count
         };
 
+        // --- Board Games ---
+        var boardGames = await dbContext.BoardGames
+            .AsNoTracking()
+            .Select(bg => new { bg.Genre })
+            .ToListAsync(cancellationToken);
+
+        var boardGameGenreBreakdown = boardGames
+            .Where(bg => !string.IsNullOrWhiteSpace(bg.Genre))
+            .GroupBy(bg => bg.Genre!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var boardGameStats = new BoardGameStatisticsDto
+        {
+            GenreBreakdown = boardGameGenreBreakdown,
+            TotalCount = boardGames.Count
+        };
+
         return new UnifiedStatisticsDto
         {
+            BoardGames = boardGameStats,
             Books = bookStats,
             Records = recordStats
         };
