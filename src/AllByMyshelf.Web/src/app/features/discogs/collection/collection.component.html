@@ -49,8 +49,8 @@
     @for (group of groupedReleases; track group.key) {
       <mat-expansion-panel
         [expanded]="isGroupExpanded(group.key)"
-        (opened)="onGroupToggle(group.key)"
-        (closed)="onGroupToggle(group.key)"
+        (opened)="onGroupExpand(group.key)"
+        (closed)="onGroupCollapse(group.key)"
         class="group-panel mat-elevation-z2"
       >
         <mat-expansion-panel-header>

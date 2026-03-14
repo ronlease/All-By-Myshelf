@@ -228,13 +228,15 @@ export class CollectionComponent implements OnInit, OnDestroy {
     this.expandedGroups.set(new Set());
   }
 
-  onGroupToggle(key: string): void {
+  onGroupCollapse(key: string): void {
     const current = new Set(this.expandedGroups());
-    if (current.has(key)) {
-      current.delete(key);
-    } else {
-      current.add(key);
-    }
+    current.delete(key);
+    this.expandedGroups.set(current);
+  }
+
+  onGroupExpand(key: string): void {
+    const current = new Set(this.expandedGroups());
+    current.add(key);
     this.expandedGroups.set(current);
   }
 
