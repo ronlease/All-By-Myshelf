@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -33,7 +33,19 @@ export class AppShellComponent implements OnInit {
   features = signal<FeaturesDto | null>(null);
   private readonly featuresService = inject(FeaturesService);
   readonly syncState = inject(SyncStateService);
-  private readonly themeService = inject(ThemeService);
+  themeIcon = computed(() => {
+    const current = this.themeService.theme();
+    if (current === 'light') return 'light_mode';
+    if (current === 'dark') return 'dark_mode';
+    return 'contrast';
+  });
+  readonly themeService = inject(ThemeService);
+
+  cycleTheme(): void {
+    const current = this.themeService.theme();
+    const nextTheme = current === 'light' ? 'dark' : current === 'dark' ? 'os-default' : 'light';
+    this.themeService.applyTheme(nextTheme);
+  }
 
   ngOnInit(): void {
     this.themeService.initialize();
