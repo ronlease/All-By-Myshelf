@@ -7,18 +7,21 @@ Person(user, "Owner", "Single authenticated user")
 
 System_Ext(auth0, "Auth0", "Identity provider. Issues and validates JWT tokens.")
 System_Ext(discogs, "Discogs API", "External vinyl record collection API. Rate-limited; returns collection data in paginated responses.")
+System_Ext(bgg, "BoardGameGeek API", "External board game collection API. XML API2 with 202 retry behavior; returns owned games with metadata.")
 System_Ext(hardcover, "Hardcover API", "External read-books API. GraphQL endpoint returning books with metadata.")
 
 System_Boundary(app, "All By Myshelf") {
-    Container(web, "Web App", "Angular 21, standalone components, Angular Material", "Collection dashboard with side drawer navigation. Displays paginated records and books, wantlist, duplicate detection, recently added releases, collection maintenance view, random picker (records and books), context-aware store finder, and collection statistics. Supports notes and ratings on releases.")
+    Container(web, "Web App", "Angular 21, standalone components, Angular Material", "Collection dashboard with side drawer navigation. Displays paginated music, books, and board games, wantlist, duplicate detection, recently added releases, collection maintenance view, random picker (music, books, board games), context-aware store finder, and unified statistics. Supports notes and ratings on releases.")
 
-    Container(api, "API", "ASP.NET Core 10 Web API", "Serves local collections via GET /api/v1/releases, /api/v1/books, /api/v1/wantlist, and /api/v1/statistics. Provides maintenance, recently added, random (records and books), duplicate detection, unified statistics (format/genre/decade breakdowns), and feature-flag endpoints. Supports PUT /api/v1/releases/{id}/notes-rating for user notes and ratings. Accepts POST /api/v1/sync and /api/v1/books/sync to start background syncs. Validates Auth0 JWTs on all requests.")
+    Container(api, "API", "ASP.NET Core 10 Web API", "Serves local collections via GET /api/v1/releases, /api/v1/books, /api/v1/boardgames, /api/v1/wantlist, and /api/v1/statistics. Provides maintenance, recently added, random picks, duplicate detection, unified statistics (format/genre/decade breakdowns), settings, and feature-flag endpoints. Supports PUT /api/v1/releases/{id}/notes-rating for user notes and ratings. Accepts POST /api/v1/sync, /api/v1/books/sync, and /api/v1/boardgames/sync to start background syncs. Validates Auth0 JWTs on all requests.")
 
     Container(discogsSyncWorker, "Discogs Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches all releases and wantlist items from the Discogs API with detail and marketplace pricing, respects rate limits (retries on HTTP 429), and upserts results into the database. Prevents concurrent runs.")
 
+    Container(bggSyncWorker, "BGG Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches owned board games from the BoardGameGeek XML API2, handles 202 retry with exponential backoff, enriches with thing details (designer, category, description), and upserts results into the database. Prevents concurrent runs.")
+
     Container(hardcoverSyncWorker, "Hardcover Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches read books from the Hardcover GraphQL API, extracts genre from cached_tags, and upserts results into the database. Prevents concurrent runs.")
 
-    ContainerDb(db, "Collection Database", "PostgreSQL 17", "Stores local copies of Discogs releases (with pricing, artwork, genre, AddedAt timestamp, user notes and ratings), Discogs wantlist items, and Hardcover books (with author, genre, cover art).")
+    ContainerDb(db, "Collection Database", "PostgreSQL 17", "Stores local copies of Discogs releases (with pricing, artwork, genre, AddedAt timestamp, user notes and ratings), Discogs wantlist items, Hardcover books (with author, genre, cover art), and BoardGameGeek board games (with designer, genre, player count, playtime).")
 }
 
 Rel(user, web, "Uses", "HTTPS")
@@ -26,11 +29,14 @@ Rel(web, auth0, "Redirects for login, receives JWT", "HTTPS/OIDC")
 Rel(web, api, "REST API calls with Bearer JWT", "HTTPS/JSON")
 Rel(api, auth0, "Validates JWT on each request", "HTTPS/OIDC")
 Rel(api, discogsSyncWorker, "Enqueues sync job on POST /api/v1/sync", "In-process")
+Rel(api, bggSyncWorker, "Enqueues sync job on POST /api/v1/boardgames/sync", "In-process")
 Rel(api, hardcoverSyncWorker, "Enqueues sync job on POST /api/v1/books/sync", "In-process")
+Rel(bggSyncWorker, bgg, "Fetches owned games collection and thing details", "HTTPS/XML")
+Rel(bggSyncWorker, db, "Upserts board games", "EF Core / Npgsql")
 Rel(discogsSyncWorker, discogs, "Fetches paginated collection, wantlist, release detail, and marketplace stats", "HTTPS/JSON")
 Rel(hardcoverSyncWorker, hardcover, "Fetches read books via GraphQL", "HTTPS/GraphQL")
 Rel(discogsSyncWorker, db, "Upserts releases and wantlist items", "EF Core / Npgsql")
 Rel(hardcoverSyncWorker, db, "Upserts books", "EF Core / Npgsql")
-Rel(api, db, "Queries and updates releases, wantlist, and books", "EF Core / Npgsql")
+Rel(api, db, "Queries and updates releases, wantlist, books, and board games", "EF Core / Npgsql")
 
 @enduml

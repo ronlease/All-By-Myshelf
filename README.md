@@ -115,11 +115,12 @@ All-By-Myshelf/
     AllByMyshelf.Api/
       Common/                 # Shared types (PagedResult, SyncStartResult)
       Features/
+        Bgg/                  # Board games, sync, BGG XML API client
         Config/               # GET /api/v1/config/features
         Discogs/              # Releases, sync, duplicates, Discogs API client
         Hardcover/            # Books, sync, Hardcover API client
-        Settings/             # User settings (theme)
-        Statistics/           # Unified statistics (records + books breakdowns)
+        Settings/             # User settings (theme, API tokens)
+        Statistics/           # Unified statistics (music, books, board games)
         Wantlist/             # Discogs wantlist sync and browsing
       Infrastructure/
         Data/                 # EF Core DbContext, migrations
