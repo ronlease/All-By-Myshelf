@@ -3,6 +3,16 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface BookDetailDto {
+  author: string | null;
+  coverImageUrl: string | null;
+  genre: string | null;
+  hardcoverId: number;
+  id: string;
+  title: string;
+  year: number | null;
+}
+
 export interface BookDto {
   author: string | null;
   coverImageUrl: string | null;
@@ -25,6 +35,10 @@ export interface PagedResult<T> {
 export class HardcoverService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
+
+  getBook(id: string): Observable<BookDetailDto> {
+    return this.http.get<BookDetailDto>(`${this.baseUrl}/api/v1/books/${id}`);
+  }
 
   getBooks(page: number, pageSize: number): Observable<PagedResult<BookDto>> {
     const params = new HttpParams()

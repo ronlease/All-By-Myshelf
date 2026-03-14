@@ -1,3 +1,16 @@
+// Feature: Book detail endpoint (ABM-049)
+//
+// Scenario: Retrieve a single book by ID
+//   Given the database contains a book with a known GUID
+//   When I request GET /api/v1/books/{id}
+//   Then the response is HTTP 200 OK
+//   And the response body contains the book detail
+//
+// Scenario: Request a book that does not exist
+//   Given the database does not contain a book with the specified ID
+//   When I request GET /api/v1/books/{id}
+//   Then the response is HTTP 404 Not Found
+//
 // Feature: Paginated books collection endpoint  (ABM-032)
 // Feature: Manual Hardcover sync trigger endpoint (ABM-031)
 //
@@ -110,6 +123,46 @@ public class BooksEndpointTests
         db.SaveChanges();
 
         return client;
+    }
+
+    // ── GET /api/v1/books/{id} — existing book ────────────────────────────────
+
+    [Fact]
+    public async Task GetBook_ExistingId_Returns200WithBookDetail()
+    {
+        // Arrange
+        var book = MakeBook(1, "Neil Gaiman", "American Gods", 2001, "Fantasy");
+        var client = CreateClientWithSeededData(new[] { book });
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/books/{book.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<BookDetailDto>();
+        body.Should().NotBeNull();
+        body!.Author.Should().Be("Neil Gaiman");
+        body.Genre.Should().Be("Fantasy");
+        body.HardcoverId.Should().Be(1);
+        body.Id.Should().Be(book.Id);
+        body.Title.Should().Be("American Gods");
+        body.Year.Should().Be(2001);
+    }
+
+    // ── GET /api/v1/books/{id} — non-existent book ─────────────────────────
+
+    [Fact]
+    public async Task GetBook_NonExistentId_Returns404()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Book>());
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/books/{Guid.NewGuid()}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     // ── GET /api/v1/books — empty database ────────────────────────────────────

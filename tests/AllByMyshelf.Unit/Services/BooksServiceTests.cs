@@ -1,4 +1,14 @@
-// Feature: Books service - business logic for books (ABM-032, ABM-036)
+// Feature: Books service - business logic for books (ABM-032, ABM-036, ABM-049)
+//
+// Scenario: GetByIdAsync returns mapped BookDetailDto when book exists
+//   Given the repository returns a book entity for the given ID
+//   When GetByIdAsync is called
+//   Then the returned BookDetailDto maps all fields from the book entity
+//
+// Scenario: GetByIdAsync returns null when book does not exist
+//   Given the repository returns null for the given ID
+//   When GetByIdAsync is called
+//   Then null is returned
 //
 // Scenario: GetRandomAsync returns a book when repository has books
 //   Given the repository returns a book
@@ -48,6 +58,51 @@ public class BooksServiceTests
             Title = title,
             Year = year
         };
+
+    // ── GetByIdAsync — existing book ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_RepositoryReturnsBook_ReturnsMappedBookDetailDto()
+    {
+        // Arrange
+        var book = MakeBook(1, "Neil Gaiman", "American Gods", 2001, "Fantasy",
+            "https://i.hardcover.com/cover.jpg");
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(book.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(book);
+
+        // Act
+        var result = await _sut.GetByIdAsync(book.Id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Author.Should().Be("Neil Gaiman");
+        result.CoverImageUrl.Should().Be("https://i.hardcover.com/cover.jpg");
+        result.Genre.Should().Be("Fantasy");
+        result.HardcoverId.Should().Be(1);
+        result.Id.Should().Be(book.Id);
+        result.Title.Should().Be("American Gods");
+        result.Year.Should().Be(2001);
+    }
+
+    // ── GetByIdAsync — non-existent book ────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_RepositoryReturnsNull_ReturnsNull()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Book?)null);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
 
     // ── GetRandomAsync — with book ────────────────────────────────────────────
 

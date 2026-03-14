@@ -16,6 +16,28 @@ public class BooksController(
     IBooksSyncService booksSyncService) : ControllerBase
 {
     /// <summary>
+    /// Returns the full detail for a single book.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the book.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Full book detail.</returns>
+    /// <response code="200">Returns the book detail.</response>
+    /// <response code="404">No book with the specified ID was found.</response>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(BookDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookDetailDto>> GetBook(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await booksService.GetByIdAsync(id, cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns a paginated list of books from the local database.
     /// </summary>
     /// <param name="author">Optional case-insensitive contains filter on the author name.</param>

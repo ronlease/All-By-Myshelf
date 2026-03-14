@@ -47,6 +47,14 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
     }
 
     /// <inheritdoc/>
+    public async Task<Book?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await db.Books
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<Book?> GetRandomAsync(CancellationToken cancellationToken)
     {
         var count = await db.Books.CountAsync(cancellationToken);

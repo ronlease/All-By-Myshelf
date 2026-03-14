@@ -2993,3 +2993,80 @@ Feature: Discogs OAuth 1.0a for enhanced marketplace pricing
     Then the pricing section indicates no pricing data is available
     And no error is shown to the user
 ```
+
+---
+
+## [ABM-049] Book Detail View
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The books dashboard shows only a summary of each book. When I want to recall specifics — full description, page count, read date, or other metadata — I have to leave the app and look it up on Hardcover. A detail view surfaces that information in context and links directly to the full Hardcover page so I can get deeper when needed, all without leaving my dashboard as the starting point.
+
+### Data Notes
+- The sync (ABM-031) is extended to call the Hardcover GraphQL API for additional book fields and store: description, page count, and read date (date_finished from the user_book). These fields are populated by a manual resync — no on-demand per-book API calls are made.
+- Cover art on this view uses the coverImageUrl already stored by the current sync.
+
+### Acceptance Criteria
+```gherkin
+Feature: Book detail view
+
+  Scenario: Navigating to the detail view for a book
+    Given I am logged in
+    And the books dashboard is showing at least one book
+    When I click a book in the list
+    Then the application navigates to /books/{id}
+    And the detail view displays title, author, year, and genre
+    And any of the following fields that are present in the stored data are also displayed: description, page count, read date
+    And the cover image is displayed prominently
+
+  Scenario: Fields absent from the stored book data are omitted
+    Given I am logged in
+    And I navigate to /books/{id} for a book where description, page count, and read date are all absent
+    When the detail view renders
+    Then only the fields that have stored data are displayed
+    And no empty rows, blank labels, or placeholder text such as "N/A" are shown
+
+  Scenario: Cover image displays when available
+    Given I am logged in
+    And I am viewing the detail view for a book with a cover image URL
+    When the detail view renders
+    Then the cover image is displayed at a larger size than the dashboard thumbnail
+    And the image is appropriately sized for the detail layout
+
+  Scenario: Cover image handles missing image gracefully
+    Given I am logged in
+    And I am viewing the detail view for a book without a cover image URL
+    When the detail view renders
+    Then a placeholder image or icon is displayed
+    And the layout remains consistent
+
+  Scenario: "View on Hardcover" link opens the book page in a new tab
+    Given I am logged in
+    And I am viewing the detail view for a book with a known Hardcover ID
+    When I click the "View on Hardcover" link
+    Then a new browser tab opens at https://hardcover.app/books/{hardcoverId}
+    And the detail view remains open in the original tab
+
+  Scenario: Navigating back returns to the books dashboard
+    Given I am logged in
+    And I have navigated to /books/{id}
+    When I navigate back
+    Then I am returned to the books dashboard
+    And the list is in the same state (same page, same scroll position) as before I opened the detail view
+
+  Scenario: Detail view fields are populated after a resync
+    Given a book was previously synced without the extended detail fields
+    When I trigger a manual resync
+    And the sync fetches additional book details from the Hardcover GraphQL API
+    Then description, page count, and read date (where present in the Hardcover response) are stored in the database
+    And the detail view at /books/{id} displays the newly stored fields
+
+  Scenario: Read date is formatted in a readable manner
+    Given I am logged in
+    And I am viewing the detail view for a book with a stored read date
+    When the detail view renders
+    Then the read date is displayed in a human-readable format (e.g., "March 15, 2025")
+    And the raw date value is not shown
+```

@@ -1,0 +1,75 @@
+<div class="page-content">
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">Unable to load book. Please go back and try again.</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="onBackClick()">Back to Books</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else if (book()) {
+    <mat-card class="release-detail-card mat-elevation-z2">
+      <div class="release-detail-layout">
+        @if (book()!.coverImageUrl) {
+          <img
+            [src]="book()!.coverImageUrl"
+            [alt]="book()!.title + ' cover'"
+            class="release-art-image"
+          />
+        } @else {
+          <div class="release-art-placeholder" aria-label="Book cover placeholder">
+            <mat-icon class="release-art-icon">menu_book</mat-icon>
+          </div>
+        }
+
+        <div class="release-detail-content">
+          <mat-card-header>
+            <mat-card-title>{{ book()!.title }}</mat-card-title>
+            @if (book()!.author) {
+              <mat-card-subtitle>{{ book()!.author }}</mat-card-subtitle>
+            }
+          </mat-card-header>
+
+          <mat-card-content>
+            <mat-list>
+              @if (book()!.year !== null) {
+                <mat-list-item>
+                  <span matListItemTitle>Year</span>
+                  <span matListItemLine>{{ book()!.year }}</span>
+                </mat-list-item>
+              }
+              @if (book()!.genre !== null) {
+                <mat-list-item>
+                  <span matListItemTitle>Genre</span>
+                  <span matListItemLine>{{ book()!.genre }}</span>
+                </mat-list-item>
+              }
+            </mat-list>
+          </mat-card-content>
+
+          <mat-card-actions>
+            <a
+              mat-raised-button
+              color="primary"
+              [href]="'https://hardcover.app/books/' + book()!.hardcoverId"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <mat-icon>open_in_new</mat-icon>
+              View on Hardcover
+            </a>
+            <button mat-button (click)="onBackClick()">
+              <mat-icon>arrow_back</mat-icon>
+              Back to Books
+            </button>
+          </mat-card-actions>
+        </div>
+      </div>
+    </mat-card>
+  }
+</div>

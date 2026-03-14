@@ -27,6 +27,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'books/:id',
+        loadComponent: () =>
+          import('./features/hardcover/book-detail/book-detail.component').then(
+            (m) => m.BookDetailComponent,
+          ),
+      },
+      {
         path: 'duplicates',
         loadComponent: () =>
           import('./features/discogs/duplicates/duplicates.component').then(

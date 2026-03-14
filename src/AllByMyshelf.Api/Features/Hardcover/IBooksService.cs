@@ -22,6 +22,14 @@ public interface IBooksService
         BookFilter? filter = null);
 
     /// <summary>
+    /// Returns the full detail for a single book by its application-generated ID.
+    /// </summary>
+    /// <param name="id">Application-generated GUID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The book detail if found, otherwise null.</returns>
+    Task<BookDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns a single randomly selected book, or null if no books exist.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
