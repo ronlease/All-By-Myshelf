@@ -3636,3 +3636,122 @@ Feature: Board games in unified statistics
     When I navigate to the statistics page
     Then I see a board games statistics section alongside records and books
 ```
+
+---
+
+## [ABM-059] Recategorize "Records" as "Music"
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The application currently labels the Discogs collection as "Records" throughout the UI (navigation, statistics, dashboard headings, etc.). However, Discogs supports multiple physical media formats — vinyl records, CDs, cassettes, and more. While the current user primarily collects vinyl, the labeling is inaccurate for the general case and would be confusing if the collection contained mixed formats. Renaming "Records" to "Music" better represents what Discogs actually provides and makes the app more accurate regardless of format mix.
+
+### Acceptance Criteria
+```gherkin
+Feature: Recategorize Records as Music in UI
+
+  Scenario: Navigation drawer shows Music instead of Records
+    Given I am logged in
+    When I view the navigation drawer
+    Then I see "Music" as the label for the Discogs collection link
+    And I do not see "Records" as a navigation label
+
+  Scenario: Statistics dashboard section header says Music
+    Given I am logged in
+    And the database contains Discogs collection items
+    When I navigate to the statistics page
+    Then the Discogs collection section header displays "Music"
+    And does not display "Records"
+
+  Scenario: Dashboard page heading says Music
+    Given I am logged in
+    When I navigate to the Discogs collection dashboard
+    Then the page heading displays "Music" or "Music Collection"
+    And does not display "Records"
+
+  Scenario: Random picker shows Music when in Discogs context
+    Given I am logged in
+    And I am using the random picker for the Discogs collection
+    When the picker displays results or context labels
+    Then it references "Music" rather than "Records"
+
+  Scenario: Store finder references Music rather than Records
+    Given I am logged in
+    When I use the local store finder in the Discogs context
+    Then UI text references "Music" where applicable
+    And does not reference "Records"
+
+  Scenario: API response field names remain unchanged
+    Given the backend exposes Discogs collection endpoints
+    When I call any Discogs-related API endpoint
+    Then the response field names and endpoint paths remain unchanged
+    And no breaking API changes are introduced
+
+  Scenario: All remaining Records references are updated
+    Given I am logged in
+    When I navigate through all pages that reference the Discogs collection
+    Then every UI label that previously said "Records" now says "Music"
+```
+
+---
+
+## [ABM-060] Quick Theme Toggle in App Bar
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+Switching between light and dark mode currently requires navigating to the Settings page, which is cumbersome when testing or frequently switching themes. A quick toggle button in the upper-right corner of the app bar would allow instant theme switching from any page without leaving the current view.
+
+### Acceptance Criteria
+```gherkin
+Feature: Quick theme toggle in app bar
+
+  Scenario: Theme toggle button is visible in app bar
+    Given I am logged in
+    When I view any page in the application
+    Then a theme toggle icon button is visible in the upper-right area of the app bar
+
+  Scenario: Clicking toggle cycles through theme modes
+    Given the current theme is light mode
+    When I click the theme toggle button
+    Then the theme changes to dark mode
+    When I click the theme toggle button again
+    Then the theme changes to OS default mode
+    When I click the theme toggle button again
+    Then the theme changes back to light mode
+
+  Scenario: Toggle icon reflects current theme
+    Given the current theme is light mode
+    Then the toggle icon displays a light_mode indicator
+    When I switch to dark mode
+    Then the toggle icon displays a dark_mode indicator
+    When I switch to OS default mode
+    Then the toggle icon displays a contrast or auto indicator
+
+  Scenario: Theme selection persists across sessions
+    Given I click the theme toggle to select dark mode
+    When I close and reopen the application
+    Then the theme remains set to dark mode
+    And the toggle icon reflects dark mode
+
+  Scenario: Settings page theme selector stays in sync
+    Given I am on any page
+    When I use the app bar toggle to switch to dark mode
+    And I navigate to the Settings page
+    Then the theme selector on the Settings page shows dark mode as selected
+
+  Scenario: App bar toggle syncs with Settings page changes
+    Given I am on the Settings page
+    When I change the theme using the Settings page selector
+    And I navigate to another page
+    Then the app bar toggle icon reflects the theme selected on Settings
+
+  Scenario: Toggle does not interfere with other app bar elements
+    Given I am logged in
+    When I view the app bar
+    Then the theme toggle is positioned without overlapping the sync button
+    And the theme toggle is positioned without overlapping navigation elements
+    And all app bar elements remain functional
+```
