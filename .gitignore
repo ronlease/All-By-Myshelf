@@ -292,7 +292,7 @@ __pycache__/
 .claude/worktrees/
 
 # Code coverage
-coverage-report/
+coverage-*/
 **/TestResults/
 
 # Secrets

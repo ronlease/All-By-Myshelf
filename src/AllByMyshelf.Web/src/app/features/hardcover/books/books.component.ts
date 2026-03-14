@@ -1,6 +1,6 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -31,6 +31,7 @@ export class BooksComponent implements OnInit, OnDestroy {
   private readonly hardcoverService = inject(HardcoverService);
   loading = signal(true);
   readonly pageSize = 25;
+  private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private subscription?: Subscription;
   private readonly syncState = inject(SyncStateService);
@@ -66,5 +67,9 @@ export class BooksComponent implements OnInit, OnDestroy {
   onPageChange(event: PageEvent): void {
     this.currentPage.set(event.pageIndex + 1);
     this.loadBooks(this.currentPage());
+  }
+
+  onRowClick(book: BookDto): void {
+    this.router.navigate(['/books', book.id]);
   }
 }

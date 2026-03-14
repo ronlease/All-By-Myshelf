@@ -22,6 +22,14 @@ public interface IBooksRepository
         BookFilter? filter = null);
 
     /// <summary>
+    /// Returns a single book by its application-generated ID.
+    /// </summary>
+    /// <param name="id">Application-generated GUID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The book if found, otherwise null.</returns>
+    Task<Book?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns a single randomly selected book. Returns null if no books exist.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
