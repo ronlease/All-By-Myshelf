@@ -119,7 +119,7 @@ All-By-Myshelf/
         Discogs/              # Releases, sync, duplicates, Discogs API client
         Hardcover/            # Books, sync, Hardcover API client
         Settings/             # User settings (theme)
-        Statistics/           # Collection value statistics
+        Statistics/           # Unified statistics (records + books breakdowns)
         Wantlist/             # Discogs wantlist sync and browsing
       Infrastructure/
         Data/                 # EF Core DbContext, migrations
