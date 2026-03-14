@@ -12,6 +12,8 @@ public class AllByMyshelfDbContext(DbContextOptions<AllByMyshelfDbContext> optio
 
     public DbSet<Release> Releases => Set<Release>();
 
+    public DbSet<WantlistRelease> WantlistReleases => Set<WantlistRelease>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AllByMyshelfDbContext).Assembly);

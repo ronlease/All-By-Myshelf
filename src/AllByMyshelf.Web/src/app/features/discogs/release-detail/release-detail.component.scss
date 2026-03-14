@@ -1,0 +1,45 @@
+.notes-field {
+  width: 100%;
+}
+
+.notes-rating-section {
+  margin-top: 24px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+}
+
+.pricing-display {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 8px 0;
+}
+
+.pricing-section {
+  margin-top: 24px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+}
+
+.rating-stars {
+  display: flex;
+  gap: 4px;
+
+  button {
+    mat-icon {
+      color: #ffc107;
+
+      &.filled {
+        color: #ffc107;
+      }
+    }
+  }
+}

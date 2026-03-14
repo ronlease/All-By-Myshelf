@@ -1,0 +1,35 @@
+<div class="page-content">
+  <h2>Duplicate Records</h2>
+
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else if (duplicateGroups().length === 0) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">No duplicate records found.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    @for (group of duplicateGroups(); track group.artist + group.title) {
+      <mat-expansion-panel class="mat-elevation-z2">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            {{ group.artist }} — {{ group.title }} ({{ group.releases.length }} copies)
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <mat-list>
+          @for (release of group.releases; track release.id) {
+            <mat-list-item (click)="onReleaseClick(release.id)" class="clickable-list-item">
+              <span matListItemTitle>
+                {{ release.year ?? '—' }} · {{ release.format }} · Discogs ID: {{ release.discogsId }}
+              </span>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-expansion-panel>
+    }
+  }
+</div>

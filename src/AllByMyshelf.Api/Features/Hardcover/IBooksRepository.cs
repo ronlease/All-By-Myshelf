@@ -22,6 +22,12 @@ public interface IBooksRepository
         BookFilter? filter = null);
 
     /// <summary>
+    /// Returns a single randomly selected book. Returns null if no books exist.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<Book?> GetRandomAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Inserts or updates the provided books, removing any books not present in the incoming collection.
     /// </summary>
     /// <param name="books">Books to upsert.</param>

@@ -32,6 +32,12 @@ public class ReleaseDetailDto
     /// <summary>Median marketplace price in USD; null when unavailable.</summary>
     public decimal? MedianPrice { get; init; }
 
+    /// <summary>User-provided listening notes; null when no notes have been entered.</summary>
+    public string? Notes { get; init; }
+
+    /// <summary>User-provided rating on a scale of 1-5; null when unrated.</summary>
+    public int? Rating { get; init; }
+
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;
 

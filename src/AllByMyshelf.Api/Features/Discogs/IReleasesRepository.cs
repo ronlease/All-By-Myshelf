@@ -15,6 +15,13 @@ public interface IReleasesRepository
     Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Returns groups of releases that share the same artist and title (case-insensitive)
+    /// but have different Discogs IDs.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IReadOnlyList<(string Artist, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns all releases that have at least one missing data field.
     /// </summary>
     Task<IReadOnlyList<Release>> GetIncompleteReleasesAsync(CancellationToken cancellationToken);
@@ -42,6 +49,16 @@ public interface IReleasesRepository
     /// Returns the most recently added releases within the specified time window.
     /// </summary>
     Task<IReadOnlyList<Release>> GetRecentlyAddedAsync(int count, int days, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the notes and rating for a specific release.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="notes">The new notes value; null to clear.</param>
+    /// <param name="rating">The new rating value (1-5); null to clear.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the release was found and updated; false otherwise.</returns>
+    Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replaces the entire collection with <paramref name="releases"/>.

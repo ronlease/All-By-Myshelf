@@ -23,6 +23,21 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     /// <returns>A randomly selected release matching the specified criteria.</returns>
     /// <response code="200">Returns a randomly selected release.</response>
     /// <response code="404">No releases match the specified criteria.</response>
+    /// <summary>
+    /// Returns groups of releases that share the same artist and title but have different Discogs IDs.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A list of duplicate groups, each containing the shared artist/title and a list of releases.</returns>
+    /// <response code="200">Returns the list of duplicate groups (may be empty).</response>
+    [HttpGet("duplicates")]
+    [ProducesResponseType(typeof(IReadOnlyList<DuplicateGroupDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<DuplicateGroupDto>>> GetDuplicates(
+        CancellationToken cancellationToken = default)
+    {
+        var result = await releasesService.GetDuplicatesAsync(cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("maintenance")]
     [ProducesResponseType(typeof(IReadOnlyList<MaintenanceReleaseDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<MaintenanceReleaseDto>>> GetMaintenanceReleases(
@@ -127,5 +142,41 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
 
         var result = await releasesService.GetReleasesAsync(page, pageSize, cancellationToken, filter);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Updates the notes and rating for a specific release.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="dto">The notes and rating values to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success, 400 Bad Request if rating is invalid, 404 Not Found if release does not exist.</returns>
+    /// <response code="204">The notes and rating were updated successfully.</response>
+    /// <response code="400">The rating value is invalid (must be 1-5 or null).</response>
+    /// <response code="404">No release with the specified ID was found.</response>
+    [HttpPut("{id:guid}/notes-rating")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNotesAndRating(
+        Guid id,
+        [FromBody] UpdateNotesRatingDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (dto.Rating.HasValue && (dto.Rating.Value < 1 || dto.Rating.Value > 5))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid Rating",
+                Detail = "Rating must be between 1 and 5, or null."
+            });
+        }
+
+        var updated = await releasesService.UpdateNotesAndRatingAsync(id, dto.Notes, dto.Rating, cancellationToken);
+        if (!updated)
+            return NotFound();
+
+        return NoContent();
     }
 }

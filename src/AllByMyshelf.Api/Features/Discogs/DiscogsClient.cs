@@ -125,6 +125,28 @@ public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOption
             return null;
         }
     }
+
+    /// <summary>
+    /// Fetches a single page of the user's Discogs wantlist.
+    /// </summary>
+    /// <param name="username">Discogs username.</param>
+    /// <param name="page">1-based page number.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="DiscogsCollectionPage"/> containing wantlist items.</returns>
+    public async Task<DiscogsCollectionPage?> GetWantlistPageAsync(string username, int page, CancellationToken cancellationToken)
+    {
+        var url = $"/users/{username}/wants?page={page}&per_page=100";
+        try
+        {
+            var response = await FetchWithRetryAsync(url, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<DiscogsCollectionPage>(cancellationToken: cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Failed to fetch wantlist page {Page} for user {Username}. Skipping.", page, username);
+            return null;
+        }
+    }
 }
 
 // ── Response model types ──────────────────────────────────────────────────────

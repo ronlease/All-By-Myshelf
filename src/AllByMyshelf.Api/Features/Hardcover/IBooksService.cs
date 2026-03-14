@@ -20,4 +20,10 @@ public interface IBooksService
         int pageSize,
         CancellationToken cancellationToken,
         BookFilter? filter = null);
+
+    /// <summary>
+    /// Returns a single randomly selected book, or null if no books exist.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<BookDto?> GetRandomAsync(CancellationToken cancellationToken);
 }

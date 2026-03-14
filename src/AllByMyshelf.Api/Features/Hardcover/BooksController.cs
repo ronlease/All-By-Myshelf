@@ -55,6 +55,26 @@ public class BooksController(
     }
 
     /// <summary>
+    /// Returns a randomly selected book.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A randomly selected book.</returns>
+    /// <response code="200">Returns a randomly selected book.</response>
+    /// <response code="404">No books exist in the collection.</response>
+    [HttpGet("random")]
+    [ProducesResponseType(typeof(BookDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookDto>> GetRandom(
+        CancellationToken cancellationToken = default)
+    {
+        var result = await booksService.GetRandomAsync(cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Triggers a manual sync of the Hardcover read books collection.
     /// </summary>
     /// <returns>

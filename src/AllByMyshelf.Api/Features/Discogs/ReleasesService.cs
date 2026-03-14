@@ -27,9 +27,29 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Id = release.Id,
             LowestPrice = release.LowestPrice,
             MedianPrice = release.MedianPrice,
+            Notes = release.Notes,
+            Rating = release.Rating,
             Title = release.Title,
             Year = release.Year,
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<DuplicateGroupDto>> GetDuplicatesAsync(CancellationToken cancellationToken)
+    {
+        var duplicates = await repository.GetDuplicatesAsync(cancellationToken);
+        return duplicates.Select(d => new DuplicateGroupDto
+        {
+            Artist = d.Artist,
+            Releases = d.Releases.Select(r => new DuplicateReleaseDto
+            {
+                DiscogsId = r.DiscogsId,
+                Format = r.Format,
+                Id = r.Id,
+                Year = r.Year
+            }).ToList(),
+            Title = d.Title
+        }).ToList();
     }
 
     /// <inheritdoc/>
@@ -39,10 +59,9 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         return releases.Select(r =>
         {
             var missing = new List<string>();
-            if (r.CoverImageUrl is null) missing.Add("Cover Art");
+            if (string.IsNullOrEmpty(r.CoverImageUrl)) missing.Add("Cover Art");
             if (r.Genre is null) missing.Add("Genre");
-            if (r.HighestPrice is null || r.LowestPrice is null || r.MedianPrice is null) missing.Add("Pricing");
-            if (r.Year is null) missing.Add("Year");
+            if (r.Year is null or 0) missing.Add("Year");
             return new MaintenanceReleaseDto
             {
                 Artist = r.Artist,
@@ -72,6 +91,8 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Id = release.Id,
             LowestPrice = release.LowestPrice,
             MedianPrice = release.MedianPrice,
+            Notes = release.Notes,
+            Rating = release.Rating,
             Title = release.Title,
             Year = release.Year,
         };
@@ -119,5 +140,11 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             PageSize = pageSize,
             TotalCount = totalCount
         };
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken)
+    {
+        return await repository.UpdateNotesAndRatingAsync(id, notes, rating, cancellationToken);
     }
 }

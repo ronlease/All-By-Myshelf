@@ -545,8 +545,8 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body.Should().HaveCount(1);
         body![0].MissingFields.Should().Contain("Genre");
         body[0].MissingFields.Should().Contain("Year");
-        body[0].MissingFields.Should().Contain("Pricing");
         body[0].MissingFields.Should().Contain("Cover Art");
+        body[0].MissingFields.Should().NotContain("Pricing");
     }
 
     [Fact]

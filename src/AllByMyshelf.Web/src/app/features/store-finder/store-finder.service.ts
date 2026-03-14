@@ -43,9 +43,9 @@ export class StoreFinderService {
   ];
   private readonly http = inject(HttpClient);
 
-  findStores(query: string): Observable<RecordStore[]> {
+  findStores(query: string, shopType: 'music' | 'books' = 'music'): Observable<RecordStore[]> {
     return this.geocode(query).pipe(
-      switchMap((coords) => this.queryOverpass(coords.lat, coords.lon)),
+      switchMap((coords) => this.queryOverpass(coords.lat, coords.lon, shopType)),
       map((response) => this.parseStores(response)),
     );
   }
@@ -111,9 +111,16 @@ export class StoreFinderService {
       }));
   }
 
-  private queryOverpass(lat: string, lon: string): Observable<OverpassResponse> {
+  private queryOverpass(lat: string, lon: string, shopType: 'music' | 'books'): Observable<OverpassResponse> {
     const around = `(around:40000,${lat},${lon})`;
-    const query = `[out:json];(node[shop=music]${around};node[shop=records]${around};node[shop=vinyl]${around};way[shop=music]${around};way[shop=records]${around};way[shop=vinyl]${around};);out;`;
+    let query: string;
+
+    if (shopType === 'music') {
+      query = `[out:json];(node[shop=music]${around};node[shop=records]${around};node[shop=vinyl]${around};way[shop=music]${around};way[shop=records]${around};way[shop=vinyl]${around};);out;`;
+    } else {
+      query = `[out:json];(node[shop=books]${around};way[shop=books]${around};);out;`;
+    }
+
     return this.http.post<OverpassResponse>(
       'https://overpass-api.de/api/interpreter',
       `data=${encodeURIComponent(query)}`,

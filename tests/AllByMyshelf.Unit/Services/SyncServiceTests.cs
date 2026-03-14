@@ -61,6 +61,7 @@ using System.Text;
 using System.Text.Json;
 using AllByMyshelf.Api.Common;
 using AllByMyshelf.Api.Features.Discogs;
+using AllByMyshelf.Api.Features.Wantlist;
 using AllByMyshelf.Api.Models.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -480,6 +481,26 @@ public class SyncServiceTests
                 Content = new StringContent(statsJson, Encoding.UTF8, "application/json")
             });
 
+        // Mock wantlist endpoint (empty wantlist)
+        var wantlistJson = JsonSerializer.Serialize(new
+        {
+            pagination = new { page = 1, pages = 1, per_page = 100, items = 0 },
+            wants = Array.Empty<object>()
+        });
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri != null &&
+                    req.RequestUri.PathAndQuery.Contains("/wants")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(wantlistJson, Encoding.UTF8, "application/json")
+            });
+
         return handler;
     }
 
@@ -506,8 +527,10 @@ public class SyncServiceTests
             return new DiscogsClient(httpClient, optionsSnapshot.Object, logger);
         });
 
-        // Register the repository
+        // Register the repositories
         services.AddScoped<IReleasesRepository>(sp => repository);
+        services.AddScoped<IWantlistRepository>(sp =>
+            new Mock<IWantlistRepository>().Object);
 
         var serviceProvider = services.BuildServiceProvider();
         var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();

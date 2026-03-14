@@ -996,7 +996,7 @@ Feature: Recently added releases
 
 ## [ABM-022] Wishlist Tracking
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1054,7 +1054,7 @@ Feature: Wishlist tracking
 
 ## [ABM-023] Listening Notes and Personal Ratings
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1121,7 +1121,7 @@ Feature: Listening notes and personal ratings
 
 ## [ABM-024] Duplicate Detection
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -1352,7 +1352,7 @@ Feature: GitHub workflow audit and hardening
 
 ## [ABM-027] Code Complexity Audit and Simplification
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -2458,7 +2458,7 @@ Feature: BoardGameGeek collection integration
 
 ## [ABM-039] Configuration & Settings Page
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2591,7 +2591,7 @@ Note: This item depends on the Configuration & Settings Page backlog item (for d
 
 ## [ABM-041] Display Marketplace Pricing on Release Detail View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -2630,7 +2630,7 @@ Feature: Display marketplace pricing on release detail view
 
 ## [ABM-042] Context-Aware Random Picker
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2679,7 +2679,7 @@ Feature: Context-aware random picker
 
 ## [ABM-043] Maintenance Page Shows Too Many Records (Overly Aggressive Incomplete Filter)
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -2769,7 +2769,7 @@ Feature: Dependency audit
 
 ## [ABM-045] Refactor Backend to Vertical Slice Architecture
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2821,7 +2821,7 @@ Feature: Vertical slice architecture refactor
 
 ## [ABM-046] Navigation Redesign — Side Drawer with Integrated Sync
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 **Supersedes:** ABM-040
 
@@ -2900,7 +2900,7 @@ Note: This item supersedes ABM-040 (Sync Dropdown Button). All sync consolidatio
 
 ## [ABM-047] Context-Aware Local Store Finder
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem

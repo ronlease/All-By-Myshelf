@@ -193,6 +193,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    localStorage.setItem('last-collection', 'records');
     this.loadAll();
     this.loadRecentlyAdded();
     this.subscription = this.syncState.discogsSyncCompleted$.subscribe(() => {

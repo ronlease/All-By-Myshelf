@@ -18,16 +18,33 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<(string Artist, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken)
+    {
+        var duplicates = await db.Releases
+            .AsNoTracking()
+            .GroupBy(r => new { Artist = r.Artist.ToLower(), Title = r.Title.ToLower() })
+            .Where(g => g.Count() > 1)
+            .Select(g => new
+            {
+                Artist = g.First().Artist,
+                Title = g.First().Title,
+                Releases = g.OrderBy(r => r.Year).ThenBy(r => r.DiscogsId).ToList()
+            })
+            .OrderBy(g => g.Artist)
+            .ThenBy(g => g.Title)
+            .ToListAsync(cancellationToken);
+
+        return duplicates.Select(d => (d.Artist, d.Title, d.Releases)).ToList();
+    }
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<Release>> GetIncompleteReleasesAsync(CancellationToken cancellationToken)
     {
         return await db.Releases
             .Where(r =>
-                r.CoverImageUrl == null ||
+                r.CoverImageUrl == null || r.CoverImageUrl == "" ||
                 r.Genre == null ||
-                r.HighestPrice == null ||
-                r.LowestPrice == null ||
-                r.MedianPrice == null ||
-                r.Year == null)
+                r.Year == null || r.Year == 0)
             .OrderBy(r => r.Artist)
             .ThenBy(r => r.Title)
             .AsNoTracking()
@@ -125,6 +142,19 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             .Skip(skip)
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken)
+    {
+        var release = await db.Releases.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        if (release is null)
+            return false;
+
+        release.Notes = notes;
+        release.Rating = rating;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     /// <inheritdoc/>

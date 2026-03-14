@@ -34,6 +34,10 @@ export class HardcoverService {
     return this.http.get<PagedResult<BookDto>>(`${this.baseUrl}/api/v1/books`, { params });
   }
 
+  getRandomBook(): Observable<BookDto> {
+    return this.http.get<BookDto>(`${this.baseUrl}/api/v1/books/random`);
+  }
+
   getSyncStatus(): Observable<{ isRunning: boolean }> {
     return this.http.get<{ isRunning: boolean }>(`${this.baseUrl}/api/v1/books/sync/status`);
   }
