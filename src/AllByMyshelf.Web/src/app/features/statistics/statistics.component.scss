@@ -1,34 +1,41 @@
-.statistics-grid {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: 1fr 1fr;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+.breakdowns-row {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
 }
 
-.stat-section {
-  margin-top: 16px;
+.breakdown-column {
+  flex: 1;
+  min-width: 180px;
 
   h3 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    margin-bottom: 0;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-bottom: 0;
     opacity: 0.7;
+    text-transform: uppercase;
   }
 }
 
-.stat-note {
-  font-size: 13px;
-  margin-top: 4px;
-  opacity: 0.6;
+.category-icon {
+  margin-right: 8px;
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 500;
-  margin: 4px 0;
+.clickable-item {
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+html.dark-theme .clickable-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light-theme):not(.dark-theme) .clickable-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
 }

@@ -15,33 +15,31 @@
         </button>
       </mat-card-actions>
     </mat-card>
-  } @else if (statistics()) {
-    <div class="statistics-grid">
-      <!-- Records Section -->
-      <mat-card class="mat-elevation-z2">
-        <mat-card-header>
-          <mat-icon matCardAvatar>album</mat-icon>
-          <mat-card-title>Records</mat-card-title>
-          <mat-card-subtitle>{{ statistics()!.records.totalCount }} total</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          @if (statistics()!.records.totalCount === 0) {
-            <p class="empty-state">No records in your collection yet.</p>
-          } @else {
-            <div class="stat-section">
-              <h3>Collection Value</h3>
-              <p class="stat-value">{{ statistics()!.records.totalValue | currency:'USD' }}</p>
-              @if (statistics()!.records.excludedFromValueCount > 0) {
-                <p class="stat-note">{{ statistics()!.records.excludedFromValueCount }} record{{ statistics()!.records.excludedFromValueCount === 1 ? '' : 's' }} without pricing data</p>
-              }
-            </div>
+  } @else if (categories().length === 0) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">No collection data available. Sync your collections to see statistics.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-accordion multi>
+      @for (category of categories(); track category.name) {
+        <mat-expansion-panel expanded>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon class="category-icon">{{ category.icon }}</mat-icon>
+              {{ category.name }}
+            </mat-panel-title>
+            <mat-panel-description>{{ category.summary }}</mat-panel-description>
+          </mat-expansion-panel-header>
 
-            @if (statistics()!.records.formatBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Format</h3>
+          <div class="breakdowns-row">
+            @for (breakdown of category.breakdowns; track breakdown.title) {
+              <div class="breakdown-column">
+                <h3>{{ breakdown.title }}</h3>
                 <mat-list dense>
-                  @for (item of statistics()!.records.formatBreakdown; track item.label) {
-                    <mat-list-item>
+                  @for (item of breakdown.items; track item.label) {
+                    <mat-list-item class="clickable-item" (click)="onLabelClick(breakdown.route, breakdown.groupByField, item.label)">
                       <span matListItemTitle>{{ item.label }}</span>
                       <span matListItemMeta>{{ item.count }}</span>
                     </mat-list-item>
@@ -49,93 +47,9 @@
                 </mat-list>
               </div>
             }
-
-            @if (statistics()!.records.genreBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Genre</h3>
-                <mat-list dense>
-                  @for (item of statistics()!.records.genreBreakdown; track item.label) {
-                    <mat-list-item>
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-
-            @if (statistics()!.records.decadeBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Decade</h3>
-                <mat-list dense>
-                  @for (item of statistics()!.records.decadeBreakdown; track item.label) {
-                    <mat-list-item>
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-          }
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Books Section -->
-      <mat-card class="mat-elevation-z2">
-        <mat-card-header>
-          <mat-icon matCardAvatar>menu_book</mat-icon>
-          <mat-card-title>Books</mat-card-title>
-          <mat-card-subtitle>{{ statistics()!.books.totalCount }} total</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          @if (statistics()!.books.totalCount === 0) {
-            <p class="empty-state">No books in your collection yet.</p>
-          } @else {
-            @if (statistics()!.books.authorBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Author</h3>
-                <mat-list dense>
-                  @for (item of statistics()!.books.authorBreakdown; track item.label) {
-                    <mat-list-item>
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-
-            @if (statistics()!.books.genreBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Genre</h3>
-                <mat-list dense>
-                  @for (item of statistics()!.books.genreBreakdown; track item.label) {
-                    <mat-list-item>
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-
-            @if (statistics()!.books.decadeBreakdown.length > 0) {
-              <div class="stat-section">
-                <h3>By Decade</h3>
-                <mat-list dense>
-                  @for (item of statistics()!.books.decadeBreakdown; track item.label) {
-                    <mat-list-item>
-                      <span matListItemTitle>{{ item.label }}</span>
-                      <span matListItemMeta>{{ item.count }}</span>
-                    </mat-list-item>
-                  }
-                </mat-list>
-              </div>
-            }
-          }
-        </mat-card-content>
-      </mat-card>
-    </div>
+          </div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
   }
 </div>

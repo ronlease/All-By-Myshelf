@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -44,6 +44,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
   allReleases = signal<ReleaseDto[]>([]);
   artistFilter = signal<string[]>([]);
   currentPage = signal(1);
+  private readonly activatedRoute = inject(ActivatedRoute);
   private readonly discogsService = inject(DiscogsService);
   readonly displayedColumns = ['thumbnail', 'artist', 'title', 'genre', 'year', 'format'];
   expandedGroups = signal<Set<string>>(new Set());
@@ -194,6 +195,15 @@ export class CollectionComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     localStorage.setItem('last-collection', 'records');
+
+    const params = this.activatedRoute.snapshot.queryParams;
+    if (params['groupBy']) {
+      this.groupByField.set(params['groupBy']);
+    }
+    if (params['expand']) {
+      this.expandedGroups.set(new Set([params['expand']]));
+    }
+
     this.loadAll();
     this.loadRecentlyAdded();
     this.subscription = this.syncState.discogsSyncCompleted$.subscribe(() => {
