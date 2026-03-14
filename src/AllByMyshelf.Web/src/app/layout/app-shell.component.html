@@ -8,6 +8,12 @@
           <span>Music</span>
         </a>
       }
+      @if (features()?.bggEnabled) {
+        <a mat-list-item routerLink="/board-games" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>extension</mat-icon>
+          <span>Board Games</span>
+        </a>
+      }
       @if (features()?.hardcoverEnabled) {
         <a mat-list-item routerLink="/books" routerLinkActive="active-link">
           <mat-icon matListItemIcon>menu_book</mat-icon>
@@ -51,8 +57,19 @@
       <mat-divider></mat-divider>
 
       <!-- Sync section -->
-      @if (features()?.discogsEnabled || features()?.hardcoverEnabled) {
+      @if (features()?.bggEnabled || features()?.discogsEnabled || features()?.hardcoverEnabled) {
         <div class="drawer-section-header">Sync</div>
+      }
+      @if (features()?.bggEnabled) {
+        <a mat-list-item (click)="syncState.startBoardGamesSync(); $event.stopPropagation()" (keyup.enter)="syncState.startBoardGamesSync()" [disabled]="syncState.gamesSyncing()">
+          <mat-icon matListItemIcon>extension</mat-icon>
+          @if (syncState.gamesSyncing()) {
+            <mat-spinner diameter="18" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+            <span>Syncing Board Games…</span>
+          } @else {
+            <span>Sync Board Games</span>
+          }
+        </a>
       }
       @if (features()?.discogsEnabled) {
         <a mat-list-item (click)="syncState.startDiscogsSync(); $event.stopPropagation()" (keyup.enter)="syncState.startDiscogsSync()" [disabled]="syncState.discogsSyncing()">
@@ -76,8 +93,8 @@
           }
         </a>
       }
-      @if (features()?.discogsEnabled && features()?.hardcoverEnabled) {
-        <a mat-list-item (click)="syncAll(); $event.stopPropagation()" (keyup.enter)="syncAll()" [disabled]="syncState.discogsSyncing() || syncState.booksSyncing()">
+      @if ((features()?.bggEnabled && features()?.discogsEnabled) || (features()?.bggEnabled && features()?.hardcoverEnabled) || (features()?.discogsEnabled && features()?.hardcoverEnabled)) {
+        <a mat-list-item (click)="syncAll(); $event.stopPropagation()" (keyup.enter)="syncAll()" [disabled]="syncState.gamesSyncing() || syncState.discogsSyncing() || syncState.booksSyncing()">
           <mat-icon matListItemIcon>sync</mat-icon>
           <span>Sync All</span>
         </a>

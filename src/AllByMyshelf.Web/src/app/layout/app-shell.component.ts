@@ -57,6 +57,7 @@ export class AppShellComponent implements OnInit {
   }
 
   syncAll(): void {
+    this.syncState.startBoardGamesSync();
     this.syncState.startDiscogsSync();
     this.syncState.startBooksSync();
   }

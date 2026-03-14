@@ -1,0 +1,131 @@
+<div class="page-content">
+  <div class="collection-controls">
+    <mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Search</mat-label>
+      <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onSearchChange()" placeholder="Search all fields…" />
+    </mat-form-field>
+
+    <mat-form-field class="group-by-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Group by</mat-label>
+      <mat-select [ngModel]="groupByField()" (ngModelChange)="groupByField.set($event); onGroupByChange()">
+        @for (option of groupByOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (loading()) {
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else if (filteredGames.length === 0) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">
+          No board games found. Try adjusting your search, or run a sync to import your BGG collection.
+        </p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (groupByField()) {
+    @for (group of groupedGames; track group.key) {
+      <mat-expansion-panel
+        [expanded]="isGroupExpanded(group.key)"
+        (opened)="onGroupExpand(group.key)"
+        (closed)="onGroupCollapse(group.key)"
+        class="group-panel mat-elevation-z2"
+      >
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ group.key }}</mat-panel-title>
+          <mat-panel-description>{{ group.items.length }} {{ group.items.length === 1 ? 'game' : 'games' }}</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <table mat-table [dataSource]="group.items" class="collection-table">
+          <ng-container matColumnDef="thumbnail">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let game" class="thumbnail-cell">
+              @if (game.thumbnailUrl) {
+                <img [src]="game.thumbnailUrl" [alt]="game.title + ' thumbnail'" class="release-thumbnail" />
+              } @else {
+                <mat-icon class="release-art-icon" style="font-size: 40px; width: 40px; height: 40px;">extension</mat-icon>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef>Title</th>
+            <td mat-cell *matCellDef="let game">{{ game.title }}</td>
+          </ng-container>
+          <ng-container matColumnDef="designer">
+            <th mat-header-cell *matHeaderCellDef>Designer</th>
+            <td mat-cell *matCellDef="let game">{{ game.designer ?? '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="genre">
+            <th mat-header-cell *matHeaderCellDef>Genre</th>
+            <td mat-cell *matCellDef="let game">{{ game.genre ?? '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="players">
+            <th mat-header-cell *matHeaderCellDef>Players</th>
+            <td mat-cell *matCellDef="let game">{{ formatPlayers(game) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="yearPublished">
+            <th mat-header-cell *matHeaderCellDef>Year</th>
+            <td mat-cell *matCellDef="let game">{{ game.yearPublished ?? '—' }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)" class="clickable-row"></tr>
+        </table>
+      </mat-expansion-panel>
+    }
+  } @else {
+    <table mat-table [dataSource]="pagedGames" class="collection-table mat-elevation-z2">
+
+      <ng-container matColumnDef="thumbnail">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let game" class="thumbnail-cell">
+          @if (game.thumbnailUrl) {
+            <img [src]="game.thumbnailUrl" [alt]="game.title + ' thumbnail'" class="release-thumbnail" />
+          } @else {
+            <mat-icon class="release-art-icon" style="font-size: 40px; width: 40px; height: 40px;">extension</mat-icon>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Title</th>
+        <td mat-cell *matCellDef="let game">{{ game.title }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="designer">
+        <th mat-header-cell *matHeaderCellDef>Designer</th>
+        <td mat-cell *matCellDef="let game">{{ game.designer ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="genre">
+        <th mat-header-cell *matHeaderCellDef>Genre</th>
+        <td mat-cell *matCellDef="let game">{{ game.genre ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="players">
+        <th mat-header-cell *matHeaderCellDef>Players</th>
+        <td mat-cell *matCellDef="let game">{{ formatPlayers(game) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="yearPublished">
+        <th mat-header-cell *matHeaderCellDef>Year</th>
+        <td mat-cell *matCellDef="let game">{{ game.yearPublished ?? '—' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)" class="clickable-row"></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalFilteredCount"
+      [pageSize]="pageSize"
+      [pageIndex]="currentPage() - 1"
+      [pageSizeOptions]="[25]"
+      (page)="onPageChange($event)"
+      aria-label="Select page of board games"
+    ></mat-paginator>
+  }
+</div>

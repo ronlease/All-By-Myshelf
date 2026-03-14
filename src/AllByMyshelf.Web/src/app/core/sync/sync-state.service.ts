@@ -1,27 +1,32 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Subject } from 'rxjs';
+import { BggService } from '../../features/bgg/bgg.service';
 import { DiscogsService, SyncProgressDto } from '../../features/discogs/discogs.service';
 import { HardcoverService } from '../../features/hardcover/hardcover.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Injectable({ providedIn: 'root' })
 export class SyncStateService {
+  private readonly bggService = inject(BggService);
   private readonly discogsService = inject(DiscogsService);
   private readonly hardcoverService = inject(HardcoverService);
   private readonly snackBar = inject(MatSnackBar);
 
-  // ── Discogs sync state ─────────────────────────────────────────────────────
+  // ── Sync state ─────────────────────────────────────────────────────────────
   booksSyncing = signal(false);
   discogsSyncProgress = signal<SyncProgressDto | null>(null);
   discogsSyncing = signal(false);
+  gamesSyncing = signal(false);
   private booksSyncTimer?: ReturnType<typeof setTimeout>;
   private discogsSyncTimer?: ReturnType<typeof setTimeout>;
+  private gamesSyncTimer?: ReturnType<typeof setTimeout>;
   private pauseStartTime = 0;
   private pauseTotalSeconds = 0;
 
   // ── Completion events ──────────────────────────────────────────────────────
   readonly booksSyncCompleted$ = new Subject<void>();
   readonly discogsSyncCompleted$ = new Subject<void>();
+  readonly gamesSyncCompleted$ = new Subject<void>();
 
   // ── Computed ───────────────────────────────────────────────────────────────
 
@@ -72,6 +77,33 @@ export class SyncStateService {
     });
   }
 
+  // ── Board games sync ───────────────────────────────────────────────────────
+
+  startBoardGamesSync(): void {
+    if (this.gamesSyncing()) return;
+    this.gamesSyncing.set(true);
+    this.bggService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Board game sync started.', 'Dismiss', { duration: 3000 });
+          this.pollBoardGamesSyncStatus();
+        } else {
+          this.gamesSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.gamesSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A board game sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('BGG username is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
+  }
+
   // ── Books sync ─────────────────────────────────────────────────────────────
 
   startBooksSync(): void {
@@ -100,6 +132,26 @@ export class SyncStateService {
   }
 
   // ── Polling ────────────────────────────────────────────────────────────────
+
+  private pollBoardGamesSyncStatus(): void {
+    const poll = () => {
+      this.bggService.getSyncStatus().subscribe({
+        next: (status) => {
+          if (status.isRunning) {
+            this.gamesSyncTimer = setTimeout(poll, 2000);
+          } else {
+            this.gamesSyncing.set(false);
+            this.snackBar.open('Board game sync completed.', 'Dismiss', { duration: 3000 });
+            this.gamesSyncCompleted$.next();
+          }
+        },
+        error: () => {
+          this.gamesSyncTimer = setTimeout(poll, 3000);
+        },
+      });
+    };
+    poll();
+  }
 
   private pollBooksSyncStatus(): void {
     const poll = () => {
