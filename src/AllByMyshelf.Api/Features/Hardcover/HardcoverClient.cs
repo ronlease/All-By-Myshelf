@@ -84,6 +84,7 @@ public class HardcoverClient(
                                     url
                                 }}
                                 release_date
+                                slug
                                 title
                             }}
                         }}
@@ -159,6 +160,7 @@ public class HardcoverClient(
         [property: JsonPropertyName("id")] int Id,
         [property: JsonPropertyName("image")] HardcoverImage? Image,
         [property: JsonPropertyName("release_date")] string? ReleaseDate,
+        [property: JsonPropertyName("slug")] string? Slug,
         [property: JsonPropertyName("title")] string? Title);
 
     public record HardcoverContribution(

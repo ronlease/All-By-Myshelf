@@ -237,6 +237,7 @@ public class BooksSyncServiceTests
             Id: 12345,
             Image: null,
             ReleaseDate: null,
+            Slug: null,
             Title: "Good Omens"
         );
 
@@ -268,6 +269,7 @@ public class BooksSyncServiceTests
             Id: 12346,
             Image: null,
             ReleaseDate: null,
+            Slug: null,
             Title: "Anonymous Work"
         );
 
@@ -301,6 +303,7 @@ public class BooksSyncServiceTests
             Id: 12347,
             Image: null,
             ReleaseDate: "2020-05-15",
+            Slug: null,
             Title: "The Midnight Library"
         );
 
@@ -338,6 +341,7 @@ public class BooksSyncServiceTests
             Id: 12348,
             Image: null,
             ReleaseDate: "not-a-date",
+            Slug: null,
             Title: "Invalid Date Book"
         );
 
@@ -375,6 +379,7 @@ public class BooksSyncServiceTests
             Id: 12349,
             Image: null,
             ReleaseDate: null,
+            Slug: null,
             Title: "No Date Book"
         );
 
@@ -412,6 +417,7 @@ public class BooksSyncServiceTests
             Id: 12350,
             Image: null,
             ReleaseDate: "   ",
+            Slug: null,
             Title: "Whitespace Date Book"
         );
 
@@ -451,6 +457,7 @@ public class BooksSyncServiceTests
             Id: 12354,
             Image: new HardcoverClient.HardcoverImage("https://i.hardcover.com/cover.jpg"),
             ReleaseDate: null,
+            Slug: null,
             Title: "Beautiful Cover Book"
         );
 
@@ -482,6 +489,7 @@ public class BooksSyncServiceTests
             Id: 12355,
             Image: null,
             ReleaseDate: null,
+            Slug: null,
             Title: "No Cover Book"
         );
 

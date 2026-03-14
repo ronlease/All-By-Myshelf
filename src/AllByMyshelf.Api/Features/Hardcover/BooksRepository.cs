@@ -93,6 +93,7 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
                 existingBook.CoverImageUrl = book.CoverImageUrl;
                 existingBook.Genre = book.Genre;
                 existingBook.LastSyncedAt = book.LastSyncedAt;
+                existingBook.Slug = book.Slug;
                 existingBook.Title = book.Title;
                 existingBook.Year = book.Year;
             }

@@ -110,6 +110,7 @@ public class BooksSyncService(
                 HardcoverId = b.Id,
                 Id = Guid.NewGuid(),
                 LastSyncedAt = now,
+                Slug = b.Slug,
                 Title = b.Title ?? "Unknown Title",
                 Year = year
             };

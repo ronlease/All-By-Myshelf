@@ -20,6 +20,9 @@ public class BookDetailDto
     /// <summary>Application-generated identifier.</summary>
     public Guid Id { get; init; }
 
+    /// <summary>URL slug for Hardcover book page links.</summary>
+    public string? Slug { get; init; }
+
     /// <summary>Book title.</summary>
     public string Title { get; init; } = string.Empty;
 
