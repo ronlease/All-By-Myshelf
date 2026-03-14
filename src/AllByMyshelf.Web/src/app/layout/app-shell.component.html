@@ -5,7 +5,7 @@
       @if (features()?.discogsEnabled) {
         <a mat-list-item routerLink="/" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
           <mat-icon matListItemIcon>album</mat-icon>
-          <span>Records</span>
+          <span>Music</span>
         </a>
       }
       @if (features()?.hardcoverEnabled) {
@@ -61,7 +61,7 @@
             <mat-spinner diameter="18" style="display: inline-block; margin-right: 8px;"></mat-spinner>
             <span>{{ syncState.discogsSyncStatusLabel }}</span>
           } @else {
-            <span>Sync Records</span>
+            <span>Sync Music</span>
           }
         </a>
       }
@@ -91,6 +91,10 @@
         <mat-icon>menu</mat-icon>
       </button>
       <span style="margin-left: 8px;">All By Myshelf</span>
+      <span style="flex: 1;"></span>
+      <button mat-icon-button (click)="cycleTheme()" [attr.aria-label]="'Toggle theme: ' + themeService.theme()">
+        <mat-icon>{{ themeIcon() }}</mat-icon>
+      </button>
     </mat-toolbar>
     <router-outlet />
   </mat-sidenav-content>

@@ -6,7 +6,7 @@
   } @else {
     @if (discogsEnabled() && hardcoverEnabled()) {
       <mat-button-toggle-group [ngModel]="context()" (ngModelChange)="context.set($event); result.set(null)" style="margin-bottom: 16px;">
-        <mat-button-toggle value="records">Records</mat-button-toggle>
+        <mat-button-toggle value="records">Music</mat-button-toggle>
         <mat-button-toggle value="books">Books</mat-button-toggle>
       </mat-button-toggle-group>
     }

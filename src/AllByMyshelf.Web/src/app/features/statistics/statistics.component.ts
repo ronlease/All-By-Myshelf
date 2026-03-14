@@ -75,8 +75,8 @@ export class StatisticsComponent implements OnInit {
       sections.push({
         breakdowns,
         icon: 'album',
-        name: 'Records',
-        summary: `${stats.records.totalCount} record${stats.records.totalCount === 1 ? '' : 's'} · ${valueSummary}`,
+        name: 'Music',
+        summary: `${stats.records.totalCount} release${stats.records.totalCount === 1 ? '' : 's'} · ${valueSummary}`,
         totalCount: stats.records.totalCount,
       });
     }
