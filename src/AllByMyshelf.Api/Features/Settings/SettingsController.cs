@@ -18,6 +18,7 @@ public class SettingsController(
     IConfigurationRoot configurationRoot) : ControllerBase
 {
     // Well-known setting keys
+    private const string BggUsernameKey = "Bgg:Username";
     private const string DiscogsPersonalAccessTokenKey = "Discogs:PersonalAccessToken";
     private const string DiscogsUsernameKey = "Discogs:Username";
     private const string HardcoverApiTokenKey = "Hardcover:ApiToken";
@@ -30,12 +31,14 @@ public class SettingsController(
     [HttpGet]
     public async Task<ActionResult<SettingsDto>> GetSettingsAsync(CancellationToken cancellationToken)
     {
+        var bggUsername = await GetSettingValueAsync(BggUsernameKey, cancellationToken);
         var discogsToken = await GetSettingValueAsync(DiscogsPersonalAccessTokenKey, cancellationToken);
         var discogsUsername = await GetSettingValueAsync(DiscogsUsernameKey, cancellationToken);
         var hardcoverToken = await GetSettingValueAsync(HardcoverApiTokenKey, cancellationToken);
         var theme = await GetSettingValueAsync(ThemeKey, cancellationToken) ?? "os-default";
 
         return Ok(new SettingsDto(
+            BggUsername: bggUsername ?? string.Empty,
             DiscogsPersonalAccessToken: MaskToken(discogsToken ?? string.Empty),
             DiscogsUsername: discogsUsername ?? string.Empty,
             HardcoverApiToken: MaskToken(hardcoverToken ?? string.Empty),
@@ -54,6 +57,9 @@ public class SettingsController(
         [FromBody] UpdateSettingsDto dto,
         CancellationToken cancellationToken)
     {
+        if (dto.BggUsername is not null)
+            await UpsertSettingAsync(BggUsernameKey, dto.BggUsername, cancellationToken);
+
         if (dto.DiscogsPersonalAccessToken is not null)
             await UpsertSettingAsync(DiscogsPersonalAccessTokenKey, dto.DiscogsPersonalAccessToken, cancellationToken);
 

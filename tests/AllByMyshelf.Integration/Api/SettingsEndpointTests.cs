@@ -209,6 +209,7 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
+            BggUsername: null,
             DiscogsPersonalAccessToken: "new-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -228,6 +229,7 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
+            BggUsername: null,
             DiscogsPersonalAccessToken: "new-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -253,6 +255,7 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
+            BggUsername: null,
             DiscogsPersonalAccessToken: null,
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -278,6 +281,7 @@ public class SettingsEndpointTests
 
         // Save first token (8+ chars for masking: first 4 + "••••" + last 2)
         var dto1 = new UpdateSettingsDto(
+            BggUsername: null,
             DiscogsPersonalAccessToken: "discogs-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -286,6 +290,7 @@ public class SettingsEndpointTests
 
         // Save second token without including first
         var dto2 = new UpdateSettingsDto(
+            BggUsername: null,
             DiscogsPersonalAccessToken: null,
             DiscogsUsername: null,
             HardcoverApiToken: "hardcover-token-456",

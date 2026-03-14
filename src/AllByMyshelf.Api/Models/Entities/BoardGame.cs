@@ -1,0 +1,49 @@
+namespace AllByMyshelf.Api.Models.Entities;
+
+/// <summary>
+/// Represents a board game persisted from a BoardGameGeek collection sync.
+/// </summary>
+public class BoardGame
+{
+    /// <summary>BGG game ID used for upsert matching.</summary>
+    public int BggId { get; set; }
+
+    /// <summary>Full cover image URL as returned by BGG; null when not provided.</summary>
+    public string? CoverImageUrl { get; set; }
+
+    /// <summary>Game description; null when not available.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Primary designer name; null when not available.</summary>
+    public string? Designer { get; set; }
+
+    /// <summary>Primary category/genre; null when not available.</summary>
+    public string? Genre { get; set; }
+
+    /// <summary>Primary key (application-generated GUID).</summary>
+    public Guid Id { get; set; }
+
+    /// <summary>UTC timestamp of the last sync that touched this record.</summary>
+    public DateTimeOffset LastSyncedAt { get; set; }
+
+    /// <summary>Maximum number of players; null when not available.</summary>
+    public int? MaxPlayers { get; set; }
+
+    /// <summary>Maximum playtime in minutes; null when not available.</summary>
+    public int? MaxPlaytime { get; set; }
+
+    /// <summary>Minimum number of players; null when not available.</summary>
+    public int? MinPlayers { get; set; }
+
+    /// <summary>Minimum playtime in minutes; null when not available.</summary>
+    public int? MinPlaytime { get; set; }
+
+    /// <summary>Thumbnail image URL; null when not available.</summary>
+    public string? ThumbnailUrl { get; set; }
+
+    /// <summary>Board game title as returned by BGG.</summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Year published; null when not available.</summary>
+    public int? YearPublished { get; set; }
+}

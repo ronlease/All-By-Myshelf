@@ -5,6 +5,7 @@ namespace AllByMyshelf.Api.Features.Settings;
 /// Tokens show first 4 + "••••" + last 2 characters (or "••••••" if too short).
 /// </summary>
 public record SettingsDto(
+    string BggUsername,
     string DiscogsPersonalAccessToken,
     string DiscogsUsername,
     string HardcoverApiToken,
@@ -15,6 +16,7 @@ public record SettingsDto(
 /// Null fields are left unchanged.
 /// </summary>
 public record UpdateSettingsDto(
+    string? BggUsername,
     string? DiscogsPersonalAccessToken,
     string? DiscogsUsername,
     string? HardcoverApiToken,
