@@ -6,37 +6,51 @@
   } @else if (error()) {
     <mat-card>
       <mat-card-content>
-        <p class="empty-state">Unable to load statistics. Please go back and try again.</p>
+        <p class="empty-state">Unable to load statistics.</p>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button (click)="onBackClick()">Back to Collection</button>
-      </mat-card-actions>
-    </mat-card>
-  } @else if (collectionValue()) {
-    <mat-card class="mat-elevation-z2">
-      <mat-card-header>
-        <mat-card-title>Collection Value</mat-card-title>
-        <mat-card-subtitle>Based on lowest marketplace price from Discogs</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        @if (collectionValue()!.includedCount === 0) {
-          <p class="empty-state">Pricing data is unavailable. Trigger a sync to fetch marketplace prices.</p>
-        } @else {
-          <p class="collection-value-total">{{ collectionValue()!.totalValue | currency:'USD' }}</p>
-          <p class="collection-value-meta">
-            Based on {{ collectionValue()!.includedCount }} release{{ collectionValue()!.includedCount === 1 ? '' : 's' }} with pricing data.
-            @if (collectionValue()!.excludedCount > 0) {
-              {{ collectionValue()!.excludedCount }} release{{ collectionValue()!.excludedCount === 1 ? '' : 's' }} excluded (no pricing data available).
-            }
-          </p>
-        }
-      </mat-card-content>
-      <mat-card-actions>
-        <button mat-button (click)="onBackClick()">
-          <mat-icon>arrow_back</mat-icon>
-          Back to Collection
+        <button mat-button (click)="retry()">
+          <mat-icon>refresh</mat-icon>
+          Retry
         </button>
       </mat-card-actions>
     </mat-card>
+  } @else if (categories().length === 0) {
+    <mat-card>
+      <mat-card-content>
+        <p class="empty-state">No collection data available. Sync your collections to see statistics.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    @for (category of categories(); track category.name) {
+      <mat-card class="category-card mat-elevation-z2">
+        <mat-card-header class="category-header" (click)="toggleCategory(category.name)">
+          <mat-icon matCardAvatar>{{ category.icon }}</mat-icon>
+          <mat-card-title>{{ category.name }}</mat-card-title>
+          <mat-card-subtitle>{{ category.summary }}</mat-card-subtitle>
+          <mat-icon class="expand-icon">{{ isCategoryExpanded(category.name) ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </mat-card-header>
+
+        @if (isCategoryExpanded(category.name)) {
+          <mat-card-content>
+            <div class="breakdowns-row">
+              @for (breakdown of category.breakdowns; track breakdown.title) {
+                <div class="breakdown-column">
+                  <h3>{{ breakdown.title }}</h3>
+                  <mat-list dense>
+                    @for (item of breakdown.items; track item.label) {
+                      <mat-list-item class="clickable-item" (click)="onLabelClick(breakdown.route, breakdown.groupByField, item.label)">
+                        <span matListItemTitle>{{ item.label }}</span>
+                        <span matListItemMeta>{{ item.count }}</span>
+                      </mat-list-item>
+                    }
+                  </mat-list>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        }
+      </mat-card>
+    }
   }
 </div>

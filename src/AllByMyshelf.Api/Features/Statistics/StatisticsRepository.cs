@@ -21,4 +21,91 @@ public class StatisticsRepository(AllByMyshelfDbContext dbContext) : IStatistics
             TotalValue = withPrice.Sum()
         };
     }
+
+    public async Task<UnifiedStatisticsDto> GetUnifiedStatisticsAsync(CancellationToken cancellationToken)
+    {
+        // --- Records ---
+        var releases = await dbContext.Releases
+            .AsNoTracking()
+            .Select(r => new { r.Format, r.Genre, r.LowestPrice, r.Year })
+            .ToListAsync(cancellationToken);
+
+        var releasesWithPrice = releases.Where(r => r.LowestPrice.HasValue).ToList();
+
+        var decadeBreakdown = releases
+            .Where(r => r.Year.HasValue)
+            .GroupBy(r => (r.Year!.Value / 10) * 10)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = $"{g.Key}s" })
+            .OrderBy(b => b.Label)
+            .ToList();
+
+        var formatBreakdown = releases
+            .Where(r => !string.IsNullOrWhiteSpace(r.Format))
+            .GroupBy(r => r.Format!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var genreBreakdown = releases
+            .Where(r => !string.IsNullOrWhiteSpace(r.Genre))
+            .GroupBy(r => r.Genre!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var recordStats = new RecordStatisticsDto
+        {
+            DecadeBreakdown = decadeBreakdown,
+            ExcludedFromValueCount = releases.Count - releasesWithPrice.Count,
+            FormatBreakdown = formatBreakdown,
+            GenreBreakdown = genreBreakdown,
+            TotalCount = releases.Count,
+            TotalValue = releasesWithPrice.Sum(r => r.LowestPrice!.Value)
+        };
+
+        // --- Books ---
+        var books = await dbContext.Books
+            .AsNoTracking()
+            .Select(b => new { b.Author, b.Genre, b.Year })
+            .ToListAsync(cancellationToken);
+
+        var bookAuthorBreakdown = books
+            .Where(b => !string.IsNullOrWhiteSpace(b.Author))
+            .GroupBy(b => b.Author!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var bookDecadeBreakdown = books
+            .Where(b => b.Year.HasValue)
+            .GroupBy(b => (b.Year!.Value / 10) * 10)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = $"{g.Key}s" })
+            .OrderBy(b => b.Label)
+            .ToList();
+
+        var bookGenreBreakdown = books
+            .Where(b => !string.IsNullOrWhiteSpace(b.Genre))
+            .GroupBy(b => b.Genre!)
+            .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
+            .OrderByDescending(b => b.Count)
+            .ThenBy(b => b.Label)
+            .ToList();
+
+        var bookStats = new BookStatisticsDto
+        {
+            AuthorBreakdown = bookAuthorBreakdown,
+            DecadeBreakdown = bookDecadeBreakdown,
+            GenreBreakdown = bookGenreBreakdown,
+            TotalCount = books.Count
+        };
+
+        return new UnifiedStatisticsDto
+        {
+            Books = bookStats,
+            Records = recordStats
+        };
+    }
 }

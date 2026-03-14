@@ -2090,7 +2090,7 @@ Feature: Books dashboard
 
 ## [ABM-034] Unified Statistics Dashboard for Records and Books
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -2402,7 +2402,7 @@ Feature: Global sync progress indicator
 
 ## [ABM-038] BoardGameGeek Collection Integration
 
-**Status:** Backlog
+**Status:** Superseded by ABM-053 through ABM-058
 **Priority:** Medium
 
 ### Business Problem
@@ -2998,7 +2998,7 @@ Feature: Discogs OAuth 1.0a for enhanced marketplace pricing
 
 ## [ABM-049] Book Detail View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -3069,4 +3069,689 @@ Feature: Book detail view
     When the detail view renders
     Then the read date is displayed in a human-readable format (e.g., "March 15, 2025")
     And the raw date value is not shown
+```
+
+---
+
+## [ABM-050] Books List Column Sorting
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+When browsing my books list, I want to reorder the table by clicking column headers so I can quickly find books by a specific attribute. For example, I may want to see my newest reads first (sort by year descending), or browse alphabetically by author. The backend already supports ordering by title, but I need the frontend to expose sorting controls and the backend to support additional sort columns.
+
+### Acceptance Criteria
+```gherkin
+Feature: Books list column sorting
+
+  Scenario: Clicking a sortable column header sorts the list ascending
+    Given I am logged in
+    And the books list is displayed
+    When I click the column header for a sortable column (title, author, genre, or year)
+    Then the books list is sorted by that column in ascending order
+    And the column header displays an ascending sort indicator
+
+  Scenario: Clicking the same column header again reverses the sort order
+    Given I am logged in
+    And the books list is sorted by a column in ascending order
+    When I click the same column header again
+    Then the books list is sorted by that column in descending order
+    And the column header displays a descending sort indicator
+
+  Scenario: Clicking a different column header changes the sort column
+    Given I am logged in
+    And the books list is sorted by one column
+    When I click a different sortable column header
+    Then the books list is sorted by the new column in ascending order
+    And the previous column no longer shows a sort indicator
+    And the new column displays an ascending sort indicator
+
+  Scenario: Default sort order is title ascending
+    Given I am logged in
+    And I navigate to the books list without any sort parameters
+    When the books list renders
+    Then the books are sorted by title in ascending order
+    And the title column header displays an ascending sort indicator
+
+  Scenario: Sort order persists across pagination
+    Given I am logged in
+    And I have sorted the books list by author descending
+    When I navigate to page 2 of the books list
+    Then the books on page 2 are still sorted by author descending
+    And the author column header still displays a descending sort indicator
+
+  Scenario: Null values sort to the end
+    Given I am logged in
+    And some books have null values for the sorted column
+    When I sort by that column
+    Then books with null values appear at the end of the list regardless of sort direction
+```
+
+---
+
+## [ABM-051] Books List Grouping by Author and Decade
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+When I want to browse my read books by a particular dimension — all books by a given author, or everything I read from a particular decade — a flat paginated list forces me to scroll and search rather than navigate naturally. A grouping option lets me select one dimension and see the books organized into collapsible sections, making thematic browsing effortless.
+
+### Acceptance Criteria
+```gherkin
+Feature: Books list grouping
+
+  Scenario: Default state shows no grouping
+    Given I am logged in
+    And I have not changed the grouping selection
+    When the books list renders
+    Then the grouping combobox displays "No grouping"
+    And the books are displayed as a flat paginated list
+
+  Scenario: Selecting author grouping organizes the list by author
+    Given I am logged in
+    When I select "Author" from the grouping combobox
+    Then the books list is reorganized into sections, one per distinct author
+    And each section header displays the author name
+    And all sections are collapsed by default
+    And pagination is no longer shown while grouping is active
+
+  Scenario: Selecting decade grouping organizes the list by decade
+    Given I am logged in
+    When I select "Decade" from the grouping combobox
+    Then the books list is reorganized into sections, one per decade (e.g., "2020s", "2010s", "2000s")
+    And each section header displays the decade label
+    And all sections are collapsed by default
+    And pagination is no longer shown while grouping is active
+
+  Scenario: Expanding a group reveals its books
+    Given I have selected a grouping field
+    And the books list shows collapsed group sections
+    When I click on a group section header
+    Then that section expands to show all books belonging to that group
+    And other sections remain in their current collapsed or expanded state
+
+  Scenario: Collapsing an expanded group hides its books
+    Given I have selected a grouping field
+    And at least one group section is expanded
+    When I click the expanded section header
+    Then that section collapses and its books are hidden
+
+  Scenario: Changing the grouping selection resets all groups to collapsed
+    Given I have selected a grouping field
+    And one or more sections are expanded
+    When I select a different grouping field from the combobox
+    Then the books are regrouped by the new field
+    And all sections in the new grouping are collapsed
+
+  Scenario: Books with null values in the grouping field appear in an "Unknown" group
+    Given I have selected a grouping field
+    And some books have null values for that field
+    When the grouped list renders
+    Then books with null values appear in a group labeled "Unknown"
+    And this group appears at the end of the group list
+
+  Scenario: Decade is derived from the year field
+    Given a book has year 2015
+    When I group by decade
+    Then the book appears in the "2010s" group
+```
+
+---
+
+## [ABM-052] Books List Search
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+As my list of read books grows, scrolling through pages to find a specific book becomes tedious. I want a single search input that filters the visible results across title, author, genre, and year simultaneously so I can narrow the list down to what I am looking for in seconds. The backend already supports filtering via query parameters; the frontend just needs to expose this through a search UI.
+
+### Acceptance Criteria
+```gherkin
+Feature: Books list search
+
+  Scenario: Typing in the search input filters the books list
+    Given I am logged in
+    And the books list is showing books
+    When I type a search term into the search input
+    Then only books whose title, author, genre, or year contain the search term (case-insensitive) are displayed
+    And the pagination reflects the filtered result count
+
+  Scenario: Clearing the search input restores the full list
+    Given I am logged in
+    And I have typed a search term that has narrowed the list
+    When I clear the search input
+    Then the full unfiltered books list is displayed again
+    And the pagination reflects the total unfiltered book count
+
+  Scenario: Search term that matches no books shows an empty state
+    Given I am logged in
+    When I type a search term that matches no book in any field
+    Then the books list shows no rows
+    And a message is displayed indicating no results were found for that term
+
+  Scenario: Search resets to the first page
+    Given I am logged in
+    And I am viewing page 2 or later of the books list
+    When I type a search term into the search input
+    Then the results reset to page 1
+    And the pagination controls reflect the new filtered page count
+
+  Scenario: Search debounces input to avoid excessive API calls
+    Given I am logged in
+    When I type quickly in the search input
+    Then the API is not called on every keystroke
+    And the search executes after a brief pause in typing
+
+  Scenario: Search works with partial matches
+    Given I am logged in
+    And the books list contains a book with author "Stephen King"
+    When I type "king" into the search input
+    Then the book by Stephen King is displayed in the results
+```
+
+---
+
+## [ABM-053] Store BGG Username in Settings
+
+**Status:** Backlog
+**Priority:** High
+
+### Business Problem
+To integrate with BoardGameGeek, the application needs to know my BGG username. Unlike Discogs and Hardcover which use API tokens, BGG's XML API is public and only requires a username to fetch a user's collection. The username should be configurable through the existing settings page, following the same pattern used for Discogs and Hardcover credentials.
+
+### Acceptance Criteria
+```gherkin
+Feature: BGG username configuration
+
+  Scenario: Configure BGG username through the settings page
+    Given I am logged in
+    And I navigate to the settings page
+    When I enter my BGG username in the BGG username field
+    And I save the settings
+    Then the username is stored securely via dotnet user-secrets
+    And a success message confirms the configuration was saved
+
+  Scenario: Settings page shows BGG username field alongside other integrations
+    Given I am logged in
+    When I navigate to the settings page
+    Then I see a BGG username field in the integrations section
+    And it appears alongside the Discogs and Hardcover credential fields
+
+  Scenario: BggOptions class provides username to services
+    Given the BGG username has been configured in user-secrets
+    When the application starts
+    Then the BggOptions class is populated with the configured username
+    And services can inject BggOptions to access the username
+
+  Scenario: FeaturesDto indicates BGG is enabled when username is configured
+    Given the BGG username has been configured
+    When the frontend requests the features endpoint
+    Then FeaturesDto includes BggEnabled set to true
+
+  Scenario: FeaturesDto indicates BGG is disabled when username is not configured
+    Given the BGG username has NOT been configured
+    When the frontend requests the features endpoint
+    Then FeaturesDto includes BggEnabled set to false
+
+  Scenario: Board Games navigation item only visible when BGG is enabled
+    Given BggEnabled is true in the features response
+    When the navigation drawer renders
+    Then the Board Games navigation item is visible
+
+  Scenario: Board Games navigation item hidden when BGG is not enabled
+    Given BggEnabled is false in the features response
+    When the navigation drawer renders
+    Then the Board Games navigation item is not visible
+```
+
+---
+
+## [ABM-054] BGG API Client and Background Sync Service
+
+**Status:** Backlog
+**Priority:** High
+**Depends on:** ABM-053
+
+### Business Problem
+The application needs to communicate with the BoardGameGeek XML API2 to fetch my board game collection. The BGG API is XML-based (not JSON) and has a known behavior where collection requests return HTTP 202 ("queued, try again") before returning actual data. A robust client must handle this retry pattern. The sync should run in the background using the same channel-based pattern as the existing Discogs and Hardcover sync services.
+
+### Acceptance Criteria
+```gherkin
+Feature: BGG API client and background sync
+
+  Scenario: BggClient fetches owned games from the collection endpoint
+    Given my BGG username is configured
+    When the BggClient requests my collection
+    Then it calls /xmlapi2/collection?username={username}&own=1&stats=1
+    And it parses the XML response to extract game data
+
+  Scenario: BggClient handles HTTP 202 with exponential backoff retry
+    Given my BGG username is configured
+    When the BGG API returns HTTP 202 (queued, try again)
+    Then the client waits and retries with exponential backoff
+    And the client retries up to 5 times before failing
+    And the client eventually returns the collection data when available
+
+  Scenario: BggClient extracts required game fields from XML
+    Given the BGG API returns a collection XML response
+    When the client parses the response
+    Then it extracts name, year published, min players, max players, min playtime, max playtime, thumbnail URL, image URL, and BGG ID for each game
+
+  Scenario: BggClient optionally fetches enriched detail for each game
+    Given the sync is configured to fetch detail
+    When the client syncs a game
+    Then it calls /xmlapi2/thing?id={id}&stats=1 for enriched detail
+    And it extracts description, designer, and categories from the response
+
+  Scenario: BggClient respects BGG server rate limits
+    Given the sync is fetching detail for multiple games
+    When the client makes sequential detail requests
+    Then there is at least a 500ms delay between requests
+
+  Scenario: BoardGamesSyncService follows BackgroundService and Channel pattern
+    Given the application is running
+    When a sync is triggered
+    Then BoardGamesSyncService processes the request via a channel
+    And the sync runs asynchronously in the background
+
+  Scenario: Sync can be triggered via POST endpoint
+    Given my BGG username is configured
+    And no sync is currently running
+    When I send POST /api/v1/boardgames/sync
+    Then the response is HTTP 202 Accepted
+    And the sync starts in the background
+
+  Scenario: Sync status is queryable
+    Given a sync is running
+    When I send GET /api/v1/boardgames/sync/status
+    Then the response includes isRunning set to true
+
+  Scenario: Existing data is preserved if sync fails
+    Given the database contains board games from a previous sync
+    When a sync fails partway through
+    Then the previously stored board games remain intact in the database
+```
+
+---
+
+## [ABM-055] Persist BGG Collection to Database
+
+**Status:** Backlog
+**Priority:** High
+**Depends on:** ABM-054
+
+### Business Problem
+Board game data fetched from BGG needs to be persisted locally so the dashboard can display it without calling the external API on every page load. This follows the same persistence pattern used for Discogs releases and Hardcover books.
+
+### Acceptance Criteria
+```gherkin
+Feature: Persist BGG collection to database
+
+  Scenario: BoardGame entity contains required fields
+    Given the EF Core model is configured
+    Then the BoardGame entity has fields: BggId, CoverImageUrl, Description, Designer, Genre, Id, LastSyncedAt, MaxPlayers, MaxPlaytime, MinPlayers, MinPlaytime, ThumbnailUrl, Title, YearPublished
+
+  Scenario: BoardGame table has unique index on BggId
+    Given the EF Core migration has been applied
+    Then the board_games table has a unique index on the bgg_id column
+    And duplicate BggIds cannot be inserted
+
+  Scenario: Migration creates board_games table
+    Given the EF Core migration is created
+    When the migration is applied to the database
+    Then the board_games table exists with all required columns
+
+  Scenario: UpsertCollectionAsync inserts new games
+    Given the database contains no board games
+    When UpsertCollectionAsync is called with a list of games
+    Then all games are inserted into the database
+    And each game has LastSyncedAt set to the current timestamp
+
+  Scenario: UpsertCollectionAsync updates existing games
+    Given the database contains board games from a previous sync
+    When UpsertCollectionAsync is called with updated game data
+    Then existing games are updated with the new data
+    And LastSyncedAt is updated to the current timestamp
+
+  Scenario: UpsertCollectionAsync removes games no longer in the collection
+    Given the database contains board games from a previous sync
+    When UpsertCollectionAsync is called with a collection that excludes some previously synced games
+    Then the games no longer in the collection are removed from the database
+
+  Scenario: DbSet BoardGame is available on AllByMyshelfDbContext
+    Given the DbContext is configured
+    Then AllByMyshelfDbContext has a DbSet<BoardGame> property
+    And queries can be executed against the BoardGame table
+```
+
+---
+
+## [ABM-056] Paginated Board Games API Endpoint
+
+**Status:** Backlog
+**Priority:** High
+**Depends on:** ABM-055
+
+### Business Problem
+The frontend needs API endpoints to display the board game collection. Following the same pattern as records and books, the API should provide paginated listing with filters, single game detail, random game selection, and sync control.
+
+### Acceptance Criteria
+```gherkin
+Feature: Board games API endpoints
+
+  Scenario: Retrieve paginated list of board games
+    Given the database contains board games
+    When I request GET /api/v1/boardgames?page=1&pageSize=25
+    Then the response is HTTP 200 OK
+    And the response body contains up to 25 board games
+    And each board game includes title, designer, genre, player count, year published, and thumbnail URL
+    And the response includes total record count and total page count
+
+  Scenario: Filter board games by title
+    Given the database contains board games
+    When I request GET /api/v1/boardgames?title=catan
+    Then the response contains only board games whose title contains "catan" (case-insensitive)
+
+  Scenario: Filter board games by designer
+    Given the database contains board games
+    When I request GET /api/v1/boardgames?designer=knizia
+    Then the response contains only board games whose designer contains "knizia" (case-insensitive)
+
+  Scenario: Filter board games by genre
+    Given the database contains board games with various genres
+    When I request GET /api/v1/boardgames?genre=strategy
+    Then the response contains only board games whose genre contains "strategy" (case-insensitive)
+
+  Scenario: Filter board games by player count
+    Given the database contains board games with varying player counts
+    When I request GET /api/v1/boardgames?playerCount=4
+    Then the response contains only board games where MinPlayers <= 4 AND MaxPlayers >= 4
+
+  Scenario: Filter board games by year
+    Given the database contains board games from various years
+    When I request GET /api/v1/boardgames?year=2020
+    Then the response contains only board games published in 2020
+
+  Scenario: Retrieve single board game by ID
+    Given the database contains a board game with ID 42
+    When I request GET /api/v1/boardgames/42
+    Then the response is HTTP 200 OK
+    And the response body contains all fields for the board game
+
+  Scenario: Retrieve single board game returns 404 when not found
+    Given the database does not contain a board game with ID 999
+    When I request GET /api/v1/boardgames/999
+    Then the response is HTTP 404 Not Found
+
+  Scenario: Retrieve random board game
+    Given the database contains board games
+    When I request GET /api/v1/boardgames/random
+    Then the response is HTTP 200 OK
+    And the response body contains a randomly selected board game
+
+  Scenario: Retrieve random board game returns 404 when empty
+    Given the database contains no board games
+    When I request GET /api/v1/boardgames/random
+    Then the response is HTTP 404 Not Found
+
+  Scenario: Trigger sync returns 202 when started
+    Given my BGG username is configured
+    And no sync is currently running
+    When I send POST /api/v1/boardgames/sync
+    Then the response is HTTP 202 Accepted
+
+  Scenario: Trigger sync returns 409 when already running
+    Given a board games sync is currently running
+    When I send POST /api/v1/boardgames/sync
+    Then the response is HTTP 409 Conflict
+
+  Scenario: Trigger sync returns 503 when not configured
+    Given my BGG username is NOT configured
+    When I send POST /api/v1/boardgames/sync
+    Then the response is HTTP 503 Service Unavailable
+
+  Scenario: Get sync status
+    Given a board games sync is running
+    When I request GET /api/v1/boardgames/sync/status
+    Then the response is HTTP 200 OK
+    And the response body contains { "isRunning": true }
+
+  Scenario: All board game endpoints require authentication
+    Given I am not authenticated
+    When I request any /api/v1/boardgames endpoint
+    Then the response is HTTP 401 Unauthorized
+```
+
+---
+
+## [ABM-057] Board Games Dashboard (Frontend)
+
+**Status:** Backlog
+**Priority:** High
+**Depends on:** ABM-056
+
+### Business Problem
+Board game data needs a frontend interface following the same dashboard pattern as records and books. I should be able to browse my collection in a paginated table, click through to a detail view, and trigger syncs.
+
+### Acceptance Criteria
+```gherkin
+Feature: Board games dashboard
+
+  Scenario: Board games list page displays paginated table
+    Given I am logged in
+    And the database contains board games
+    When I navigate to /board-games
+    Then I see a paginated mat-table of board games
+    And the table has columns: thumbnail, title, designer, genre, player count, year published
+
+  Scenario: Player count is formatted as a range
+    Given a board game has MinPlayers 2 and MaxPlayers 4
+    When the board games list renders
+    Then the player count column displays "2-4"
+
+  Scenario: Clicking a row navigates to the detail page
+    Given I am logged in
+    And the board games list is displayed
+    When I click on a board game row
+    Then I am navigated to /board-games/{id}
+
+  Scenario: Detail page shows all board game fields
+    Given I am logged in
+    When I navigate to /board-games/{id}
+    Then I see the board game's title, designer, genre, year published, description, player count, and play time
+    And I see the cover image
+
+  Scenario: Detail page includes View on BGG link
+    Given I am logged in
+    And I am viewing a board game detail page
+    When I click the "View on BGG" link
+    Then a new browser tab opens to https://boardgamegeek.com/boardgame/{bggId}
+
+  Scenario: Navigation drawer includes Board Games item
+    Given I am logged in
+    And BggEnabled is true
+    When the navigation drawer renders
+    Then I see a "Board Games" navigation item with an appropriate icon
+
+  Scenario: Empty state when no games synced
+    Given I am logged in
+    And the database contains no board games
+    When I navigate to /board-games
+    Then I see an empty state message indicating no board games have been synced
+
+  Scenario: Sync triggers from navigation sync controls
+    Given I am logged in
+    And I am on the board games page
+    When I use the navigation sync controls to sync board games
+    Then a sync is triggered via POST /api/v1/boardgames/sync
+```
+
+---
+
+## [ABM-058] Add Board Games to Unified Statistics
+
+**Status:** Backlog
+**Priority:** Medium
+**Depends on:** ABM-055, ABM-034
+
+### Business Problem
+Once board games are stored locally, the unified statistics dashboard should include a board games section alongside records and books, showing total count and breakdowns by genre and player count.
+
+### Acceptance Criteria
+```gherkin
+Feature: Board games in unified statistics
+
+  Scenario: UnifiedStatisticsDto includes board games property
+    Given the statistics endpoint is called
+    Then the response includes a BoardGames property containing BoardGameStatisticsDto
+
+  Scenario: Total board game count is displayed
+    Given the database contains 25 board games
+    When I view the unified statistics dashboard
+    Then the board games section displays a total count of 25
+
+  Scenario: Genre breakdown is displayed
+    Given the database contains board games with various genres
+    When I view the unified statistics dashboard
+    Then the board games section displays a breakdown by genre
+    And each genre shows its count
+
+  Scenario: Player count breakdown is displayed
+    Given the database contains board games with various player counts
+    When I view the unified statistics dashboard
+    Then the board games section displays a breakdown by player count range
+    And ranges include "1-2 players", "3-4 players", "5+ players"
+
+  Scenario: Empty state when no board games exist
+    Given the database contains no board games
+    When I view the unified statistics dashboard
+    Then the board games section displays an empty state or zero counts
+
+  Scenario: Statistics frontend includes board games section
+    Given I am logged in
+    And the database contains board games
+    When I navigate to the statistics page
+    Then I see a board games statistics section alongside records and books
+```
+
+---
+
+## [ABM-059] Recategorize "Records" as "Music"
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The application currently labels the Discogs collection as "Records" throughout the UI (navigation, statistics, dashboard headings, etc.). However, Discogs supports multiple physical media formats — vinyl records, CDs, cassettes, and more. While the current user primarily collects vinyl, the labeling is inaccurate for the general case and would be confusing if the collection contained mixed formats. Renaming "Records" to "Music" better represents what Discogs actually provides and makes the app more accurate regardless of format mix.
+
+### Acceptance Criteria
+```gherkin
+Feature: Recategorize Records as Music in UI
+
+  Scenario: Navigation drawer shows Music instead of Records
+    Given I am logged in
+    When I view the navigation drawer
+    Then I see "Music" as the label for the Discogs collection link
+    And I do not see "Records" as a navigation label
+
+  Scenario: Statistics dashboard section header says Music
+    Given I am logged in
+    And the database contains Discogs collection items
+    When I navigate to the statistics page
+    Then the Discogs collection section header displays "Music"
+    And does not display "Records"
+
+  Scenario: Dashboard page heading says Music
+    Given I am logged in
+    When I navigate to the Discogs collection dashboard
+    Then the page heading displays "Music" or "Music Collection"
+    And does not display "Records"
+
+  Scenario: Random picker shows Music when in Discogs context
+    Given I am logged in
+    And I am using the random picker for the Discogs collection
+    When the picker displays results or context labels
+    Then it references "Music" rather than "Records"
+
+  Scenario: Store finder references Music rather than Records
+    Given I am logged in
+    When I use the local store finder in the Discogs context
+    Then UI text references "Music" where applicable
+    And does not reference "Records"
+
+  Scenario: API response field names remain unchanged
+    Given the backend exposes Discogs collection endpoints
+    When I call any Discogs-related API endpoint
+    Then the response field names and endpoint paths remain unchanged
+    And no breaking API changes are introduced
+
+  Scenario: All remaining Records references are updated
+    Given I am logged in
+    When I navigate through all pages that reference the Discogs collection
+    Then every UI label that previously said "Records" now says "Music"
+```
+
+---
+
+## [ABM-060] Quick Theme Toggle in App Bar
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+Switching between light and dark mode currently requires navigating to the Settings page, which is cumbersome when testing or frequently switching themes. A quick toggle button in the upper-right corner of the app bar would allow instant theme switching from any page without leaving the current view.
+
+### Acceptance Criteria
+```gherkin
+Feature: Quick theme toggle in app bar
+
+  Scenario: Theme toggle button is visible in app bar
+    Given I am logged in
+    When I view any page in the application
+    Then a theme toggle icon button is visible in the upper-right area of the app bar
+
+  Scenario: Clicking toggle cycles through theme modes
+    Given the current theme is light mode
+    When I click the theme toggle button
+    Then the theme changes to dark mode
+    When I click the theme toggle button again
+    Then the theme changes to OS default mode
+    When I click the theme toggle button again
+    Then the theme changes back to light mode
+
+  Scenario: Toggle icon reflects current theme
+    Given the current theme is light mode
+    Then the toggle icon displays a light_mode indicator
+    When I switch to dark mode
+    Then the toggle icon displays a dark_mode indicator
+    When I switch to OS default mode
+    Then the toggle icon displays a contrast or auto indicator
+
+  Scenario: Theme selection persists across sessions
+    Given I click the theme toggle to select dark mode
+    When I close and reopen the application
+    Then the theme remains set to dark mode
+    And the toggle icon reflects dark mode
+
+  Scenario: Settings page theme selector stays in sync
+    Given I am on any page
+    When I use the app bar toggle to switch to dark mode
+    And I navigate to the Settings page
+    Then the theme selector on the Settings page shows dark mode as selected
+
+  Scenario: App bar toggle syncs with Settings page changes
+    Given I am on the Settings page
+    When I change the theme using the Settings page selector
+    And I navigate to another page
+    Then the app bar toggle icon reflects the theme selected on Settings
+
+  Scenario: Toggle does not interfere with other app bar elements
+    Given I am logged in
+    When I view the app bar
+    Then the theme toggle is positioned without overlapping the sync button
+    And the theme toggle is positioned without overlapping navigation elements
+    And all app bar elements remain functional
 ```
