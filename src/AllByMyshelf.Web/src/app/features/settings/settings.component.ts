@@ -30,6 +30,7 @@ import { ThemeService } from '../../core/config/theme.service';
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
+  bggApiTokenControl = new FormControl<string>('');
   bggUsernameControl = new FormControl<string>('');
   discogsPersonalAccessTokenControl = new FormControl<string>('');
   discogsUsernameControl = new FormControl<string>('');
@@ -52,6 +53,11 @@ export class SettingsComponent implements OnInit {
 
     const dto: UpdateSettingsDto = {};
     const current = this.settings();
+
+    const bggApiToken = this.bggApiTokenControl.value?.trim();
+    if (bggApiToken && bggApiToken !== current?.bggApiToken) {
+      dto.bggApiToken = bggApiToken;
+    }
 
     const bggUsername = this.bggUsernameControl.value?.trim();
     if (bggUsername && bggUsername !== current?.bggUsername) {
@@ -77,6 +83,7 @@ export class SettingsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.snackBar.open('Settings saved', 'Close', { duration: 3000 });
+        this.bggApiTokenControl.reset();
         this.bggUsernameControl.reset();
         this.discogsPersonalAccessTokenControl.reset();
         this.discogsUsernameControl.reset();
@@ -110,6 +117,7 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getSettings().subscribe({
       next: (s) => {
         this.settings.set(s);
+        this.bggApiTokenControl.setValue(s.bggApiToken || '');
         this.bggUsernameControl.setValue(s.bggUsername || '');
         this.discogsPersonalAccessTokenControl.setValue(s.discogsPersonalAccessToken || '');
         this.discogsUsernameControl.setValue(s.discogsUsername || '');

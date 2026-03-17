@@ -1,12 +1,17 @@
+using System.Net.Http.Headers;
 using System.Xml.Linq;
+using Microsoft.Extensions.Options;
 
 namespace AllByMyshelf.Api.Features.Bgg;
 
 /// <summary>
 /// Client for the BoardGameGeek XML API.
+/// Sends an Authorization: Bearer header when an API token is configured.
 /// </summary>
-public class BggClient(HttpClient httpClient, ILogger<BggClient> logger)
+public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILogger<BggClient> logger)
 {
+    private readonly BggOptions _options = options.Value;
+
     private const int MaxRetries = 5;
 
     /// <summary>
@@ -22,7 +27,9 @@ public class BggClient(HttpClient httpClient, ILogger<BggClient> logger)
 
         for (var attempt = 0; attempt < MaxRetries; attempt++)
         {
-            var response = await httpClient.GetAsync(url, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            ApplyAuthHeader(request);
+            var response = await httpClient.SendAsync(request, cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
             {
@@ -52,10 +59,20 @@ public class BggClient(HttpClient httpClient, ILogger<BggClient> logger)
         var idList = string.Join(",", ids);
         var url = $"/xmlapi2/thing?id={idList}&stats=1";
 
-        var response = await httpClient.GetAsync(url, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        ApplyAuthHeader(request);
+        var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
         var xml = await response.Content.ReadAsStringAsync(cancellationToken);
         return ParseThingDetails(xml);
+    }
+
+    private void ApplyAuthHeader(HttpRequestMessage request)
+    {
+        if (!string.IsNullOrWhiteSpace(_options.ApiToken))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiToken);
+        }
     }
 
     private static IReadOnlyList<BggCollectionItem> ParseCollection(string xml)

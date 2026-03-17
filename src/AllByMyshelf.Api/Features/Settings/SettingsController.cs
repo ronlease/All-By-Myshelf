@@ -18,6 +18,7 @@ public class SettingsController(
     IConfigurationRoot configurationRoot) : ControllerBase
 {
     // Well-known setting keys
+    private const string BggApiTokenKey = "Bgg:ApiToken";
     private const string BggUsernameKey = "Bgg:Username";
     private const string DiscogsPersonalAccessTokenKey = "Discogs:PersonalAccessToken";
     private const string DiscogsUsernameKey = "Discogs:Username";
@@ -31,6 +32,7 @@ public class SettingsController(
     [HttpGet]
     public async Task<ActionResult<SettingsDto>> GetSettingsAsync(CancellationToken cancellationToken)
     {
+        var bggApiToken = await GetSettingValueAsync(BggApiTokenKey, cancellationToken);
         var bggUsername = await GetSettingValueAsync(BggUsernameKey, cancellationToken);
         var discogsToken = await GetSettingValueAsync(DiscogsPersonalAccessTokenKey, cancellationToken);
         var discogsUsername = await GetSettingValueAsync(DiscogsUsernameKey, cancellationToken);
@@ -38,6 +40,7 @@ public class SettingsController(
         var theme = await GetSettingValueAsync(ThemeKey, cancellationToken) ?? "os-default";
 
         return Ok(new SettingsDto(
+            BggApiToken: MaskToken(bggApiToken ?? string.Empty),
             BggUsername: bggUsername ?? string.Empty,
             DiscogsPersonalAccessToken: MaskToken(discogsToken ?? string.Empty),
             DiscogsUsername: discogsUsername ?? string.Empty,
@@ -57,6 +60,9 @@ public class SettingsController(
         [FromBody] UpdateSettingsDto dto,
         CancellationToken cancellationToken)
     {
+        if (dto.BggApiToken is not null)
+            await UpsertSettingAsync(BggApiTokenKey, dto.BggApiToken, cancellationToken);
+
         if (dto.BggUsername is not null)
             await UpsertSettingAsync(BggUsernameKey, dto.BggUsername, cancellationToken);
 
