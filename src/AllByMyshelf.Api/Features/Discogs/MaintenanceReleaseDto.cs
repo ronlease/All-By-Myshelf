@@ -5,8 +5,8 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// </summary>
 public record MaintenanceReleaseDto
 {
-    /// <summary>Artist name.</summary>
-    public required string Artist { get; init; }
+    /// <summary>List of artist names.</summary>
+    public required List<string> Artists { get; init; }
 
     /// <summary>Discogs release ID.</summary>
     public required int DiscogsId { get; init; }

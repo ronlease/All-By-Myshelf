@@ -45,11 +45,11 @@ public class BooksServiceTests
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static Book MakeBook(int hardcoverId, string author, string title, int? year = 2000,
+    private static Book MakeBook(int hardcoverId, string? author, string title, int? year = 2000,
         string? genre = "Fiction", string? coverImageUrl = null) =>
         new()
         {
-            Author = author,
+            Authors = author is not null ? [author] : [],
             CoverImageUrl = coverImageUrl,
             Genre = genre,
             HardcoverId = hardcoverId,
@@ -77,7 +77,7 @@ public class BooksServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Author.Should().Be("Neil Gaiman");
+        result!.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
         result.CoverImageUrl.Should().Be("https://i.hardcover.com/cover.jpg");
         result.Genre.Should().Be("Fantasy");
         result.HardcoverId.Should().Be(1);
@@ -123,7 +123,7 @@ public class BooksServiceTests
         // Assert
         result.Should().NotBeNull();
         result!.HardcoverId.Should().Be(1);
-        result.Author.Should().Be("Neil Gaiman");
+        result.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
         result.Title.Should().Be("American Gods");
         result.Year.Should().Be(2001);
         result.Genre.Should().Be("Fantasy");
@@ -165,7 +165,7 @@ public class BooksServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Author.Should().BeNull();
+        result!.Authors.Should().BeEmpty();
         result.Year.Should().BeNull();
         result.Genre.Should().BeNull();
         result.CoverImageUrl.Should().BeNull();

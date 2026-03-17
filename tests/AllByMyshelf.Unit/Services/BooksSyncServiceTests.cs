@@ -224,7 +224,7 @@ public class BooksSyncServiceTests
     // ── Mapping — author from contributions ───────────────────────────────────
 
     [Fact]
-    public void SyncMapping_BookWithContributions_MapsAuthorFromFirstContribution()
+    public void SyncMapping_BookWithContributions_MapsAllAuthors()
     {
         // Arrange — mirror the mapping expression from RunSyncAsync
         var hardcoverBook = new HardcoverClient.HardcoverBook(
@@ -242,10 +242,14 @@ public class BooksSyncServiceTests
         );
 
         // Act — apply the same mapping logic BooksSyncService.RunSyncAsync uses
-        var author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name;
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = author,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -256,7 +260,7 @@ public class BooksSyncServiceTests
         };
 
         // Assert
-        entity.Author.Should().Be("Neil Gaiman");
+        entity.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman", "Terry Pratchett" });
     }
 
     [Fact]
@@ -274,10 +278,14 @@ public class BooksSyncServiceTests
         );
 
         // Act
-        var author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name;
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = author,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -288,7 +296,7 @@ public class BooksSyncServiceTests
         };
 
         // Assert
-        entity.Author.Should().BeNull();
+        entity.Authors.Should().BeEmpty();
     }
 
     // ── Mapping — year from release_date ──────────────────────────────────────
@@ -315,9 +323,14 @@ public class BooksSyncServiceTests
             year = releaseDate.Year;
         }
 
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -353,9 +366,14 @@ public class BooksSyncServiceTests
             year = releaseDate.Year;
         }
 
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -391,9 +409,14 @@ public class BooksSyncServiceTests
             year = releaseDate.Year;
         }
 
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -429,9 +452,14 @@ public class BooksSyncServiceTests
             year = releaseDate.Year;
         }
 
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = hardcoverBook.Image?.Url,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -462,10 +490,15 @@ public class BooksSyncServiceTests
         );
 
         // Act
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var coverImageUrl = hardcoverBook.Image?.Url;
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = coverImageUrl,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -494,10 +527,15 @@ public class BooksSyncServiceTests
         );
 
         // Act
+        var authors = hardcoverBook.Contributions?
+            .Select(c => c.Author?.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .ToList() ?? new List<string>();
         var coverImageUrl = hardcoverBook.Image?.Url;
         var entity = new Book
         {
-            Author = hardcoverBook.Contributions?.FirstOrDefault()?.Author?.Name,
+            Authors = authors,
             CoverImageUrl = coverImageUrl,
             Genre = null,
             HardcoverId = hardcoverBook.Id,
@@ -535,7 +573,7 @@ public class BooksSyncServiceTests
                     books.Count() == 1 &&
                     books.First().HardcoverId == 54321 &&
                     books.First().Title == "Good Omens" &&
-                    books.First().Author == "Neil Gaiman"),
+                    books.First().Authors.Contains("Neil Gaiman")),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }

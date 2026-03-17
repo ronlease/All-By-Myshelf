@@ -7,7 +7,7 @@ export interface BoardGameDetailDto {
   bggId: number;
   coverImageUrl: string | null;
   description: string | null;
-  designer: string | null;
+  designers: string[];
   genre: string | null;
   id: string;
   maxPlayers: number | null;
@@ -21,7 +21,7 @@ export interface BoardGameDetailDto {
 
 export interface BoardGameDto {
   bggId: number;
-  designer: string | null;
+  designers: string[];
   genre: string | null;
   id: string;
   maxPlayers: number | null;

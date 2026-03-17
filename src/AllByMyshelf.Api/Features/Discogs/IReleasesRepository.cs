@@ -15,11 +15,11 @@ public interface IReleasesRepository
     Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns groups of releases that share the same artist and title (case-insensitive)
+    /// Returns groups of releases that share the same artists and title (case-insensitive)
     /// but have different Discogs IDs.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task<IReadOnlyList<(string Artist, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<(List<string> Artists, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns all releases that have at least one missing data field.

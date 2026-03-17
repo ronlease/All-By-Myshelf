@@ -19,7 +19,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
             BggId = boardGame.BggId,
             CoverImageUrl = boardGame.CoverImageUrl,
             Description = boardGame.Description,
-            Designer = boardGame.Designer,
+            Designers = boardGame.Designers,
             Genre = boardGame.Genre,
             Id = boardGame.Id,
             MaxPlayers = boardGame.MaxPlayers,
@@ -43,7 +43,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
 
         var dtos = items.Select(b => new BoardGameDto(
             BggId: b.BggId,
-            Designer: b.Designer,
+            Designers: b.Designers,
             Genre: b.Genre,
             Id: b.Id,
             MaxPlayers: b.MaxPlayers,
@@ -71,7 +71,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
 
         return new BoardGameDto(
             BggId: boardGame.BggId,
-            Designer: boardGame.Designer,
+            Designers: boardGame.Designers,
             Genre: boardGame.Genre,
             Id: boardGame.Id,
             MaxPlayers: boardGame.MaxPlayers,

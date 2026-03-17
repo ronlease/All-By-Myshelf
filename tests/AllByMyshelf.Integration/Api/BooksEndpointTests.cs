@@ -142,7 +142,7 @@ public class BooksEndpointTests
 
         var body = await response.Content.ReadFromJsonAsync<BookDetailDto>();
         body.Should().NotBeNull();
-        body!.Author.Should().Be("Neil Gaiman");
+        body!.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
         body.Genre.Should().Be("Fantasy");
         body.HardcoverId.Should().Be(1);
         body.Id.Should().Be(book.Id);
@@ -202,7 +202,7 @@ public class BooksEndpointTests
 
         // Assert
         var item = body!.Items.Single();
-        item.Author.Should().Be("Neil Gaiman");
+        item.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
         item.Title.Should().Be("American Gods");
         item.Year.Should().Be(2001);
         item.Genre.Should().Be("Fantasy");
@@ -332,7 +332,7 @@ public class BooksEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<BookDto>();
         body.Should().NotBeNull();
-        body!.Author.Should().Be("Neil Gaiman");
+        body!.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
         body.Title.Should().Be("American Gods");
     }
 
@@ -462,7 +462,7 @@ public class BooksEndpointTests
         string genre = "Fiction") =>
         new()
         {
-            Author = author,
+            Authors = new List<string> { author },
             CoverImageUrl = null,
             Genre = genre,
             HardcoverId = hardcoverId,

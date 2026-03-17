@@ -115,7 +115,7 @@ public class WantlistEndpointTests
 
         // Assert
         var item = body!.Items.Single();
-        item.Artist.Should().Be("John Coltrane");
+        item.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         item.Title.Should().Be("A Love Supreme");
         item.Year.Should().Be(1964);
         item.Format.Should().Be("Vinyl");
@@ -237,7 +237,7 @@ public class WantlistEndpointTests
         new()
         {
             AddedAt = DateTimeOffset.UtcNow,
-            Artist = artist,
+            Artists = new List<string> { artist },
             CoverImageUrl = null,
             DiscogsId = discogsId,
             Format = format,

@@ -21,7 +21,7 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
         if (filter is not null)
         {
             if (!string.IsNullOrWhiteSpace(filter.Author))
-                query = query.Where(b => b.Author != null && EF.Functions.ILike(b.Author, $"%{filter.Author}%"));
+                query = query.Where(b => b.Authors.Any(a => EF.Functions.ILike(a, $"%{filter.Author}%")));
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
                 query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{filter.Genre}%"));
@@ -89,7 +89,7 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
             if (existing.TryGetValue(book.HardcoverId, out var existingBook))
             {
                 // Update in-place so EF tracks the change.
-                existingBook.Author = book.Author;
+                existingBook.Authors = book.Authors;
                 existingBook.CoverImageUrl = book.CoverImageUrl;
                 existingBook.Genre = book.Genre;
                 existingBook.LastSyncedAt = book.LastSyncedAt;

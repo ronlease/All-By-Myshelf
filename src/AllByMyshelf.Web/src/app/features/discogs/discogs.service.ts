@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface ReleaseDetailDto {
-  artist: string;
+  artists: string[];
   coverImageUrl: string | null;
   discogsId: number;
   format: string;
@@ -20,7 +20,7 @@ export interface ReleaseDetailDto {
 }
 
 export interface ReleaseDto {
-  artist: string;
+  artists: string[];
   format: string;
   genre: string | null;
   id: string;
@@ -44,7 +44,7 @@ export interface SyncProgressDto {
 }
 
 export interface MaintenanceReleaseDto {
-  artist: string;
+  artists: string[];
   discogsId: number;
   id: string;
   missingFields: string[];
@@ -70,7 +70,7 @@ export interface PagedResult<T> {
 }
 
 export interface DuplicateGroupDto {
-  artist: string;
+  artists: string[];
   releases: DuplicateReleaseDto[];
   title: string;
 }

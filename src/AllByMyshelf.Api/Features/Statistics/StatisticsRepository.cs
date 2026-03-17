@@ -68,12 +68,13 @@ public class StatisticsRepository(AllByMyshelfDbContext dbContext) : IStatistics
         // --- Books ---
         var books = await dbContext.Books
             .AsNoTracking()
-            .Select(b => new { b.Author, b.Genre, b.Year })
+            .Select(b => new { b.Authors, b.Genre, b.Year })
             .ToListAsync(cancellationToken);
 
         var bookAuthorBreakdown = books
-            .Where(b => !string.IsNullOrWhiteSpace(b.Author))
-            .GroupBy(b => b.Author!)
+            .SelectMany(b => b.Authors)
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .GroupBy(a => a)
             .Select(g => new BreakdownItemDto { Count = g.Count(), Label = g.Key })
             .OrderByDescending(b => b.Count)
             .ThenBy(b => b.Label)

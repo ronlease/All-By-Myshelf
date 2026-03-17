@@ -27,9 +27,10 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
             .IsUnique()
             .HasDatabaseName("ix_books_hardcover_id");
 
-        builder.Property(b => b.Author)
-            .HasColumnName("author")
-            .HasMaxLength(500);
+        builder.Property(b => b.Authors)
+            .HasColumnName("authors")
+            .HasColumnType("text[]")
+            .IsRequired();
 
         builder.Property(b => b.CoverImageUrl)
             .HasColumnName("cover_image_url")

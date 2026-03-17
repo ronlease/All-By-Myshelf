@@ -13,9 +13,7 @@ public class WantlistRepository(AllByMyshelfDbContext db) : IWantlistRepository
     public async Task<(IReadOnlyList<WantlistRelease> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, CancellationToken cancellationToken)
     {
-        var query = db.WantlistReleases
-            .OrderBy(w => w.Artist)
-            .ThenBy(w => w.Title);
+        var query = db.WantlistReleases;
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -24,6 +22,12 @@ public class WantlistRepository(AllByMyshelfDbContext db) : IWantlistRepository
             .Take(pageSize)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Sort by first artist in memory since we can't sort by array in EF
+        items = items
+            .OrderBy(w => w.Artists.FirstOrDefault() ?? string.Empty)
+            .ThenBy(w => w.Title)
+            .ToList();
 
         return (items, totalCount);
     }
@@ -54,7 +58,7 @@ public class WantlistRepository(AllByMyshelfDbContext db) : IWantlistRepository
             if (existing.TryGetValue(release.DiscogsId, out var existingRelease))
             {
                 // Update in-place so EF tracks the change.
-                existingRelease.Artist = release.Artist;
+                existingRelease.Artists = release.Artists;
                 existingRelease.CoverImageUrl = release.CoverImageUrl;
                 existingRelease.Format = release.Format;
                 existingRelease.Genre = release.Genre;

@@ -82,7 +82,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
     const term = this.searchTerm().toLowerCase().trim();
     if (term) {
       releases = releases.filter(r =>
-        r.artist.toLowerCase().includes(term) ||
+        r.artists.some(a => a.toLowerCase().includes(term)) ||
         r.title.toLowerCase().includes(term) ||
         r.format.toLowerCase().includes(term) ||
         (r.genre ?? '').toLowerCase().includes(term) ||
@@ -149,7 +149,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
 
   private columnValue(r: ReleaseDto, col: string): string {
     switch (col) {
-      case 'artist': return r.artist;
+      case 'artist': return r.artists.join(', ');
       case 'format': return r.format;
       case 'genre': return r.genre ?? '—';
       case 'title': return r.title;

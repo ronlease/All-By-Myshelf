@@ -18,7 +18,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
 
         return new ReleaseDetailDto
         {
-            Artist = release.Artist,
+            Artists = release.Artists,
             CoverImageUrl = release.CoverImageUrl,
             DiscogsId = release.DiscogsId,
             Format = release.Format,
@@ -40,7 +40,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         var duplicates = await repository.GetDuplicatesAsync(cancellationToken);
         return duplicates.Select(d => new DuplicateGroupDto
         {
-            Artist = d.Artist,
+            Artists = d.Artists,
             Releases = d.Releases.Select(r => new DuplicateReleaseDto
             {
                 DiscogsId = r.DiscogsId,
@@ -64,7 +64,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             if (r.Year is null or 0) missing.Add("Year");
             return new MaintenanceReleaseDto
             {
-                Artist = r.Artist,
+                Artists = r.Artists,
                 DiscogsId = r.DiscogsId,
                 Id = r.Id,
                 MissingFields = missing,
@@ -82,7 +82,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
 
         return new ReleaseDetailDto
         {
-            Artist = release.Artist,
+            Artists = release.Artists,
             CoverImageUrl = release.CoverImageUrl,
             DiscogsId = release.DiscogsId,
             Format = release.Format,
@@ -104,7 +104,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         var releases = await repository.GetRecentlyAddedAsync(10, 30, cancellationToken);
         return releases.Select(r => new ReleaseDto
         {
-            Artist = r.Artist,
+            Artists = r.Artists,
             Format = r.Format,
             Genre = r.Genre,
             Id = r.Id,
@@ -124,7 +124,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
 
         var dtos = items.Select(r => new ReleaseDto
         {
-            Artist = r.Artist,
+            Artists = r.Artists,
             Format = r.Format,
             Genre = r.Genre,
             Id = r.Id,

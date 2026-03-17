@@ -91,7 +91,11 @@ public class BooksSyncService(
 
         foreach (var b in apiBooks)
         {
-            var author = b.Contributions?.FirstOrDefault()?.Author?.Name;
+            var authors = b.Contributions?
+                .Select(c => c.Author?.Name)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Cast<string>()
+                .ToList() ?? [];
             var coverImageUrl = b.Image?.Url;
             var genre = ParseGenre(b.CachedTags);
 
@@ -104,7 +108,7 @@ public class BooksSyncService(
 
             var book = new Book
             {
-                Author = author,
+                Authors = authors,
                 CoverImageUrl = coverImageUrl,
                 Genre = genre,
                 HardcoverId = b.Id,

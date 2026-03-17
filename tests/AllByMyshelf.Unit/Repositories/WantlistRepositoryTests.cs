@@ -76,7 +76,7 @@ public class WantlistRepositoryTests : IDisposable
         string? genre = null) =>
         new()
         {
-            Artist = artist,
+            Artists = new List<string> { artist },
             CoverImageUrl = null,
             DiscogsId = discogsId,
             Format = format,
@@ -119,11 +119,11 @@ public class WantlistRepositoryTests : IDisposable
 
         // Assert
         result.Items.Should().HaveCount(3);
-        result.Items[0].Artist.Should().Be("Alpha");
+        result.Items[0].Artists.Should().BeEquivalentTo(new[] { "Alpha" });
         result.Items[0].Title.Should().Be("First Album");
-        result.Items[1].Artist.Should().Be("Alpha");
+        result.Items[1].Artists.Should().BeEquivalentTo(new[] { "Alpha" });
         result.Items[1].Title.Should().Be("Second Album");
-        result.Items[2].Artist.Should().Be("Zebra");
+        result.Items[2].Artists.Should().BeEquivalentTo(new[] { "Zebra" });
     }
 
     // ── GetPagedAsync — pagination ────────────────────────────────────────────
@@ -145,7 +145,7 @@ public class WantlistRepositoryTests : IDisposable
         result.Items.Should().HaveCount(10);
         result.TotalCount.Should().Be(25);
         // Verify pagination: page 2 should skip the first 10 releases
-        result.Items.First().Artist.Should().Be("Artist 11");
+        result.Items.First().Artists.Should().BeEquivalentTo(new[] { "Artist 11" });
     }
 
     // ── RemoveAbsentAsync — removes missing releases ──────────────────────────
@@ -248,7 +248,7 @@ public class WantlistRepositoryTests : IDisposable
         _db.WantlistReleases.Should().HaveCount(1);
         var release = _db.WantlistReleases.Single();
         release.DiscogsId.Should().Be(100);
-        release.Artist.Should().Be("New Artist");
+        release.Artists.Should().BeEquivalentTo(new[] { "New Artist" });
         release.Title.Should().Be("New Album");
         release.Genre.Should().Be("New Genre");
     }
@@ -272,7 +272,7 @@ public class WantlistRepositoryTests : IDisposable
 
         // Assert
         _db.WantlistReleases.Should().HaveCount(2);
-        _db.WantlistReleases.Should().Contain(r => r.DiscogsId == 100 && r.Artist == "Updated Artist");
-        _db.WantlistReleases.Should().Contain(r => r.DiscogsId == 101 && r.Artist == "New Artist");
+        _db.WantlistReleases.Should().Contain(r => r.DiscogsId == 100 && r.Artists.Contains("Updated Artist"));
+        _db.WantlistReleases.Should().Contain(r => r.DiscogsId == 101 && r.Artists.Contains("New Artist"));
     }
 }

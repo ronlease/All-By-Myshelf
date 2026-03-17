@@ -3820,7 +3820,7 @@ Feature: Random picker history with configurable count
 
 ## [ABM-062] Support Multiple Authors and Artists for Collaborations
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem

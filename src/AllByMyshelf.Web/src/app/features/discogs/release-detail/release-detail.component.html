@@ -30,7 +30,7 @@
         <div class="release-detail-content">
           <mat-card-header>
             <mat-card-title>{{ release()!.title }}</mat-card-title>
-            <mat-card-subtitle>{{ release()!.artist }}</mat-card-subtitle>
+            <mat-card-subtitle>{{ release()!.artists.join(', ') }}</mat-card-subtitle>
           </mat-card-header>
 
           <mat-card-content>

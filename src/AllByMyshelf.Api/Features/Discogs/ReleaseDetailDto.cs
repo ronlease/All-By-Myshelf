@@ -5,8 +5,8 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// </summary>
 public class ReleaseDetailDto
 {
-    /// <summary>Artist name.</summary>
-    public string Artist { get; init; } = string.Empty;
+    /// <summary>List of artist names.</summary>
+    public List<string> Artists { get; init; } = [];
 
     /// <summary>Discogs CDN URL for the full-resolution cover image. Null when Discogs does not provide a cover image.</summary>
     public string? CoverImageUrl { get; init; }

@@ -29,7 +29,7 @@ public class BoardGamesRepository(AllByMyshelfDbContext db) : IBoardGamesReposit
         if (filter is not null)
         {
             if (!string.IsNullOrWhiteSpace(filter.Designer))
-                query = query.Where(b => b.Designer != null && EF.Functions.ILike(b.Designer, $"%{filter.Designer}%"));
+                query = query.Where(b => b.Designers.Any(d => EF.Functions.ILike(d, $"%{filter.Designer}%")));
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
                 query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{filter.Genre}%"));
@@ -94,7 +94,7 @@ public class BoardGamesRepository(AllByMyshelfDbContext db) : IBoardGamesReposit
                 // Update in-place so EF tracks the change.
                 existingBoardGame.CoverImageUrl = boardGame.CoverImageUrl;
                 existingBoardGame.Description = boardGame.Description;
-                existingBoardGame.Designer = boardGame.Designer;
+                existingBoardGame.Designers = boardGame.Designers;
                 existingBoardGame.Genre = boardGame.Genre;
                 existingBoardGame.LastSyncedAt = boardGame.LastSyncedAt;
                 existingBoardGame.MaxPlayers = boardGame.MaxPlayers;

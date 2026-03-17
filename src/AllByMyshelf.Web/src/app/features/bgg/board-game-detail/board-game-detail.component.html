@@ -30,8 +30,8 @@
         <div class="release-detail-content">
           <mat-card-header>
             <mat-card-title>{{ game()!.title }}</mat-card-title>
-            @if (game()!.designer) {
-              <mat-card-subtitle>{{ game()!.designer }}</mat-card-subtitle>
+            @if (game()!.designers.length > 0) {
+              <mat-card-subtitle>{{ game()!.designers.join(', ') }}</mat-card-subtitle>
             }
           </mat-card-header>
 

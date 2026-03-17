@@ -223,9 +223,10 @@ public class SyncServiceTests
         };
 
         // Act — apply the same mapping logic SyncService.RunSyncAsync uses
+        var artists = basicInfo.Artists?.Select(a => a.Name).ToList() ?? new List<string> { "Unknown Artist" };
         var entity = new Release
         {
-            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            Artists = artists,
             CoverImageUrl = basicInfo.CoverImage,
             DiscogsId = 999,
             Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
@@ -258,9 +259,10 @@ public class SyncServiceTests
         };
 
         // Act
+        var artists = basicInfo.Artists?.Select(a => a.Name).ToList() ?? new List<string> { "Unknown Artist" };
         var entity = new Release
         {
-            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            Artists = artists,
             CoverImageUrl = basicInfo.CoverImage,
             DiscogsId = 998,
             Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
@@ -293,9 +295,10 @@ public class SyncServiceTests
         };
 
         // Act
+        var artists = basicInfo.Artists?.Select(a => a.Name).ToList() ?? new List<string> { "Unknown Artist" };
         var entity = new Release
         {
-            Artist = basicInfo.Artists.FirstOrDefault()?.Name ?? "Unknown Artist",
+            Artists = artists,
             CoverImageUrl = basicInfo.CoverImage,
             DiscogsId = 997,
             Format = basicInfo.Formats.FirstOrDefault()?.Name ?? string.Empty,
@@ -327,7 +330,7 @@ public class SyncServiceTests
         // Act — apply the same mapping logic SyncService.RunSyncAsync uses
         var entity = new Release
         {
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             CoverImageUrl = null,
             DiscogsId = 555,
             Format = "Vinyl",
@@ -392,7 +395,7 @@ public class SyncServiceTests
                     releases.Count() == 1 &&
                     releases.First().DiscogsId == 123456 &&
                     releases.First().Title == "A Love Supreme" &&
-                    releases.First().Artist == "John Coltrane" &&
+                    releases.First().Artists.Contains("John Coltrane") &&
                     releases.First().Genre == "Jazz" &&
                     releases.First().LowestPrice == 19.99m),
                 It.IsAny<CancellationToken>()),

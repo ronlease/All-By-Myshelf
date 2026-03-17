@@ -103,7 +103,7 @@ public class BoardGamesEndpointTests
         var body = await response.Content.ReadFromJsonAsync<BoardGameDetailDto>();
         body.Should().NotBeNull();
         body!.BggId.Should().Be(1);
-        body.Designer.Should().Be("Klaus Teuber");
+        body.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
         body.Genre.Should().Be("Strategy");
         body.Id.Should().Be(boardGame.Id);
         body.Title.Should().Be("Catan");
@@ -215,7 +215,7 @@ public class BoardGamesEndpointTests
             BggId = bggId,
             CoverImageUrl = null,
             Description = null,
-            Designer = designer,
+            Designers = designer != null ? new List<string> { designer } : new List<string>(),
             Genre = genre,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,

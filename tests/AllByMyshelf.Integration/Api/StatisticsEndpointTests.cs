@@ -107,7 +107,7 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
     private static Book MakeBook(int hardcoverId, string title, string? genre = null) =>
         new()
         {
-            Author = "Author",
+            Authors = new List<string> { "Author" },
             Genre = genre,
             HardcoverId = hardcoverId,
             Id = Guid.NewGuid(),
@@ -118,7 +118,7 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
     private static Release MakeRelease(int discogsId, string? format = null, string? genre = null, int? year = null) =>
         new()
         {
-            Artist = $"Artist {discogsId}",
+            Artists = new List<string> { $"Artist {discogsId}" },
             DiscogsId = discogsId,
             Format = format ?? "Vinyl",
             Genre = genre,
@@ -132,7 +132,7 @@ public class StatisticsEndpointTests(StatisticsEndpointTests.StatisticsFactory f
     private static Release MakeReleaseWithPrice(int discogsId, decimal? lowestPrice) =>
         new()
         {
-            Artist = $"Artist {discogsId}",
+            Artists = new List<string> { $"Artist {discogsId}" },
             DiscogsId = discogsId,
             Format = "Vinyl",
             Id = Guid.NewGuid(),

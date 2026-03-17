@@ -66,7 +66,9 @@ export class RandomPickerComponent implements OnInit {
   get distinctBookAuthors(): string[] {
     const seen = new Set<string>();
     for (const b of this.allBooks()) {
-      if (b.author) seen.add(b.author);
+      for (const author of b.authors) {
+        seen.add(author);
+      }
     }
     return Array.from(seen).sort((a, b) => a.localeCompare(b));
   }
@@ -199,7 +201,7 @@ export class RandomPickerComponent implements OnInit {
       const genreFilter = this.bookGenreFilter();
 
       if (authorFilter) {
-        filtered = filtered.filter(b => b.author === authorFilter);
+        filtered = filtered.filter(b => b.authors.includes(authorFilter));
       }
       if (genreFilter) {
         filtered = filtered.filter(b => b.genre === genreFilter);

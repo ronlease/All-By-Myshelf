@@ -24,7 +24,7 @@
 
       <ng-container matColumnDef="artist">
         <th mat-header-cell *matHeaderCellDef>Artist</th>
-        <td mat-cell *matCellDef="let release">{{ release.artist }}</td>
+        <td mat-cell *matCellDef="let release">{{ release.artists.join(', ') }}</td>
       </ng-container>
 
       <ng-container matColumnDef="title">

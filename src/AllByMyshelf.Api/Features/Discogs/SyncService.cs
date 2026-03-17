@@ -105,13 +105,17 @@ public class SyncService(
             _current++;
             _status = "syncing";
 
-            var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
+            var artists = r.BasicInformation.Artists
+                .Select(a => a.Name)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToList();
+            if (artists.Count == 0) artists = ["Unknown Artist"];
             var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
             var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
 
             var release = new Release
             {
-                Artist = artist,
+                Artists = artists,
                 CoverImageUrl = r.BasicInformation.CoverImage,
                 DiscogsId = r.Id,
                 Format = format,
@@ -160,13 +164,17 @@ public class SyncService(
 
             foreach (var r in pageData.Releases)
             {
-                var artist = r.BasicInformation.Artists.FirstOrDefault()?.Name ?? "Unknown Artist";
+                var artists = r.BasicInformation.Artists
+                    .Select(a => a.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .ToList();
+                if (artists.Count == 0) artists = ["Unknown Artist"];
                 var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
                 var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
 
                 var wantlistRelease = new Models.Entities.WantlistRelease
                 {
-                    Artist = artist,
+                    Artists = artists,
                     CoverImageUrl = r.BasicInformation.CoverImage,
                     DiscogsId = r.Id,
                     Format = format,

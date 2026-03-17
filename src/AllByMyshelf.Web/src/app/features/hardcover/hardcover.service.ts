@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface BookDetailDto {
-  author: string | null;
+  authors: string[];
   coverImageUrl: string | null;
   genre: string | null;
   hardcoverId: number;
@@ -15,7 +15,7 @@ export interface BookDetailDto {
 }
 
 export interface BookDto {
-  author: string | null;
+  authors: string[];
   coverImageUrl: string | null;
   genre: string | null;
   hardcoverId: number;
