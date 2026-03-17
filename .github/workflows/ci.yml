@@ -48,8 +48,8 @@ jobs:
           reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:./coverage-report -reporttypes:"TextSummary;Html"
           cat ./coverage-report/Summary.txt
 
-          # Extract line coverage percentage
-          line_coverage=$(grep "Line coverage:" ./coverage-report/Summary.txt | grep -oP '\d+\.\d+(?=%)')
+          # Extract line coverage percentage (handles both "86%" and "86.5%")
+          line_coverage=$(grep "Line coverage:" ./coverage-report/Summary.txt | grep -oP '\d+\.?\d*(?=%)')
           echo "Line coverage: ${line_coverage}%"
 
           # Check if coverage meets threshold
