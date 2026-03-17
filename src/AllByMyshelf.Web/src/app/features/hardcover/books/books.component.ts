@@ -1,21 +1,21 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { BookDto, HardcoverService } from '../hardcover.service';
-import { SyncStateService } from '../../../core/sync/sync-state.service';
+import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
 @Component({
   selector: 'app-books',
@@ -38,82 +38,38 @@ import { SyncStateService } from '../../../core/sync/sync-state.service';
   ],
   templateUrl: './books.component.html',
 })
-export class BooksComponent implements OnInit, OnDestroy {
-  allBooks = signal<BookDto[]>([]);
-  currentPage = signal(1);
-  readonly displayedColumns = ['thumbnail', 'author', 'title', 'genre', 'year'];
-  expandedGroups = signal<Set<string>>(new Set());
-  readonly groupByOptions = [
+export class BooksComponent extends CollectionBaseComponent<BookDto> {
+  protected allItems = signal<BookDto[]>([]);
+  protected readonly collectionKey = 'books';
+  protected readonly displayedColumns = ['thumbnail', 'author', 'title', 'genre', 'year'];
+  protected readonly groupByOptions = [
     { label: 'No grouping', value: '' },
     { label: 'Author', value: 'author' },
     { label: 'Decade', value: 'decade' },
     { label: 'Genre', value: 'genre' },
     { label: 'Year', value: 'year' },
   ];
-  groupByField = signal('');
-  private readonly activatedRoute = inject(ActivatedRoute);
   private readonly hardcoverService = inject(HardcoverService);
-  loading = signal(true);
-  readonly pageSize = 25;
-  private readonly router = inject(Router);
-  private searchTimer?: ReturnType<typeof setTimeout>;
-  searchTerm = signal('');
-  private readonly snackBar = inject(MatSnackBar);
-  private subscription?: Subscription;
-  private readonly syncState = inject(SyncStateService);
+  protected readonly pageSize = 25;
 
-  // ── Computed ────────────────────────────────────────────────────────────────
+  // Alias for template compatibility
+  get allBooks() {
+    return this.allItems;
+  }
 
-  get filteredBooks(): BookDto[] {
-    let books = this.allBooks();
-
+  protected applySearch(books: BookDto[]): BookDto[] {
     const term = this.searchTerm().toLowerCase().trim();
-    if (term) {
-      books = books.filter(b =>
-        b.title.toLowerCase().includes(term) ||
-        b.authors.some(a => a.toLowerCase().includes(term)) ||
-        (b.genre ?? '').toLowerCase().includes(term) ||
-        (b.year?.toString() ?? '').includes(term)
-      );
-    }
+    if (!term) return books;
 
-    return books;
+    return books.filter(b =>
+      b.title.toLowerCase().includes(term) ||
+      b.authors.some(a => a.toLowerCase().includes(term)) ||
+      (b.genre ?? '').toLowerCase().includes(term) ||
+      (b.year?.toString() ?? '').includes(term)
+    );
   }
 
-  get groupedBooks(): { items: BookDto[]; key: string }[] {
-    const field = this.groupByField();
-    if (!field) return [];
-
-    const map = new Map<string, BookDto[]>();
-    for (const b of this.filteredBooks) {
-      let key: string;
-      if (field === 'decade') {
-        key = b.year != null ? `${Math.floor(b.year / 10) * 10}s` : '—';
-      } else {
-        key = this.columnValue(b, field);
-      }
-      const group = map.get(key) ?? [];
-      group.push(b);
-      map.set(key, group);
-    }
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, items]) => ({ items, key }));
-  }
-
-  get pagedBooks(): BookDto[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredBooks.slice(start, start + this.pageSize);
-  }
-
-  get totalFilteredCount(): number {
-    return this.filteredBooks.length;
-  }
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  private columnValue(b: BookDto, col: string): string {
+  protected columnValue(b: BookDto, col: string): string {
     switch (col) {
       case 'author': return b.authors.length > 0 ? b.authors.join(', ') : '—';
       case 'genre': return b.genre ?? '—';
@@ -123,17 +79,29 @@ export class BooksComponent implements OnInit, OnDestroy {
     }
   }
 
-  isGroupExpanded(key: string): boolean {
-    return this.expandedGroups().has(key);
+  protected detailRoute(book: BookDto): string {
+    return `/books/${book.id}`;
   }
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
+  // Alias for template compatibility
+  get filteredBooks(): BookDto[] {
+    return this.filteredItems;
+  }
 
-  private loadAll(): void {
+  protected getDecadeKey(book: BookDto): string {
+    return book.year != null ? `${Math.floor(book.year / 10) * 10}s` : '—';
+  }
+
+  // Alias for template compatibility
+  get groupedBooks(): { items: BookDto[]; key: string }[] {
+    return this.groupedItems;
+  }
+
+  protected loadAll(): void {
     this.loading.set(true);
     this.hardcoverService.getBooks(1, 10000).subscribe({
       next: (result) => {
-        this.allBooks.set(result.items);
+        this.allItems.set(result.items);
         this.loading.set(false);
       },
       error: () => {
@@ -143,55 +111,12 @@ export class BooksComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
+  // Alias for template compatibility
+  get pagedBooks(): BookDto[] {
+    return this.pagedItems;
   }
 
-  ngOnInit(): void {
-    localStorage.setItem('last-collection', 'books');
-
-    const params = this.activatedRoute.snapshot.queryParams;
-    if (params['groupBy']) {
-      this.groupByField.set(params['groupBy']);
-    }
-    if (params['expand']) {
-      this.expandedGroups.set(new Set([params['expand']]));
-    }
-
-    this.loadAll();
-    this.subscription = this.syncState.booksSyncCompleted$.subscribe(() => {
-      this.loadAll();
-    });
-  }
-
-  // ── Event handlers ───────────────────────────────────────────────────────────
-
-  onGroupByChange(): void {
-    this.expandedGroups.set(new Set());
-  }
-
-  onGroupCollapse(key: string): void {
-    const current = new Set(this.expandedGroups());
-    current.delete(key);
-    this.expandedGroups.set(current);
-  }
-
-  onGroupExpand(key: string): void {
-    const current = new Set(this.expandedGroups());
-    current.add(key);
-    this.expandedGroups.set(current);
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.currentPage.set(event.pageIndex + 1);
-  }
-
-  onRowClick(book: BookDto): void {
-    this.router.navigate(['/books', book.id]);
-  }
-
-  onSearchChange(): void {
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.currentPage.set(1), 300);
+  protected syncCompletedObservable(): Observable<void> {
+    return this.syncState.booksSyncCompleted$;
   }
 }

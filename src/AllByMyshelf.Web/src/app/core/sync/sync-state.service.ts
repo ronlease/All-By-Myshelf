@@ -8,27 +8,21 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 @Injectable({ providedIn: 'root' })
 export class SyncStateService {
   private readonly bggService = inject(BggService);
-  private readonly discogsService = inject(DiscogsService);
-  private readonly hardcoverService = inject(HardcoverService);
-  private readonly snackBar = inject(MatSnackBar);
-
-  // ── Sync state ─────────────────────────────────────────────────────────────
+  readonly booksSyncCompleted$ = new Subject<void>();
   booksSyncing = signal(false);
+  private booksSyncTimer?: ReturnType<typeof setTimeout>;
+  private readonly discogsService = inject(DiscogsService);
+  readonly discogsSyncCompleted$ = new Subject<void>();
   discogsSyncProgress = signal<SyncProgressDto | null>(null);
   discogsSyncing = signal(false);
-  gamesSyncing = signal(false);
-  private booksSyncTimer?: ReturnType<typeof setTimeout>;
   private discogsSyncTimer?: ReturnType<typeof setTimeout>;
+  readonly gamesSyncCompleted$ = new Subject<void>();
+  gamesSyncing = signal(false);
   private gamesSyncTimer?: ReturnType<typeof setTimeout>;
+  private readonly hardcoverService = inject(HardcoverService);
   private pauseStartTime = 0;
   private pauseTotalSeconds = 0;
-
-  // ── Completion events ──────────────────────────────────────────────────────
-  readonly booksSyncCompleted$ = new Subject<void>();
-  readonly discogsSyncCompleted$ = new Subject<void>();
-  readonly gamesSyncCompleted$ = new Subject<void>();
-
-  // ── Computed ───────────────────────────────────────────────────────────────
+  private readonly snackBar = inject(MatSnackBar);
 
   get discogsSyncStatusLabel(): string {
     const p = this.discogsSyncProgress();
@@ -49,89 +43,6 @@ export class SyncStateService {
           : 'Syncing…';
     }
   }
-
-  // ── Discogs sync ───────────────────────────────────────────────────────────
-
-  startDiscogsSync(): void {
-    if (this.discogsSyncing()) return;
-    this.discogsSyncing.set(true);
-    this.discogsService.triggerSync().subscribe({
-      next: (response) => {
-        if (response.status === 202) {
-          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
-          this.pollDiscogsSyncStatus();
-        } else {
-          this.discogsSyncing.set(false);
-        }
-      },
-      error: (err) => {
-        this.discogsSyncing.set(false);
-        if (err.status === 409) {
-          this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
-        } else if (err.status === 503) {
-          this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
-        } else {
-          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
-        }
-      },
-    });
-  }
-
-  // ── Board games sync ───────────────────────────────────────────────────────
-
-  startBoardGamesSync(): void {
-    if (this.gamesSyncing()) return;
-    this.gamesSyncing.set(true);
-    this.bggService.triggerSync().subscribe({
-      next: (response) => {
-        if (response.status === 202) {
-          this.snackBar.open('Board game sync started.', 'Dismiss', { duration: 3000 });
-          this.pollBoardGamesSyncStatus();
-        } else {
-          this.gamesSyncing.set(false);
-        }
-      },
-      error: (err) => {
-        this.gamesSyncing.set(false);
-        if (err.status === 409) {
-          this.snackBar.open('A board game sync is already in progress.', 'Dismiss', { duration: 5000 });
-        } else if (err.status === 503) {
-          this.snackBar.open('BGG username is not configured.', 'Dismiss', { duration: 5000 });
-        } else {
-          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
-        }
-      },
-    });
-  }
-
-  // ── Books sync ─────────────────────────────────────────────────────────────
-
-  startBooksSync(): void {
-    if (this.booksSyncing()) return;
-    this.booksSyncing.set(true);
-    this.hardcoverService.triggerSync().subscribe({
-      next: (response) => {
-        if (response.status === 202) {
-          this.snackBar.open('Book sync started.', 'Dismiss', { duration: 3000 });
-          this.pollBooksSyncStatus();
-        } else {
-          this.booksSyncing.set(false);
-        }
-      },
-      error: (err) => {
-        this.booksSyncing.set(false);
-        if (err.status === 409) {
-          this.snackBar.open('A book sync is already in progress.', 'Dismiss', { duration: 5000 });
-        } else if (err.status === 503) {
-          this.snackBar.open('Hardcover API key is not configured.', 'Dismiss', { duration: 5000 });
-        } else {
-          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
-        }
-      },
-    });
-  }
-
-  // ── Polling ────────────────────────────────────────────────────────────────
 
   private pollBoardGamesSyncStatus(): void {
     const poll = () => {
@@ -197,5 +108,80 @@ export class SyncStateService {
       });
     };
     poll();
+  }
+
+  startBoardGamesSync(): void {
+    if (this.gamesSyncing()) return;
+    this.gamesSyncing.set(true);
+    this.bggService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Board game sync started.', 'Dismiss', { duration: 3000 });
+          this.pollBoardGamesSyncStatus();
+        } else {
+          this.gamesSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.gamesSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A board game sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('BGG username is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
+  }
+
+  startBooksSync(): void {
+    if (this.booksSyncing()) return;
+    this.booksSyncing.set(true);
+    this.hardcoverService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Book sync started.', 'Dismiss', { duration: 3000 });
+          this.pollBooksSyncStatus();
+        } else {
+          this.booksSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.booksSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A book sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('Hardcover API key is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
+  }
+
+  startDiscogsSync(): void {
+    if (this.discogsSyncing()) return;
+    this.discogsSyncing.set(true);
+    this.discogsService.triggerSync().subscribe({
+      next: (response) => {
+        if (response.status === 202) {
+          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
+          this.pollDiscogsSyncStatus();
+        } else {
+          this.discogsSyncing.set(false);
+        }
+      },
+      error: (err) => {
+        this.discogsSyncing.set(false);
+        if (err.status === 409) {
+          this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
+        } else if (err.status === 503) {
+          this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
+        } else {
+          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+        }
+      },
+    });
   }
 }

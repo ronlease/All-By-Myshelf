@@ -14,45 +14,18 @@ public class BooksSyncService(
     IOptions<HardcoverOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<BooksSyncService> logger)
-    : BackgroundService, IBooksSyncService
+    : SyncServiceBase, IBooksSyncService
 {
     private readonly HardcoverOptions _options = options.Value;
 
-    // Channel used to signal the background loop that a sync was requested.
-    private readonly System.Threading.Channels.Channel<bool> _syncChannel =
-        System.Threading.Channels.Channel.CreateBounded<bool>(1);
-
-    // 0 = idle, 1 = running
-    private int _syncRunning;
+    /// <inheritdoc/>
+    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken);
 
     /// <inheritdoc/>
-    public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
+    protected override ILogger Logger => logger;
 
-    /// <summary>
-    /// Background loop: waits for sync signals and executes them one at a time.
-    /// </summary>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        await foreach (var _ in _syncChannel.Reader.ReadAllAsync(stoppingToken))
-        {
-            try
-            {
-                await RunSyncAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                logger.LogInformation("Hardcover sync cancelled due to application shutdown.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Hardcover sync failed.");
-            }
-            finally
-            {
-                Volatile.Write(ref _syncRunning, 0);
-            }
-        }
-    }
+    /// <inheritdoc/>
+    protected override string LogName => "Hardcover";
 
     private static string? ParseGenre(JsonElement? cachedTags)
     {
@@ -74,7 +47,8 @@ public class BooksSyncService(
         return null;
     }
 
-    private async Task RunSyncAsync(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    protected override async Task RunSyncAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("Hardcover sync started.");
 
@@ -124,21 +98,5 @@ public class BooksSyncService(
 
         await booksRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("Hardcover sync completed successfully.");
-    }
-
-    /// <inheritdoc/>
-    public SyncStartResult TryStartSync()
-    {
-        if (string.IsNullOrWhiteSpace(_options.ApiToken))
-            return SyncStartResult.TokenNotConfigured;
-
-        // Try to acquire the running flag atomically.
-        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
-            return SyncStartResult.AlreadyRunning;
-
-        // Signal the background loop. If the channel is already full the write
-        // will fail, but that's fine — a sync is about to run anyway.
-        _syncChannel.Writer.TryWrite(true);
-        return SyncStartResult.Started;
     }
 }

@@ -13,22 +13,23 @@ public class SyncService(
     IOptions<DiscogsOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<SyncService> logger)
-    : BackgroundService, ISyncService
+    : SyncServiceBase, ISyncService
 {
     private readonly DiscogsOptions _options = options.Value;
-
-    // Channel used to signal the background loop that a sync was requested.
-    private readonly System.Threading.Channels.Channel<bool> _syncChannel =
-        System.Threading.Channels.Channel.CreateBounded<bool>(1);
 
     private volatile int _current;
     private volatile int _retryAfterSeconds;
     private volatile string _status = "idle";
-    private int _syncRunning;
     private volatile int _total;
 
     /// <inheritdoc/>
-    public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
+    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.PersonalAccessToken);
+
+    /// <inheritdoc/>
+    protected override ILogger Logger => logger;
+
+    /// <inheritdoc/>
+    protected override string LogName => "Discogs";
 
     /// <inheritdoc/>
     public SyncProgressDto Progress => new(
@@ -40,36 +41,41 @@ public class SyncService(
     );
 
     /// <summary>
-    /// Background loop: waits for sync signals and executes them one at a time.
+    /// Maps common fields from Discogs BasicInformation to a tuple of properties
+    /// shared between Release and WantlistRelease entities.
     /// </summary>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private static (
+        List<string> Artists,
+        string? CoverImageUrl,
+        string Format,
+        string? ThumbnailUrl,
+        string Title,
+        int? Year
+    ) MapBasicReleaseFields(DiscogsRelease r)
     {
-        await foreach (var _ in _syncChannel.Reader.ReadAllAsync(stoppingToken))
-        {
-            try
-            {
-                await RunSyncAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                logger.LogInformation("Discogs sync cancelled due to application shutdown.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Discogs sync failed.");
-            }
-            finally
-            {
-                _current = 0;
-                _retryAfterSeconds = 0;
-                _status = "idle";
-                _total = 0;
-                Volatile.Write(ref _syncRunning, 0);
-            }
-        }
+        var artists = r.BasicInformation.Artists
+            .Select(a => a.Name)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+        if (artists.Count == 0) artists = ["Unknown Artist"];
+
+        var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
+        var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
+
+        return (artists, r.BasicInformation.CoverImage, format, r.BasicInformation.Thumb, r.BasicInformation.Title, year);
     }
 
-    private async Task RunSyncAsync(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    protected override void OnSyncCompleted()
+    {
+        _current = 0;
+        _retryAfterSeconds = 0;
+        _status = "idle";
+        _total = 0;
+    }
+
+    /// <inheritdoc/>
+    protected override async Task RunSyncAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("Discogs sync started.");
 
@@ -105,24 +111,18 @@ public class SyncService(
             _current++;
             _status = "syncing";
 
-            var artists = r.BasicInformation.Artists
-                .Select(a => a.Name)
-                .Where(n => !string.IsNullOrWhiteSpace(n))
-                .ToList();
-            if (artists.Count == 0) artists = ["Unknown Artist"];
-            var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
-            var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
+            var (artists, coverImageUrl, format, thumbnailUrl, title, year) = MapBasicReleaseFields(r);
 
             var release = new Release
             {
                 Artists = artists,
-                CoverImageUrl = r.BasicInformation.CoverImage,
+                CoverImageUrl = coverImageUrl,
                 DiscogsId = r.Id,
                 Format = format,
                 Id = Guid.NewGuid(),
                 LastSyncedAt = now,
-                ThumbnailUrl = r.BasicInformation.Thumb,
-                Title = r.BasicInformation.Title,
+                ThumbnailUrl = thumbnailUrl,
+                Title = title,
                 Year = year,
             };
 
@@ -164,24 +164,18 @@ public class SyncService(
 
             foreach (var r in pageData.Releases)
             {
-                var artists = r.BasicInformation.Artists
-                    .Select(a => a.Name)
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .ToList();
-                if (artists.Count == 0) artists = ["Unknown Artist"];
-                var format = r.BasicInformation.Formats.FirstOrDefault()?.Name ?? string.Empty;
-                var year = r.BasicInformation.Year == 0 ? (int?)null : r.BasicInformation.Year;
+                var (artists, coverImageUrl, format, thumbnailUrl, title, year) = MapBasicReleaseFields(r);
 
                 var wantlistRelease = new Models.Entities.WantlistRelease
                 {
                     Artists = artists,
-                    CoverImageUrl = r.BasicInformation.CoverImage,
+                    CoverImageUrl = coverImageUrl,
                     DiscogsId = r.Id,
                     Format = format,
                     Id = Guid.NewGuid(),
                     LastSyncedAt = now,
-                    ThumbnailUrl = r.BasicInformation.Thumb,
-                    Title = r.BasicInformation.Title,
+                    ThumbnailUrl = thumbnailUrl,
+                    Title = title,
                     Year = year,
                 };
 
@@ -211,19 +205,4 @@ public class SyncService(
         logger.LogInformation("Discogs sync completed successfully.");
     }
 
-    /// <inheritdoc/>
-    public SyncStartResult TryStartSync()
-    {
-        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
-            return SyncStartResult.TokenNotConfigured;
-
-        // Try to acquire the running flag atomically.
-        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
-            return SyncStartResult.AlreadyRunning;
-
-        // Signal the background loop. If the channel is already full the write
-        // will fail, but that's fine — a sync is about to run anyway.
-        _syncChannel.Writer.TryWrite(true);
-        return SyncStartResult.Started;
-    }
 }

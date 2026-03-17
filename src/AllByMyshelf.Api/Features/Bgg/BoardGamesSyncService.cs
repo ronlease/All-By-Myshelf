@@ -13,47 +13,21 @@ public class BoardGamesSyncService(
     IOptions<BggOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<BoardGamesSyncService> logger)
-    : BackgroundService, IBoardGamesSyncService
+    : SyncServiceBase, IBoardGamesSyncService
 {
     private readonly BggOptions _options = options.Value;
 
-    // Channel used to signal the background loop that a sync was requested.
-    private readonly System.Threading.Channels.Channel<bool> _syncChannel =
-        System.Threading.Channels.Channel.CreateBounded<bool>(1);
-
-    // 0 = idle, 1 = running
-    private int _syncRunning;
+    /// <inheritdoc/>
+    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken);
 
     /// <inheritdoc/>
-    public bool IsSyncRunning => Volatile.Read(ref _syncRunning) == 1;
+    protected override ILogger Logger => logger;
 
-    /// <summary>
-    /// Background loop: waits for sync signals and executes them one at a time.
-    /// </summary>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        await foreach (var _ in _syncChannel.Reader.ReadAllAsync(stoppingToken))
-        {
-            try
-            {
-                await RunSyncAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                logger.LogInformation("BGG sync cancelled due to application shutdown.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "BGG sync failed.");
-            }
-            finally
-            {
-                Volatile.Write(ref _syncRunning, 0);
-            }
-        }
-    }
+    /// <inheritdoc/>
+    protected override string LogName => "BGG";
 
-    private async Task RunSyncAsync(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    protected override async Task RunSyncAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("BGG sync started.");
 
@@ -117,21 +91,5 @@ public class BoardGamesSyncService(
 
         await boardGamesRepository.UpsertCollectionAsync(entities, cancellationToken);
         logger.LogInformation("BGG sync completed successfully.");
-    }
-
-    /// <inheritdoc/>
-    public SyncStartResult TryStartSync()
-    {
-        if (string.IsNullOrWhiteSpace(_options.ApiToken))
-            return SyncStartResult.TokenNotConfigured;
-
-        // Try to acquire the running flag atomically.
-        if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
-            return SyncStartResult.AlreadyRunning;
-
-        // Signal the background loop. If the channel is already full the write
-        // will fail, but that's fine — a sync is about to run anyway.
-        _syncChannel.Writer.TryWrite(true);
-        return SyncStartResult.Started;
     }
 }

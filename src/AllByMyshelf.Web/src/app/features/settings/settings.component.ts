@@ -34,15 +34,35 @@ export class SettingsComponent implements OnInit {
   bggUsernameControl = new FormControl<string>('');
   discogsPersonalAccessTokenControl = new FormControl<string>('');
   discogsUsernameControl = new FormControl<string>('');
+  private readonly featuresService = inject(FeaturesService);
   hardcoverApiTokenControl = new FormControl<string>('');
   loading = signal<boolean>(true);
-  private readonly featuresService = inject(FeaturesService);
   saving = signal<boolean>(false);
   settings = signal<SettingsDto | null>(null);
   private readonly settingsService = inject(SettingsService);
   private readonly snackBar = inject(MatSnackBar);
   themeControl = new FormControl<string>('os-default');
   private readonly themeService = inject(ThemeService);
+
+  private loadSettings(): void {
+    this.loading.set(true);
+    this.settingsService.getSettings().subscribe({
+      next: (s) => {
+        this.settings.set(s);
+        this.bggApiTokenControl.setValue(s.bggApiToken || '');
+        this.bggUsernameControl.setValue(s.bggUsername || '');
+        this.discogsPersonalAccessTokenControl.setValue(s.discogsPersonalAccessToken || '');
+        this.discogsUsernameControl.setValue(s.discogsUsername || '');
+        this.hardcoverApiTokenControl.setValue(s.hardcoverApiToken || '');
+        this.themeControl.setValue(s.theme || 'os-default', { emitEvent: false });
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.snackBar.open('Failed to load settings', 'Close', { duration: 5000 });
+      },
+    });
+  }
 
   ngOnInit(): void {
     this.loadSettings();
@@ -112,23 +132,4 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  private loadSettings(): void {
-    this.loading.set(true);
-    this.settingsService.getSettings().subscribe({
-      next: (s) => {
-        this.settings.set(s);
-        this.bggApiTokenControl.setValue(s.bggApiToken || '');
-        this.bggUsernameControl.setValue(s.bggUsername || '');
-        this.discogsPersonalAccessTokenControl.setValue(s.discogsPersonalAccessToken || '');
-        this.discogsUsernameControl.setValue(s.discogsUsername || '');
-        this.hardcoverApiTokenControl.setValue(s.hardcoverApiToken || '');
-        this.themeControl.setValue(s.theme || 'os-default', { emitEvent: false });
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.snackBar.open('Failed to load settings', 'Close', { duration: 5000 });
-      },
-    });
-  }
 }

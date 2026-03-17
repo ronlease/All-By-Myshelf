@@ -28,6 +28,7 @@
 using System.Net;
 using System.Text.Json;
 using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Unit.TestDoubles;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -174,17 +175,3 @@ public class BggClientTests
             "application/xml");
 }
 
-// ── Test doubles ──────────────────────────────────────────────────────────────
-
-/// <summary>Captures the last request and returns a fixed response.</summary>
-internal sealed class CapturingHandler(HttpResponseMessage response) : HttpMessageHandler
-{
-    public HttpRequestMessage? LastRequest { get; private set; }
-
-    protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        LastRequest = request;
-        return Task.FromResult(response);
-    }
-}

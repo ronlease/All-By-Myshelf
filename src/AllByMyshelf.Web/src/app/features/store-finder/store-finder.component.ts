@@ -44,10 +44,6 @@ export class StoreFinderComponent implements OnInit {
   stores = signal<RecordStore[]>([]);
   storeType = signal<StoreType>('records');
 
-  get pageTitle(): string {
-    return this.storeType() === 'records' ? 'Find Local Record Stores' : 'Find Local Bookstores';
-  }
-
   locationForm = this.fb.group({
     location: ['', [Validators.required, this.usLocationValidator]],
   });
@@ -61,6 +57,10 @@ export class StoreFinderComponent implements OnInit {
 
   onBackClick(): void {
     this.router.navigate(['/']);
+  }
+
+  get pageTitle(): string {
+    return this.storeType() === 'records' ? 'Find Local Record Stores' : 'Find Local Bookstores';
   }
 
   onSubmit(): void {

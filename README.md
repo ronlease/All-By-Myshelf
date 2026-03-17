@@ -8,7 +8,8 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 - **Record detail** — cover art, format, genre, year, Discogs marketplace pricing (low/median/high), personal notes, and star rating
 - **Wantlist** — browse and sync your Discogs wantlist
 - **Duplicates** — detect duplicate releases in your collection
-- **Random picker** — suggests a random record or book, context-aware (defaults to last-viewed collection), filterable by decade, format, and genre
+- **Board games** — syncs your board game collection from BoardGameGeek; paginated table with search, grouping, and thumbnails
+- **Random picker** — suggests a random record, book, or board game, context-aware (defaults to last-viewed collection), filterable by decade, format, and genre
 - **Store finder** — locates independent record stores or bookstores near a US zip code or city using OpenStreetMap, context-aware (records vs books)
 - **Books** — syncs your read books from Hardcover; paginated table with cover thumbnails, author, title, year
 - **Collection value** — estimates total collection value from Discogs marketplace lowest-price data
@@ -55,6 +56,8 @@ cd src/AllByMyshelf.Api
 dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=allbymyshelf;Username=allbymyshelf;Password=localdev"
 dotnet user-secrets set "Auth0:Domain" "<your-auth0-domain>"
 dotnet user-secrets set "Auth0:Audience" "<your-auth0-audience>"
+dotnet user-secrets set "Bgg:ApiToken" "<your-bgg-api-token>"
+dotnet user-secrets set "Bgg:Username" "<your-bgg-username>"
 dotnet user-secrets set "Discogs:PersonalAccessToken" "<your-discogs-personal-access-token>"
 dotnet user-secrets set "Discogs:Username" "<your-discogs-username>"
 dotnet user-secrets set "Hardcover:ApiToken" "<your-hardcover-api-token>"
@@ -156,6 +159,7 @@ This project uses [Claude Code](https://claude.ai/code) with a multi-agent setup
 
 | API | Status | Docs |
 |---|---|---|
+| BoardGameGeek | Live | [boardgamegeek.com/wiki/page/BGG_XML_API2](https://boardgamegeek.com/wiki/page/BGG_XML_API2) |
 | Discogs | Live | [discogs.com/developers](https://www.discogs.com/developers/) |
 | Hardcover | Live | [docs.hardcover.app](https://docs.hardcover.app/api/getting-started/) |
 | Nominatim (OpenStreetMap) | Live | [nominatim.org/release-docs/latest/api/Search/](https://nominatim.org/release-docs/latest/api/Search/) |
@@ -170,6 +174,8 @@ Never commit secrets. All secrets are managed via `dotnet user-secrets` locally.
 | `ConnectionStrings:Default` | PostgreSQL connection string |
 | `Auth0:Domain` | Auth0 tenant domain (e.g. `dev-xxxx.us.auth0.com`) |
 | `Auth0:Audience` | Auth0 API identifier (e.g. `https://localhost/api`) |
+| `Bgg:ApiToken` | BoardGameGeek API token |
+| `Bgg:Username` | BoardGameGeek username |
 | `Discogs:PersonalAccessToken` | Discogs personal access token |
 | `Discogs:Username` | Discogs username |
 | `Hardcover:ApiToken` | Hardcover API token (from hardcover.app/account/api) |
