@@ -3883,3 +3883,76 @@ Feature: Support multiple authors and artists for collaborations
     And no data is lost
     And the application continues to function correctly
 ```
+
+---
+
+## [ABM-063] BGG API Token Authentication
+
+**Status:** Done
+**Priority:** High
+
+### Business Problem
+BGG now requires registered applications to authenticate via Bearer tokens. The current implementation only stores a username but does not send any authentication headers, which means requests are rate-limited or may be rejected. Adding API token support enables full authenticated access to the BGG XML API.
+
+### Acceptance Criteria
+```gherkin
+Feature: BGG API token authentication
+
+  Scenario: BggOptions includes ApiToken property
+    Given the application configuration is set up
+    When the BGG API token has been set in user-secrets under "Bgg:ApiToken"
+    Then the BggOptions class is populated with the configured ApiToken
+    And services can inject BggOptions to access the token
+
+  Scenario: BggClient sends Authorization header when token is configured
+    Given the BGG API token has been configured in user-secrets
+    When BggClient makes any request to the BGG XML API
+    Then the request includes an Authorization header with value "Bearer {token}"
+    And the token value matches the configured ApiToken
+
+  Scenario: BggClient works without token when only username is configured
+    Given the BGG username has been configured
+    And the BGG API token has NOT been configured
+    When BggClient makes a request to the BGG XML API
+    Then the request does not include an Authorization header
+    And the request proceeds with username-only access
+
+  Scenario: Settings page includes BGG API Token field
+    Given I am logged in
+    When I navigate to the settings page
+    Then I see a BGG API Token field in the integrations section
+    And it appears alongside the existing BGG Username field
+    And the field is a password/masked input for security
+
+  Scenario: BGG API Token can be saved through settings page
+    Given I am logged in
+    And I navigate to the settings page
+    When I enter my BGG API token in the BGG API Token field
+    And I save the settings
+    Then the token is stored securely via dotnet user-secrets
+    And a success message confirms the configuration was saved
+
+  Scenario: FeaturesDto BggEnabled requires both username and token
+    Given the BGG username has been configured
+    And the BGG API token has been configured
+    When the frontend requests the features endpoint
+    Then FeaturesDto includes BggEnabled set to true
+
+  Scenario: FeaturesDto BggEnabled is false when only username is configured
+    Given the BGG username has been configured
+    And the BGG API token has NOT been configured
+    When the frontend requests the features endpoint
+    Then FeaturesDto includes BggEnabled set to false
+
+  Scenario: FeaturesDto BggEnabled is false when only token is configured
+    Given the BGG API token has been configured
+    And the BGG username has NOT been configured
+    When the frontend requests the features endpoint
+    Then FeaturesDto includes BggEnabled set to false
+
+  Scenario: Authenticated requests work with BGG API
+    Given both the BGG username and API token are configured
+    When a sync is triggered
+    Then the BGG API accepts the authenticated requests
+    And the sync completes successfully
+```

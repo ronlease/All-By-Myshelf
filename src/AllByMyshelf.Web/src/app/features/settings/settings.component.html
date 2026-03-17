@@ -67,6 +67,15 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
+          <mat-label>BoardGameGeek API Token</mat-label>
+          <input
+            matInput
+            type="password"
+            [formControl]="bggApiTokenControl" />
+          <mat-hint>Bearer token from your registered BGG application</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>BoardGameGeek Username</mat-label>
           <input
             matInput

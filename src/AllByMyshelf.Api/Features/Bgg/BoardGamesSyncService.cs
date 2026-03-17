@@ -122,7 +122,7 @@ public class BoardGamesSyncService(
     /// <inheritdoc/>
     public SyncStartResult TryStartSync()
     {
-        if (string.IsNullOrWhiteSpace(_options.Username))
+        if (string.IsNullOrWhiteSpace(_options.ApiToken))
             return SyncStartResult.TokenNotConfigured;
 
         // Try to acquire the running flag atomically.
