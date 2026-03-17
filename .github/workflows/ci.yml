@@ -25,7 +25,7 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('**/*.csproj') }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dotnet-test-results
           path: ./test-results/*.trx
@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dotnet-coverage-report
           path: ./coverage-report/
@@ -91,7 +91,7 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('**/*.csproj') }}
@@ -118,7 +118,7 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('**/*.csproj') }}
@@ -252,7 +252,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: angular-coverage
           path: src/AllByMyshelf.Web/coverage/
