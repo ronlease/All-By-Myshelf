@@ -22,9 +22,9 @@ public class WantlistReleaseConfiguration : IEntityTypeConfiguration<WantlistRel
         builder.Property(w => w.AddedAt)
             .HasColumnName("added_at");
 
-        builder.Property(w => w.Artist)
-            .HasColumnName("artist")
-            .HasMaxLength(500)
+        builder.Property(w => w.Artists)
+            .HasColumnName("artists")
+            .HasColumnType("text[]")
             .IsRequired();
 
         builder.Property(w => w.CoverImageUrl)

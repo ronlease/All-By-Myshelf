@@ -120,7 +120,7 @@ public class ReleasesServiceTests
         {
             Id = id,
             DiscogsId = discogsId,
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",
@@ -133,7 +133,7 @@ public class ReleasesServiceTests
         {
             Id = Guid.NewGuid(),
             DiscogsId = discogsId,
-            Artist = artist,
+            Artists = new List<string> { artist },
             Title = title,
             Year = 2000 + discogsId,
             Format = "Vinyl",
@@ -160,7 +160,7 @@ public class ReleasesServiceTests
         result.Should().NotBeNull();
         result!.Id.Should().Be(id);
         result.DiscogsId.Should().Be(555);
-        result.Artist.Should().Be("John Coltrane");
+        result.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         result.Title.Should().Be("A Love Supreme");
         result.Year.Should().Be(1964);
         result.Format.Should().Be("Vinyl");
@@ -178,7 +178,7 @@ public class ReleasesServiceTests
         {
             Id = id,
             DiscogsId = 666,
-            Artist = "Unknown Artist",
+            Artists = new List<string> { "Unknown Artist" },
             Title = "Untitled",
             Year = null,
             Format = "Vinyl",
@@ -210,9 +210,9 @@ public class ReleasesServiceTests
             MakeRelease(100, "John Coltrane", "A Love Supreme"),
             MakeRelease(200, "John Coltrane", "A Love Supreme")
         };
-        var duplicates = new List<(string Artist, string Title, List<Release> Releases)>
+        var duplicates = new List<(List<string> Artists, string Title, List<Release> Releases)>
         {
-            ("John Coltrane", "A Love Supreme", releases)
+            (new List<string> { "John Coltrane" }, "A Love Supreme", releases)
         };
 
         _repositoryMock
@@ -224,7 +224,7 @@ public class ReleasesServiceTests
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].Artist.Should().Be("John Coltrane");
+        result[0].Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         result[0].Title.Should().Be("A Love Supreme");
         result[0].Releases.Should().HaveCount(2);
         result[0].Releases[0].DiscogsId.Should().Be(100);
@@ -239,7 +239,7 @@ public class ReleasesServiceTests
         // Arrange
         _repositoryMock
             .Setup(r => r.GetDuplicatesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<(string, string, List<Release>)>());
+            .ReturnsAsync(new List<(List<string>, string, List<Release>)>());
 
         // Act
         var result = await _sut.GetDuplicatesAsync(CancellationToken.None);
@@ -322,7 +322,7 @@ public class ReleasesServiceTests
 
         // Assert
         result.Items.Should().HaveCount(3);
-        result.Items.Select(d => d.Artist).Should().BeEquivalentTo("Artist 1", "Artist 2", "Artist 3");
+        result.Items.SelectMany(d => d.Artists).Should().BeEquivalentTo("Artist 1", "Artist 2", "Artist 3");
     }
 
     // ── GetReleasesAsync — page size cap ─────────────────────────────────────
@@ -397,7 +397,7 @@ public class ReleasesServiceTests
         // Assert
         result.Items.Should().HaveCount(1);
         var dto = result.Items.Single();
-        dto.Artist.Should().Be("Miles Davis");
+        dto.Artists.Should().BeEquivalentTo(new[] { "Miles Davis" });
         dto.Title.Should().Be("Kind of Blue");
         dto.Year.Should().Be(1959);
         dto.Format.Should().Be("Vinyl");

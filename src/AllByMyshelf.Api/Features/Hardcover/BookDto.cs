@@ -3,7 +3,7 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 /// <summary>
 /// Public representation of a book for API responses.
 /// </summary>
-/// <param name="Author">Author name; null when not available.</param>
+/// <param name="Authors">List of author names.</param>
 /// <param name="CoverImageUrl">Cover image URL; null when not available.</param>
 /// <param name="Genre">Primary genre; null when not available.</param>
 /// <param name="HardcoverId">Hardcover book ID.</param>
@@ -12,7 +12,7 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 /// <param name="Title">Book title.</param>
 /// <param name="Year">Publication year; null when not available.</param>
 public record BookDto(
-    string? Author,
+    List<string> Authors,
     string? CoverImageUrl,
     string? Genre,
     int HardcoverId,

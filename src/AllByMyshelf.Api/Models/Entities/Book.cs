@@ -5,8 +5,8 @@ namespace AllByMyshelf.Api.Models.Entities;
 /// </summary>
 public class Book
 {
-    /// <summary>Author name as returned by Hardcover; null when not provided.</summary>
-    public string? Author { get; set; }
+    /// <summary>Author names as returned by Hardcover.</summary>
+    public List<string> Authors { get; set; } = [];
 
     /// <summary>Cover image URL as returned by Hardcover; null when not provided.</summary>
     public string? CoverImageUrl { get; set; }

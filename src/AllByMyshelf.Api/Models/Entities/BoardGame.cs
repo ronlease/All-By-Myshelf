@@ -14,8 +14,8 @@ public class BoardGame
     /// <summary>Game description; null when not available.</summary>
     public string? Description { get; set; }
 
-    /// <summary>Primary designer name; null when not available.</summary>
-    public string? Designer { get; set; }
+    /// <summary>Designer names; empty when not available.</summary>
+    public List<string> Designers { get; set; } = [];
 
     /// <summary>Primary category/genre; null when not available.</summary>
     public string? Genre { get; set; }

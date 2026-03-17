@@ -190,7 +190,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body.Should().NotBeNull();
         body!.Id.Should().Be(id);
         body.DiscogsId.Should().Be(5001);
-        body.Artist.Should().Be("John Coltrane");
+        body.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         body.Title.Should().Be("A Love Supreme");
         body.Year.Should().Be(1964);
         body.Format.Should().Be("Vinyl");
@@ -226,7 +226,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         {
             Id = id,
             DiscogsId = 5003,
-            Artist = "Miles Davis",
+            Artists = new List<string> { "Miles Davis" },
             Title = "Kind of Blue",
             Year = 1959,
             Format = "Vinyl",
@@ -318,7 +318,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 
         // Assert
         var item = body!.Items.Single();
-        item.Artist.Should().Be("John Coltrane");
+        item.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         item.Title.Should().Be("A Love Supreme");
         item.Year.Should().Be(1964);
         item.Format.Should().Be("Vinyl");
@@ -426,7 +426,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ReleaseDetailDto>();
         body.Should().NotBeNull();
-        body!.Artist.Should().Be("John Coltrane");
+        body!.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
     }
 
     [Fact]
@@ -459,7 +459,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<List<ReleaseDto>>();
         body.Should().HaveCount(1);
-        body![0].Artist.Should().Be("Artist A");
+        body![0].Artists.Should().BeEquivalentTo(new[] { "Artist A" });
     }
 
     [Fact]
@@ -525,7 +525,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         // Arrange — two releases with same artist and title but different Discogs IDs
         var release1 = new Release
         {
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             DiscogsId = 100,
             Format = "Vinyl",
             Genre = "Jazz",
@@ -536,7 +536,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         };
         var release2 = new Release
         {
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             DiscogsId = 200,
             Format = "CD",
             Genre = "Jazz",
@@ -554,7 +554,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<List<DuplicateGroupDto>>();
         body.Should().HaveCount(1);
-        body![0].Artist.Should().Be("John Coltrane");
+        body![0].Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         body[0].Title.Should().Be("A Love Supreme");
         body[0].Releases.Should().HaveCount(2);
     }
@@ -692,7 +692,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         {
             Id = Guid.NewGuid(),
             DiscogsId = 100,
-            Artist = "Artist",
+            Artists = new List<string> { "Artist" },
             Format = "Vinyl",
             Genre = null,
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -739,7 +739,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         {
             Id = Guid.NewGuid(),
             DiscogsId = 200,
-            Artist = "Incomplete Artist",
+            Artists = new List<string> { "Incomplete Artist" },
             CoverImageUrl = null,
             Format = "Vinyl",
             Genre = "Rock",
@@ -755,7 +755,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
 
         // Assert
         body.Should().HaveCount(1);
-        body![0].Artist.Should().Be("Incomplete Artist");
+        body![0].Artists.Should().BeEquivalentTo(new[] { "Incomplete Artist" });
         body[0].MissingFields.Should().Contain("Cover Art");
     }
 
@@ -767,7 +767,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
             Id = Guid.NewGuid(),
             CoverImageUrl = "https://example.com/cover.jpg",
             DiscogsId = discogsId,
-            Artist = "Complete Artist",
+            Artists = new List<string> { "Complete Artist" },
             Format = "Vinyl",
             Genre = "Rock",
             HighestPrice = 30m,
@@ -783,7 +783,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         {
             Id = id,
             DiscogsId = discogsId,
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",
@@ -796,7 +796,7 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         new()
         {
             AddedAt = addedAt,
-            Artist = artist,
+            Artists = new List<string> { artist },
             DiscogsId = discogsId,
             Format = format,
             Genre = genre,

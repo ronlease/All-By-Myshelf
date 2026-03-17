@@ -41,7 +41,7 @@ public class WantlistController(IWantlistRepository wantlistRepository) : Contro
 
         var dtos = items.Select(w => new WantlistReleaseDto
         {
-            Artist = w.Artist,
+            Artists = w.Artists,
             CoverImageUrl = w.CoverImageUrl,
             DiscogsId = w.DiscogsId,
             Format = w.Format,

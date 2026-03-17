@@ -103,7 +103,7 @@ public class StatisticsRepositoryTests : IDisposable
         string? author = "Author", int? year = null) =>
         new()
         {
-            Author = author,
+            Authors = author != null ? new List<string> { author } : new List<string>(),
             Genre = genre,
             HardcoverId = hardcoverId,
             Id = Guid.NewGuid(),
@@ -115,7 +115,7 @@ public class StatisticsRepositoryTests : IDisposable
     private static Release MakeRelease(int discogsId, string? format = null, string? genre = null, int? year = null) =>
         new()
         {
-            Artist = $"Artist {discogsId}",
+            Artists = new List<string> { $"Artist {discogsId}" },
             DiscogsId = discogsId,
             Format = format ?? "Vinyl",
             Genre = genre,
@@ -129,7 +129,7 @@ public class StatisticsRepositoryTests : IDisposable
     private static Release MakeReleaseWithPrice(int discogsId, decimal? lowestPrice) =>
         new()
         {
-            Artist = $"Artist {discogsId}",
+            Artists = new List<string> { $"Artist {discogsId}" },
             DiscogsId = discogsId,
             Format = "Vinyl",
             Id = Guid.NewGuid(),

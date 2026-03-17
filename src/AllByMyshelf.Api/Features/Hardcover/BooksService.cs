@@ -17,7 +17,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
         var (items, totalCount) = await booksRepository.GetPagedAsync(page, pageSize, cancellationToken, filter);
 
         var dtos = items.Select(b => new BookDto(
-            Author: b.Author,
+            Authors: b.Authors,
             CoverImageUrl: b.CoverImageUrl,
             Genre: b.Genre,
             HardcoverId: b.HardcoverId,
@@ -45,7 +45,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
 
         return new BookDetailDto
         {
-            Author = book.Author,
+            Authors = book.Authors,
             CoverImageUrl = book.CoverImageUrl,
             Genre = book.Genre,
             HardcoverId = book.HardcoverId,
@@ -64,7 +64,7 @@ public class BooksService(IBooksRepository booksRepository) : IBooksService
             return null;
 
         return new BookDto(
-            Author: book.Author,
+            Authors: book.Authors,
             CoverImageUrl: book.CoverImageUrl,
             Genre: book.Genre,
             HardcoverId: book.HardcoverId,

@@ -71,7 +71,7 @@ export class BooksComponent implements OnInit, OnDestroy {
     if (term) {
       books = books.filter(b =>
         b.title.toLowerCase().includes(term) ||
-        (b.author ?? '').toLowerCase().includes(term) ||
+        b.authors.some(a => a.toLowerCase().includes(term)) ||
         (b.genre ?? '').toLowerCase().includes(term) ||
         (b.year?.toString() ?? '').includes(term)
       );
@@ -115,7 +115,7 @@ export class BooksComponent implements OnInit, OnDestroy {
 
   private columnValue(b: BookDto, col: string): string {
     switch (col) {
-      case 'author': return b.author ?? '—';
+      case 'author': return b.authors.length > 0 ? b.authors.join(', ') : '—';
       case 'genre': return b.genre ?? '—';
       case 'title': return b.title;
       case 'year': return b.year?.toString() ?? '—';

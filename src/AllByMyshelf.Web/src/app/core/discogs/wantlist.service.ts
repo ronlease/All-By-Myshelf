@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { PagedResult } from '../../features/discogs/discogs.service';
 
 export interface WantlistReleaseDto {
-  artist: string;
+  artists: string[];
   coverImageUrl: string | null;
   discogsId: number;
   format: string;

@@ -8,8 +8,8 @@ public class WantlistRelease
     /// <summary>UTC timestamp of when this item was added to the wantlist; null when not provided by Discogs.</summary>
     public DateTimeOffset? AddedAt { get; set; }
 
-    /// <summary>Artist name as returned by Discogs.</summary>
-    public string Artist { get; set; } = string.Empty;
+    /// <summary>Artist names as returned by Discogs.</summary>
+    public List<string> Artists { get; set; } = [];
 
     /// <summary>Full-size cover image URL as returned by Discogs; null when not provided.</summary>
     public string? CoverImageUrl { get; set; }

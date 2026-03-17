@@ -18,19 +18,19 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<(string Artist, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<(List<string> Artists, string Title, List<Release> Releases)>> GetDuplicatesAsync(CancellationToken cancellationToken)
     {
         var allReleases = await db.Releases
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return allReleases
-            .GroupBy(r => new { Artist = r.Artist.ToLower(), Title = r.Title.ToLower() })
+            .GroupBy(r => new { Artists = string.Join("|", r.Artists.OrderBy(a => a)).ToLower(), Title = r.Title.ToLower() })
             .Where(g => g.Count() > 1)
-            .OrderBy(g => g.First().Artist)
+            .OrderBy(g => string.Join(", ", g.First().Artists))
             .ThenBy(g => g.First().Title)
             .Select(g => (
-                g.First().Artist,
+                g.First().Artists,
                 g.First().Title,
                 g.OrderBy(r => r.Year).ThenBy(r => r.DiscogsId).ToList()
             ))
@@ -40,15 +40,18 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     /// <inheritdoc/>
     public async Task<IReadOnlyList<Release>> GetIncompleteReleasesAsync(CancellationToken cancellationToken)
     {
-        return await db.Releases
+        var releases = await db.Releases
             .Where(r =>
                 r.CoverImageUrl == null || r.CoverImageUrl == "" ||
                 r.Genre == null ||
                 r.Year == null || r.Year == 0)
-            .OrderBy(r => r.Artist)
-            .ThenBy(r => r.Title)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        return releases
+            .OrderBy(r => string.Join(", ", r.Artists))
+            .ThenBy(r => r.Title)
+            .ToList();
     }
 
     /// <inheritdoc/>
@@ -63,7 +66,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             {
                 var term = $"%{filter.Search}%";
                 query = query.Where(r =>
-                    EF.Functions.ILike(r.Artist, term) ||
+                    r.Artists.Any(a => EF.Functions.ILike(a, term)) ||
                     EF.Functions.ILike(r.Format, term) ||
                     EF.Functions.ILike(r.Title, term) ||
                     (r.Genre != null && EF.Functions.ILike(r.Genre, term)) ||
@@ -71,7 +74,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             }
 
             if (!string.IsNullOrWhiteSpace(filter.Artist))
-                query = query.Where(r => EF.Functions.ILike(r.Artist, $"%{filter.Artist}%"));
+                query = query.Where(r => r.Artists.Any(a => EF.Functions.ILike(a, $"%{filter.Artist}%")));
 
             if (!string.IsNullOrWhiteSpace(filter.Format))
                 query = query.Where(r => EF.Functions.ILike(r.Format, $"%{filter.Format}%"));
@@ -86,8 +89,6 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 query = query.Where(r => r.Year != null && EF.Functions.ILike(r.Year.Value.ToString(), $"%{filter.Year}%"));
         }
 
-        query = query.OrderBy(r => r.Artist).ThenBy(r => r.Title);
-
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
@@ -95,6 +96,12 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             .Take(pageSize)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Sort by first artist in memory since we can't sort by array in EF
+        items = items
+            .OrderBy(r => r.Artists.FirstOrDefault() ?? string.Empty)
+            .ThenBy(r => r.Title)
+            .ToList();
 
         return (items, totalCount);
     }
@@ -178,7 +185,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             if (existing.TryGetValue(release.DiscogsId, out var existingRelease))
             {
                 // Update in-place so EF tracks the change.
-                existingRelease.Artist = release.Artist;
+                existingRelease.Artists = release.Artists;
                 existingRelease.CoverImageUrl = release.CoverImageUrl;
                 existingRelease.Format = release.Format;
                 existingRelease.Genre = release.Genre;

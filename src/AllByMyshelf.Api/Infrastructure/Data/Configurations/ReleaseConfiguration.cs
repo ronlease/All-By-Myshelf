@@ -27,9 +27,12 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .IsUnique()
             .HasDatabaseName("ix_releases_discogs_id");
 
-        builder.Property(r => r.Artist)
-            .HasColumnName("artist")
-            .HasMaxLength(500)
+        builder.Property(r => r.AddedAt)
+            .HasColumnName("added_at");
+
+        builder.Property(r => r.Artists)
+            .HasColumnName("artists")
+            .HasColumnType("text[]")
             .IsRequired();
 
         builder.Property(r => r.CoverImageUrl)

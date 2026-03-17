@@ -12,11 +12,11 @@
       </mat-card-content>
     </mat-card>
   } @else {
-    @for (group of duplicateGroups(); track group.artist + group.title) {
+    @for (group of duplicateGroups(); track group.artists.join(', ') + group.title) {
       <mat-expansion-panel class="mat-elevation-z2">
         <mat-expansion-panel-header>
           <mat-panel-title>
-            {{ group.artist }} — {{ group.title }} ({{ group.releases.length }} copies)
+            {{ group.artists.join(', ') }} — {{ group.title }} ({{ group.releases.length }} copies)
           </mat-panel-title>
         </mat-expansion-panel-header>
 

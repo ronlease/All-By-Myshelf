@@ -5,8 +5,8 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// </summary>
 public class ReleaseDto
 {
-    /// <summary>Artist name.</summary>
-    public string Artist { get; init; } = string.Empty;
+    /// <summary>List of artist names.</summary>
+    public List<string> Artists { get; init; } = [];
 
     /// <summary>Primary format description.</summary>
     public string Format { get; init; } = string.Empty;

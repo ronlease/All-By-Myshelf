@@ -58,7 +58,7 @@ public class BoardGamesServiceTests
             BggId = bggId,
             CoverImageUrl = coverImageUrl,
             Description = description,
-            Designer = designer,
+            Designers = designer != null ? new List<string> { designer } : new List<string>(),
             Genre = genre,
             Id = Guid.NewGuid(),
             LastSyncedAt = DateTimeOffset.UtcNow,
@@ -104,7 +104,7 @@ public class BoardGamesServiceTests
         result!.BggId.Should().Be(1);
         result.CoverImageUrl.Should().Be("https://cf.geekdo-images.com/cover.jpg");
         result.Description.Should().Be("Trade, build, settle");
-        result.Designer.Should().Be("Klaus Teuber");
+        result.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
         result.Genre.Should().Be("Strategy");
         result.Id.Should().Be(boardGame.Id);
         result.MaxPlayers.Should().Be(4);
@@ -161,7 +161,7 @@ public class BoardGamesServiceTests
         // Assert
         result.Should().NotBeNull();
         result!.BggId.Should().Be(1);
-        result.Designer.Should().Be("Klaus Teuber");
+        result.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
         result.Genre.Should().Be("Strategy");
         result.MaxPlayers.Should().Be(4);
         result.MinPlayers.Should().Be(3);

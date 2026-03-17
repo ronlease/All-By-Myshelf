@@ -35,9 +35,10 @@ public class BoardGameConfiguration : IEntityTypeConfiguration<BoardGame>
             .HasColumnName("description")
             .HasMaxLength(10000);
 
-        builder.Property(b => b.Designer)
-            .HasColumnName("designer")
-            .HasMaxLength(500);
+        builder.Property(b => b.Designers)
+            .HasColumnName("designers")
+            .HasColumnType("text[]")
+            .IsRequired();
 
         builder.Property(b => b.Genre)
             .HasColumnName("genre")

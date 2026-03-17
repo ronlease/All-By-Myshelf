@@ -4,7 +4,7 @@ namespace AllByMyshelf.Api.Features.Bgg;
 /// Public representation of a board game for API list responses.
 /// </summary>
 /// <param name="BggId">BGG game ID.</param>
-/// <param name="Designer">Primary designer name; null when not available.</param>
+/// <param name="Designers">List of designer names.</param>
 /// <param name="Genre">Primary category/genre; null when not available.</param>
 /// <param name="Id">Application-generated GUID.</param>
 /// <param name="MaxPlayers">Maximum number of players; null when not available.</param>
@@ -14,7 +14,7 @@ namespace AllByMyshelf.Api.Features.Bgg;
 /// <param name="YearPublished">Year published; null when not available.</param>
 public record BoardGameDto(
     int BggId,
-    string? Designer,
+    List<string> Designers,
     string? Genre,
     Guid Id,
     int? MaxPlayers,

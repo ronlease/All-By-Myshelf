@@ -99,7 +99,7 @@ public class BoardGamesSyncService(
                 BggId = c.BggId,
                 CoverImageUrl = c.CoverImageUrl,
                 Description = detail?.Description,
-                Designer = detail?.Designer,
+                Designers = detail?.Designers ?? [],
                 Genre = detail?.Category,
                 Id = Guid.NewGuid(),
                 LastSyncedAt = now,

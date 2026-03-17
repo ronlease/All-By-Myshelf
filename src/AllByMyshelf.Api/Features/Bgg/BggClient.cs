@@ -111,9 +111,11 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
             var id = int.TryParse(item.Attribute("id")?.Value, out var i) ? i : 0;
             var description = item.Element("description")?.Value;
 
-            var designer = item.Elements("link")
-                .FirstOrDefault(l => l.Attribute("type")?.Value == "boardgamedesigner")
-                ?.Attribute("value")?.Value;
+            var designers = item.Elements("link")
+                .Where(l => l.Attribute("type")?.Value == "boardgamedesigner")
+                .Select(l => l.Attribute("value")?.Value!)
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .ToList();
 
             var category = item.Elements("link")
                 .FirstOrDefault(l => l.Attribute("type")?.Value == "boardgamecategory")
@@ -121,7 +123,7 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
 
             if (id > 0)
             {
-                details.Add(new BggThingDetail(category, description, designer, id));
+                details.Add(new BggThingDetail(category, description, designers, id));
             }
         }
 
@@ -155,14 +157,14 @@ public record BggCollectionItem(
 
 /// <summary>
 /// Represents detailed information fetched from the BGG thing API.
-/// Contains enrichment data like description, designer, and category.
+/// Contains enrichment data like description, designers, and category.
 /// </summary>
 /// <param name="Category">Primary category/genre.</param>
 /// <param name="Description">Game description.</param>
-/// <param name="Designer">Primary designer name.</param>
+/// <param name="Designers">List of designer names.</param>
 /// <param name="Id">BGG game ID.</param>
 public record BggThingDetail(
     string? Category,
     string? Description,
-    string? Designer,
+    List<string> Designers,
     int Id);

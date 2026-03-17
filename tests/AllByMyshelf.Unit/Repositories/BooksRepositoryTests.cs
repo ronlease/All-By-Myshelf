@@ -79,7 +79,7 @@ public class BooksRepositoryTests : IDisposable
         string? coverImageUrl = null) =>
         new()
         {
-            Author = author,
+            Authors = new List<string> { author },
             CoverImageUrl = coverImageUrl,
             Genre = genre,
             HardcoverId = hardcoverId,
@@ -98,7 +98,7 @@ public class BooksRepositoryTests : IDisposable
         var book = MakeBook(1, "Neil Gaiman", "American Gods");
 
         // Assert
-        book.Author.Should().Be("Neil Gaiman");
+        book.Authors.Should().BeEquivalentTo(new[] { "Neil Gaiman" });
     }
 
     // ── Entity mapping — coverImageUrl ────────────────────────────────────────
@@ -311,7 +311,7 @@ public class BooksRepositoryTests : IDisposable
 
         // Assert
         _db.Books.Should().HaveCount(2);
-        _db.Books.Should().Contain(b => b.HardcoverId == 100 && b.Author == "New Author A");
+        _db.Books.Should().Contain(b => b.HardcoverId == 100 && b.Authors.Contains("New Author A"));
         _db.Books.Should().Contain(b => b.HardcoverId == 102);
         _db.Books.Should().NotContain(b => b.HardcoverId == 101);
 
@@ -337,7 +337,7 @@ public class BooksRepositoryTests : IDisposable
         _db.Books.Should().HaveCount(1);
         var book = _db.Books.Single();
         book.HardcoverId.Should().Be(100);
-        book.Author.Should().Be("New Author");
+        book.Authors.Should().BeEquivalentTo(new[] { "New Author" });
         book.Title.Should().Be("New Book");
     }
 }

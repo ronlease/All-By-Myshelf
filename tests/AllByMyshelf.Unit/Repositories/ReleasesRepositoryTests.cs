@@ -78,7 +78,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DiscogsId = discogsId,
-            Artist = artist,
+            Artists = new List<string> { artist },
             Title = title,
             Year = year,
             Format = format,
@@ -102,7 +102,7 @@ public class ReleasesRepositoryTests : IDisposable
         result.Should().NotBeNull();
         result!.Id.Should().Be(target.Id);
         result.DiscogsId.Should().Be(901);
-        result.Artist.Should().Be("Charles Mingus");
+        result.Artists.Should().BeEquivalentTo(new[] { "Charles Mingus" });
         result.Title.Should().Be("The Black Saint");
     }
 
@@ -142,7 +142,7 @@ public class ReleasesRepositoryTests : IDisposable
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].Artist.Should().Be("John Coltrane");
+        result[0].Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
         result[0].Title.Should().Be("A Love Supreme");
         result[0].Releases.Should().HaveCount(2);
     }
@@ -166,8 +166,8 @@ public class ReleasesRepositoryTests : IDisposable
 
         // Assert
         result.Should().HaveCount(2);
-        result[0].Artist.Should().Be("Alpha");
-        result[1].Artist.Should().Be("Zebra");
+        result[0].Artists.Should().BeEquivalentTo(new[] { "Alpha" });
+        result[1].Artists.Should().BeEquivalentTo(new[] { "Zebra" });
     }
 
     [Fact]
@@ -347,7 +347,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DiscogsId = 1200,
-            Artist = "Miles Davis",
+            Artists = new List<string> { "Miles Davis" },
             Title = "Bitches Brew",
             Year = 1970,
             Format = "Vinyl",
@@ -391,7 +391,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DiscogsId = 200,
-            Artist = "Miles Davis",
+            Artists = new List<string> { "Miles Davis" },
             Title = "Bitches Brew",
             Year = 1970,
             Format = "Vinyl",
@@ -403,7 +403,7 @@ public class ReleasesRepositoryTests : IDisposable
 
         // Assert
         var stored = await _db.Releases.SingleAsync();
-        stored.Artist.Should().Be("Miles Davis");
+        stored.Artists.Should().BeEquivalentTo(new[] { "Miles Davis" });
         stored.Title.Should().Be("Bitches Brew");
         stored.Year.Should().Be(1970);
         stored.Format.Should().Be("Vinyl");
@@ -453,7 +453,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),        // intentionally different — upsert should not create a duplicate
             DiscogsId = 401,
-            Artist = "New Artist",
+            Artists = new List<string> { "New Artist" },
             Title = "New Title",
             Year = 2020,
             Format = "Vinyl",
@@ -466,7 +466,7 @@ public class ReleasesRepositoryTests : IDisposable
         // Assert
         var stored = await _db.Releases.ToListAsync();
         stored.Should().HaveCount(1);
-        stored.Single().Artist.Should().Be("New Artist");
+        stored.Single().Artists.Should().BeEquivalentTo(new[] { "New Artist" });
         stored.Single().Title.Should().Be("New Title");
         stored.Single().Year.Should().Be(2020);
         stored.Single().Format.Should().Be("Vinyl");
@@ -500,7 +500,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DiscogsId = 1300,
-            Artist = "Ornette Coleman",
+            Artists = new List<string> { "Ornette Coleman" },
             Title = "The Shape of Jazz to Come",
             Year = 1959,
             Format = "Vinyl",
@@ -514,7 +514,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(), // different Guid — upsert matches on DiscogsId
             DiscogsId = 1300,
-            Artist = "Ornette Coleman",
+            Artists = new List<string> { "Ornette Coleman" },
             Title = "The Shape of Jazz to Come",
             Year = 1959,
             Format = "Vinyl",
@@ -638,7 +638,7 @@ public class ReleasesRepositoryTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DiscogsId = 1100,
-            Artist = "John Coltrane",
+            Artists = new List<string> { "John Coltrane" },
             Title = "A Love Supreme",
             Year = 1964,
             Format = "Vinyl",

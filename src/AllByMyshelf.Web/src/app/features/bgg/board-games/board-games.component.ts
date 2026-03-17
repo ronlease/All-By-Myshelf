@@ -71,7 +71,7 @@ export class BoardGamesComponent implements OnInit, OnDestroy {
     if (term) {
       games = games.filter(g =>
         g.title.toLowerCase().includes(term) ||
-        (g.designer ?? '').toLowerCase().includes(term) ||
+        g.designers.some(d => d.toLowerCase().includes(term)) ||
         (g.genre ?? '').toLowerCase().includes(term) ||
         (g.yearPublished?.toString() ?? '').includes(term)
       );
@@ -115,7 +115,7 @@ export class BoardGamesComponent implements OnInit, OnDestroy {
 
   private columnValue(g: BoardGameDto, col: string): string {
     switch (col) {
-      case 'designer': return g.designer ?? '—';
+      case 'designer': return g.designers.length > 0 ? g.designers.join(', ') : '—';
       case 'genre': return g.genre ?? '—';
       case 'title': return g.title;
       case 'year': return g.yearPublished?.toString() ?? '—';
