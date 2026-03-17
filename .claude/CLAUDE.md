@@ -46,6 +46,8 @@ AllByMyshelf/
   the Engineer implements a feature, QA immediately writes tests for it before moving on.
 - The Architect generates and updates OpenAPI specs and C4 models after API changes.
 - The Product Owner owns `docs/backlog.md` exclusively.
+- Commit locally freely as work progresses. Only push to origin or open/update PRs when explicitly asked.
+- "Backlog" always means `docs/backlog.md` (ABM-xxx items). The public hosting backlog (`docs/backlog-public-hosting.md`, PUB-xxx items) is only referenced when explicitly stated.
 
 ## Routing Rules
 - "backlog", "story", "feature request", "business problem" → Product Owner
@@ -55,6 +57,7 @@ AllByMyshelf/
 - "test", "gherkin", "scenario", "given/when/then", "coverage" → QA Engineer
 
 ## Conventions
+- Prefer vertical slice / clean architecture over layer-based folder organization. Organize by domain/feature, not by layer (controllers, services, repositories, etc.).
 - C# follows Microsoft conventions. Use `var` where type is obvious.
 - All API endpoints are versioned under `/api/v1/`.
 - All secrets go through `dotnet user-secrets` locally. Never hardcode credentials.
@@ -62,3 +65,14 @@ AllByMyshelf/
 - Angular uses standalone components. No NgModules.
 - All new features require a backlog entry before implementation.
 - **All fields, properties, methods, and variables within a class must be declared in alphabetical order.** This applies to both C# and TypeScript. Enforced to ease diffs and code review.
+
+## Pre-PR Checklist
+Before any PR is opened, verify the following:
+1. All README files in the repo are up-to-date
+2. Every vertical slice feature folder has a README.md (`src/AllByMyshelf.Api/Features/*/README.md` and `src/AllByMyshelf.Web/src/app/features/*/README.md`)
+3. All PlantUML C4 diagrams in `docs/c4/` are up-to-date
+4. All Swagger/OpenAPI docs are up-to-date (new endpoints documented, descriptions accurate)
+5. All projects build successfully (`dotnet build`, `ng build`)
+6. All tests pass (`dotnet test`)
+7. Code coverage is at least 90% (excluding EF migrations, generated code, property-only DTOs, and Program.cs)
+8. Delete any leftover `coverage-*/` and `**/TestResults/` directories before committing

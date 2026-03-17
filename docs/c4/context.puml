@@ -5,15 +5,17 @@ title System Context — All By Myshelf
 
 Person(user, "Owner", "Single authenticated user managing their collections")
 
-System(app, "All By Myshelf", "Personal collection dashboard that aggregates data from external APIs (Discogs, Hardcover) with local notes and ratings")
+System(app, "All By Myshelf", "Personal collection dashboard that aggregates data from external APIs (Discogs, Hardcover, BoardGameGeek) with local notes and ratings")
 
 System_Ext(auth0, "Auth0", "Identity provider. Issues JWT tokens for the single user.")
+System_Ext(bgg, "BoardGameGeek API", "Source of truth for the user's board game collection. Queried via XML API v2 during background sync.")
 System_Ext(discogs, "Discogs API", "Source of truth for the user's vinyl record collection and wantlist. Queried during background sync.")
 System_Ext(hardcover, "Hardcover API", "Source of truth for the user's read books. Queried via GraphQL during background sync.")
 
 Rel(user, app, "Views collections, triggers syncs, adds notes/ratings", "HTTPS")
 Rel(app, auth0, "Validates JWT tokens", "HTTPS/OIDC")
 Rel(user, auth0, "Authenticates", "HTTPS/OIDC")
+Rel(app, bgg, "Fetches board game collection using API token", "HTTPS/XML")
 Rel(app, discogs, "Fetches vinyl collection and wantlist using personal access token", "HTTPS/JSON")
 Rel(app, hardcover, "Fetches read books using API token", "HTTPS/GraphQL")
 

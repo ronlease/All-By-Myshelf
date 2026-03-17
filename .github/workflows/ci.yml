@@ -38,7 +38,27 @@ jobs:
         run: dotnet build AllByMyshelf.slnx --no-restore --configuration Release
 
       - name: Run tests
-        run: dotnet test AllByMyshelf.slnx --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+        run: dotnet test AllByMyshelf.slnx --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate coverage report and check threshold
+        run: |
+          reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:./coverage-report -reporttypes:"TextSummary;Html"
+          cat ./coverage-report/Summary.txt
+
+          # Extract line coverage percentage (handles both "86%" and "86.5%")
+          line_coverage=$(grep "Line coverage:" ./coverage-report/Summary.txt | grep -oP '\d+\.?\d*(?=%)')
+          echo "Line coverage: ${line_coverage}%"
+
+          # Check if coverage meets threshold
+          if (( $(echo "$line_coverage < 90" | bc -l) )); then
+            echo "ERROR: Code coverage (${line_coverage}%) is below the required threshold of 90%"
+            exit 1
+          fi
+
+          echo "SUCCESS: Code coverage (${line_coverage}%) meets the required threshold of 90%"
 
       - name: Upload test results
         if: always()
@@ -46,6 +66,14 @@ jobs:
         with:
           name: dotnet-test-results
           path: ./test-results/*.trx
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage-report
+          path: ./coverage-report/
           retention-days: 7
 
   # ── .NET: format check ────────────────────────────────────────────────────
@@ -220,7 +248,7 @@ jobs:
           cp src/environments/environment.template.ts src/environments/environment.prod.ts
 
       - name: Run unit tests
-        run: npx ng test --watch=false --browsers=ChromeHeadless
+        run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
 
       - name: Upload test results
         if: always()

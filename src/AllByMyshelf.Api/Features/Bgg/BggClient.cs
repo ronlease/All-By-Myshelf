@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
@@ -144,6 +145,7 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
 /// <param name="Name">Game title.</param>
 /// <param name="ThumbnailUrl">Thumbnail image URL.</param>
 /// <param name="YearPublished">Year the game was published.</param>
+[ExcludeFromCodeCoverage]
 public record BggCollectionItem(
     int BggId,
     string? CoverImageUrl,

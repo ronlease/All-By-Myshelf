@@ -1,23 +1,23 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
-import { Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { DiscogsService, ReleaseDto } from '../discogs.service';
 import { FormatIconPipe } from '../format-icon.pipe';
-import { SyncStateService } from '../../../core/sync/sync-state.service';
+import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
 @Component({
   selector: 'app-collection',
@@ -42,17 +42,15 @@ import { SyncStateService } from '../../../core/sync/sync-state.service';
   ],
   templateUrl: './collection.component.html',
 })
-export class CollectionComponent implements OnInit, OnDestroy {
-  allReleases = signal<ReleaseDto[]>([]);
+export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
+  protected allItems = signal<ReleaseDto[]>([]);
   artistFilter = signal<string[]>([]);
-  currentPage = signal(1);
-  private readonly activatedRoute = inject(ActivatedRoute);
+  protected readonly collectionKey = 'records';
   private readonly discogsService = inject(DiscogsService);
-  readonly displayedColumns = ['thumbnail', 'artist', 'title', 'genre', 'year', 'format'];
-  expandedGroups = signal<Set<string>>(new Set());
+  protected readonly displayedColumns = ['thumbnail', 'artist', 'title', 'genre', 'year', 'format'];
   formatFilter = signal<string[]>([]);
   genreFilter = signal<string[]>([]);
-  readonly groupByOptions = [
+  protected readonly groupByOptions = [
     { label: 'No grouping', value: '' },
     { label: 'Artist', value: 'artist' },
     { label: 'Decade', value: 'decade' },
@@ -60,25 +58,18 @@ export class CollectionComponent implements OnInit, OnDestroy {
     { label: 'Genre', value: 'genre' },
     { label: 'Year', value: 'year' },
   ];
-  groupByField = signal('');
-  loading = signal(true);
-  readonly pageSize = 20;
+  protected readonly pageSize = 20;
   recentReleases = signal<ReleaseDto[]>([]);
-  private readonly router = inject(Router);
-  private searchTimer?: ReturnType<typeof setTimeout>;
-  searchTerm = signal('');
-  private readonly snackBar = inject(MatSnackBar);
   sortActive = signal('title');
   sortDirection = signal<'asc' | 'desc'>('asc');
-  private subscription?: Subscription;
-  private readonly syncState = inject(SyncStateService);
   yearFilter = signal<string[]>([]);
 
-  // ── Computed ────────────────────────────────────────────────────────────────
+  // Alias for template compatibility
+  get allReleases() {
+    return this.allItems;
+  }
 
-  get filteredReleases(): ReleaseDto[] {
-    let releases = this.allReleases();
-
+  protected applySearch(releases: ReleaseDto[]): ReleaseDto[] {
     const term = this.searchTerm().toLowerCase().trim();
     if (term) {
       releases = releases.filter(r =>
@@ -90,6 +81,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
       );
     }
 
+    // Apply column filters (Discogs-specific)
     const af = this.artistFilter();
     if (af.length) releases = releases.filter(r => af.includes(this.columnValue(r, 'artist')));
 
@@ -102,6 +94,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
     const yf = this.yearFilter();
     if (yf.length) releases = releases.filter(r => yf.includes(this.columnValue(r, 'year')));
 
+    // Apply sorting (Discogs-specific)
     const sortCol = this.sortActive();
     const sortDir = this.sortDirection();
     releases = [...releases].sort((a, b) => {
@@ -114,40 +107,7 @@ export class CollectionComponent implements OnInit, OnDestroy {
     return releases;
   }
 
-  get groupedReleases(): { items: ReleaseDto[]; key: string }[] {
-    const field = this.groupByField();
-    if (!field) return [];
-
-    const map = new Map<string, ReleaseDto[]>();
-    for (const r of this.filteredReleases) {
-      let key: string;
-      if (field === 'decade') {
-        key = r.year != null ? `${Math.floor(r.year / 10) * 10}s` : '—';
-      } else {
-        key = this.columnValue(r, field);
-      }
-      const group = map.get(key) ?? [];
-      group.push(r);
-      map.set(key, group);
-    }
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, items]) => ({ items, key }));
-  }
-
-  get pagedReleases(): ReleaseDto[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredReleases.slice(start, start + this.pageSize);
-  }
-
-  get totalFilteredCount(): number {
-    return this.filteredReleases.length;
-  }
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  private columnValue(r: ReleaseDto, col: string): string {
+  protected columnValue(r: ReleaseDto, col: string): string {
     switch (col) {
       case 'artist': return r.artists.join(', ');
       case 'format': return r.format;
@@ -158,12 +118,30 @@ export class CollectionComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected detailRoute(release: ReleaseDto): string {
+    return `/releases/${release.id}`;
+  }
+
   distinctValues(col: string): string[] {
     const seen = new Set<string>();
-    for (const r of this.allReleases()) {
+    for (const r of this.allItems()) {
       seen.add(this.columnValue(r, col));
     }
     return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }
+
+  // Alias for template compatibility
+  get filteredReleases(): ReleaseDto[] {
+    return this.filteredItems;
+  }
+
+  protected getDecadeKey(release: ReleaseDto): string {
+    return release.year != null ? `${Math.floor(release.year / 10) * 10}s` : '—';
+  }
+
+  // Alias for template compatibility
+  get groupedReleases(): { items: ReleaseDto[]; key: string }[] {
+    return this.groupedItems;
   }
 
   hasActiveFilter(col: string): boolean {
@@ -176,17 +154,11 @@ export class CollectionComponent implements OnInit, OnDestroy {
     }
   }
 
-  isGroupExpanded(key: string): boolean {
-    return this.expandedGroups().has(key);
-  }
-
-  // ── Data loading ─────────────────────────────────────────────────────────────
-
-  private loadAll(): void {
+  protected loadAll(): void {
     this.loading.set(true);
     this.discogsService.getCollection(1, 10000).subscribe({
       next: (result) => {
-        this.allReleases.set(result.items);
+        this.allItems.set(result.items);
         this.loading.set(false);
       },
       error: () => {
@@ -202,12 +174,8 @@ export class CollectionComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
-  }
-
-  ngOnInit(): void {
-    localStorage.setItem('last-collection', 'records');
+  override ngOnInit(): void {
+    localStorage.setItem('last-collection', this.collectionKey);
 
     const params = this.activatedRoute.snapshot.queryParams;
     if (params['groupBy']) {
@@ -218,14 +186,12 @@ export class CollectionComponent implements OnInit, OnDestroy {
     }
 
     this.loadAll();
-    this.loadRecentlyAdded();
-    this.subscription = this.syncState.discogsSyncCompleted$.subscribe(() => {
+    this.loadRecentlyAdded(); // Discogs-specific
+    this.subscription = this.syncCompletedObservable().subscribe(() => {
       this.loadAll();
-      this.loadRecentlyAdded();
+      this.loadRecentlyAdded(); // Discogs-specific: reload recently added on sync
     });
   }
-
-  // ── Event handlers ───────────────────────────────────────────────────────────
 
   onColumnFilterChange(col: string, values: string[]): void {
     switch (col) {
@@ -237,37 +203,17 @@ export class CollectionComponent implements OnInit, OnDestroy {
     this.currentPage.set(1);
   }
 
-  onGroupByChange(): void {
-    this.expandedGroups.set(new Set());
-  }
-
-  onGroupCollapse(key: string): void {
-    const current = new Set(this.expandedGroups());
-    current.delete(key);
-    this.expandedGroups.set(current);
-  }
-
-  onGroupExpand(key: string): void {
-    const current = new Set(this.expandedGroups());
-    current.add(key);
-    this.expandedGroups.set(current);
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.currentPage.set(event.pageIndex + 1);
-  }
-
-  onRowClick(release: ReleaseDto): void {
-    this.router.navigate(['/releases', release.id]);
-  }
-
-  onSearchChange(): void {
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.currentPage.set(1), 300);
-  }
-
   onSortChange(sort: Sort): void {
     this.sortActive.set(sort.active);
     this.sortDirection.set(sort.direction as 'asc' | 'desc' || 'asc');
+  }
+
+  // Alias for template compatibility
+  get pagedReleases(): ReleaseDto[] {
+    return this.pagedItems;
+  }
+
+  protected syncCompletedObservable(): Observable<void> {
+    return this.syncState.discogsSyncCompleted$;
   }
 }

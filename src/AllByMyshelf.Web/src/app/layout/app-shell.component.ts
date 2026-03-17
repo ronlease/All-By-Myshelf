@@ -45,15 +45,15 @@ export class AppShellComponent implements OnInit {
     this.themeService.applyTheme(nextTheme);
   }
 
+  private detectOsTheme(): 'light' | 'dark' {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
   ngOnInit(): void {
     this.themeService.initialize(this.detectOsTheme());
     this.featuresService.getFeatures().subscribe({
       next: (f) => this.features.set(f),
     });
-  }
-
-  private detectOsTheme(): 'light' | 'dark' {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
   syncAll(): void {

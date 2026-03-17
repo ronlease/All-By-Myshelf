@@ -49,8 +49,8 @@ export class RandomPickerComponent implements OnInit {
   bookGenreFilter = signal('');
   context = signal<PickContext>('records');
   decadeFilter = signal('');
-  private readonly discogsService = inject(DiscogsService);
   discogsEnabled = signal(false);
+  private readonly discogsService = inject(DiscogsService);
   private readonly featuresService = inject(FeaturesService);
   formatFilter = signal('');
   genreFilter = signal('');

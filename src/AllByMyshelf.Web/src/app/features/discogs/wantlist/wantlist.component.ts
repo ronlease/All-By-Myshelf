@@ -38,19 +38,6 @@ export class WantlistComponent implements OnInit {
   totalCount = signal(0);
   private readonly wantlistService = inject(WantlistService);
 
-  ngOnInit(): void {
-    this.loadWantlist();
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.currentPage.set(event.pageIndex + 1);
-    this.loadWantlist();
-  }
-
-  onRowClick(release: WantlistReleaseDto): void {
-    this.router.navigate(['/releases', release.id]);
-  }
-
   private loadWantlist(): void {
     this.loading.set(true);
     this.wantlistService.getWantlist(this.currentPage(), this.pageSize).subscribe({
@@ -64,5 +51,18 @@ export class WantlistComponent implements OnInit {
         this.snackBar.open('Failed to load wantlist.', 'Dismiss', { duration: 5000 });
       },
     });
+  }
+
+  ngOnInit(): void {
+    this.loadWantlist();
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.currentPage.set(event.pageIndex + 1);
+    this.loadWantlist();
+  }
+
+  onRowClick(release: WantlistReleaseDto): void {
+    this.router.navigate(['/releases', release.id]);
   }
 }

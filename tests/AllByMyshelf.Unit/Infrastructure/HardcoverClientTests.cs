@@ -38,6 +38,7 @@
 using System.Net;
 using System.Text.Json;
 using AllByMyshelf.Api.Features.Hardcover;
+using AllByMyshelf.Unit.TestDoubles;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -452,18 +453,3 @@ public class HardcoverClientTests
     }
 }
 
-// ── Test doubles ──────────────────────────────────────────────────────────────
-
-/// <summary>Captures all requests and returns responses from a queue in order.</summary>
-internal sealed class CapturingQueuedHandler(Queue<HttpResponseMessage> responses)
-    : HttpMessageHandler
-{
-    public List<HttpRequestMessage> CapturedRequests { get; } = [];
-
-    protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        CapturedRequests.Add(request);
-        return Task.FromResult(responses.Dequeue());
-    }
-}
