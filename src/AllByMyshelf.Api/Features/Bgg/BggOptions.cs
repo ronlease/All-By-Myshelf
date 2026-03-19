@@ -18,7 +18,7 @@ public class BggOptions
     /// <summary>
     /// The BoardGameGeek username used to fetch the collection.
     /// Must be set via dotnet user-secrets (key: Bgg:Username).
-    /// Not exposed in the Settings UI — the API token is sufficient to enable BGG.
+    /// Not exposed in the Settings UI — both the API token and username are required to enable BGG.
     /// </summary>
     public string Username { get; init; } = string.Empty;
 }
