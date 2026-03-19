@@ -19,6 +19,6 @@ Provides unified analytics and value estimates across all collections (records, 
 - `UnifiedStatisticsDto` — Contains `RecordStatisticsDto`, `BookStatisticsDto`, and `BoardGameStatisticsDto`
 - `RecordStatisticsDto` — TotalCount, TotalValue, DecadeBreakdown, FormatBreakdown, GenreBreakdown, ExcludedFromValueCount
 - `BookStatisticsDto` — TotalCount, AuthorBreakdown, GenreBreakdown, YearBreakdown
-- `BoardGameStatisticsDto` — TotalCount, DesignerBreakdown, GenreBreakdown, YearBreakdown
+- `BoardGameStatisticsDto` — TotalCount, GenreBreakdown
 - `CollectionValueDto` — TotalValue, IncludedCount, ExcludedCount (based on lowest marketplace price)
 - `BreakdownItemDto` — Label, Count

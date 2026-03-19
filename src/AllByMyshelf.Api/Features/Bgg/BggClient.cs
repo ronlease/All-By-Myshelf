@@ -165,6 +165,7 @@ public record BggCollectionItem(
 /// <param name="Description">Game description.</param>
 /// <param name="Designers">List of designer names.</param>
 /// <param name="Id">BGG game ID.</param>
+[ExcludeFromCodeCoverage]
 public record BggThingDetail(
     string? Category,
     string? Description,

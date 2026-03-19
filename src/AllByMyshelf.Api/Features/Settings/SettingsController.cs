@@ -30,6 +30,7 @@ public class SettingsController(
     /// </summary>
     /// <returns>A <see cref="SettingsDto"/> with masked token values.</returns>
     [HttpGet]
+    [ProducesResponseType(typeof(SettingsDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<SettingsDto>> GetSettingsAsync(CancellationToken cancellationToken)
     {
         var bggApiToken = await GetSettingValueAsync(BggApiTokenKey, cancellationToken);
@@ -56,6 +57,7 @@ public class SettingsController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>204 No Content on success.</returns>
     [HttpPut]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateSettingsAsync(
         [FromBody] UpdateSettingsDto dto,
         CancellationToken cancellationToken)

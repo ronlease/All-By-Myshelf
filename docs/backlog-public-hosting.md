@@ -249,3 +249,41 @@ Feature: GDPR compliance and data deletion
 ```
 
 ---
+
+## [PUB-006] Add "Powered by BGG" Logo to Board Games Page (Light and Dark Theme)
+
+**Status:** Todo
+**Priority:** Medium
+
+### Business Problem
+The BGG XML API Terms of Use require public-facing applications to display a "Powered by BGG" logo that links back to BoardGameGeek. The app needs both a light-themed and dark-themed variant to match the user's selected theme.
+
+### Acceptance Criteria
+```gherkin
+Feature: Display "Powered by BGG" logo on Board Games page
+
+  Scenario: Logo is displayed on page load
+    Given I am viewing the Board Games page
+    When the page loads
+    Then a "Powered by BGG" logo is displayed that links to https://boardgamegeek.com
+
+  Scenario: Light-themed logo is shown in light mode
+    Given I am using the light theme
+    When I view the Board Games page
+    Then the light-themed BGG logo is shown
+
+  Scenario: Dark-themed logo is shown in dark mode
+    Given I am using the dark theme
+    When I view the Board Games page
+    Then the dark-themed BGG logo is shown
+
+  Scenario: Logo links to BoardGameGeek in new tab
+    Given I click the "Powered by BGG" logo
+    When the link is activated
+    Then I am navigated to https://boardgamegeek.com in a new tab
+```
+
+### Notes
+Acceptable logo files are available at https://drive.google.com/drive/folders/1k3VgEIpNEY59iTVnpTibt31JcO0rEaSw?usp=drive_link — the logo must be sized so that the text remains easily legible per BGG requirements.
+
+---

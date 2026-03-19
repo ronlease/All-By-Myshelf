@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
@@ -7,6 +8,7 @@ namespace AllByMyshelf.Api.Infrastructure.Configuration;
 /// Configuration provider that loads settings from the app_settings database table.
 /// Uses raw Npgsql connection to avoid circular DI with EF Core.
 /// </summary>
+[ExcludeFromCodeCoverage] // Requires a live PostgreSQL database — tested via integration/manual testing.
 public class DbConfigurationProvider(string connectionString) : ConfigurationProvider
 {
     private readonly string _connectionString = connectionString;

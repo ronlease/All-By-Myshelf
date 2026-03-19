@@ -5,7 +5,7 @@ Manages the board game collection sourced from the BoardGameGeek XML API v2.
 ## External API
 
 - **BoardGameGeek XML API v2** (`https://www.boardgamegeek.com/xmlapi2/`)
-- Authentication via Bearer token (`Bgg:ApiToken`)
+- Authentication via Bearer token (`Bgg:ApiToken`) and username (`Bgg:Username`) — both required to enable BGG
 - Handles BGG's 202 "queued" responses with exponential backoff (max 5 retries)
 
 ## Endpoints

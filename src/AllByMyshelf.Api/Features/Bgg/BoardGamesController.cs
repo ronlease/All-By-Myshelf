@@ -105,7 +105,7 @@ public class BoardGamesController(
     /// <returns>An object containing the sync running status.</returns>
     /// <response code="200">Returns the current sync status.</response>
     [HttpGet("sync/status")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetSyncStatus() =>
         Ok(new { isRunning = boardGamesSyncService.IsSyncRunning });
 

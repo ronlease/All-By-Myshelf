@@ -20,4 +20,4 @@ This feature does not have its own sync. `WantlistRelease` records are created a
 ## Models
 
 - `WantlistRelease` — EF Core entity
-- `WantlistReleaseDto` — Response DTO (Artists, Title, Format, Genre, Year, CoverImageUrl, ThumbnailUrl, DiscogsId)
+- `WantlistReleaseDto` — Response DTO (Artists, CoverImageUrl, DiscogsId, Format, Genre, Id, ThumbnailUrl, Title, Year)
