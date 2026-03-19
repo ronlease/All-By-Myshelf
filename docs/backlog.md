@@ -3956,3 +3956,328 @@ Feature: BGG API token authentication
     Then the BGG API accepts the authenticated requests
     And the sync completes successfully
 ```
+
+---
+
+## [ABM-064] Board Game Options Not Appearing When BGG API Token Is Configured
+
+**Status:** Done
+**Priority:** High
+
+### Business Problem
+When configuring BGG integration, users expect Board Game features to appear once they have properly set up their credentials. However, the current implementation only checks for the API token presence when determining if BGG is enabled, ignoring the username requirement. This causes incorrect behavior: if only the API token is set (no username), the UI shows BGG features that then fail because API calls require the username. Conversely, this bug masks a related issue where having only a username configured should not enable BGG features since ABM-063 established that both credentials are required for authenticated access.
+
+### Acceptance Criteria
+```gherkin
+Feature: BggEnabled requires both username and API token
+
+  Scenario: BggEnabled is true when both username and token are configured
+    Given the BGG username has been set in user-secrets under "Bgg:Username"
+    And the BGG API token has been set in user-secrets under "Bgg:ApiToken"
+    When the frontend requests the features endpoint
+    Then the response includes BggEnabled set to true
+    And the Board Games nav link is visible
+    And the Board Games sync option is available
+    And the Board Games toggle appears in the random picker
+    And Board Games are included in the unified statistics section
+
+  Scenario: BggEnabled is false when only API token is configured
+    Given the BGG API token has been set in user-secrets under "Bgg:ApiToken"
+    And the BGG username has NOT been configured
+    When the frontend requests the features endpoint
+    Then the response includes BggEnabled set to false
+    And the Board Games nav link is hidden
+    And the Board Games sync option is not available
+    And the Board Games toggle does not appear in the random picker
+
+  Scenario: BggEnabled is false when only username is configured
+    Given the BGG username has been set in user-secrets under "Bgg:Username"
+    And the BGG API token has NOT been configured
+    When the frontend requests the features endpoint
+    Then the response includes BggEnabled set to false
+    And the Board Games nav link is hidden
+    And the Board Games sync option is not available
+    And the Board Games toggle does not appear in the random picker
+
+  Scenario: BggEnabled is false when neither credential is configured
+    Given the BGG username has NOT been configured
+    And the BGG API token has NOT been configured
+    When the frontend requests the features endpoint
+    Then the response includes BggEnabled set to false
+    And the Board Games nav link is hidden
+
+  Scenario: ConfigController validates both credentials
+    Given the ConfigController features endpoint
+    When determining the BggEnabled value
+    Then it checks that both _bgg.Username and _bgg.ApiToken are non-empty strings
+    And returns true only when both values are present
+```
+
+---
+
+## [ABM-065] Board Game Sync Fails With "Username Not Configured" Even When Both Credentials Are Present
+
+**Status:** Done
+**Priority:** High
+
+### Business Problem
+When attempting to sync board games, the sync fails with a misleading error message stating "BGG Username Not Configured" even when both the username and API token are properly configured. This occurs because the `IsTokenConfigured` property in `BoardGamesSyncService` only checks for the API token, but the sync operation requires both credentials. Additionally, the error message in the controller is misleading: it reports "Username Not Configured" when the actual check is on the API token. Users cannot sync their board game collections despite having valid credentials configured, and the error message points them in the wrong direction for troubleshooting.
+
+### Acceptance Criteria
+```gherkin
+Feature: Board game sync validates both username and API token
+
+  Scenario: Sync succeeds when both credentials are configured
+    Given the BGG username has been set in user-secrets under "Bgg:Username"
+    And the BGG API token has been set in user-secrets under "Bgg:ApiToken"
+    When I trigger a board game sync
+    Then the sync starts successfully
+    And the sync completes without credential-related errors
+
+  Scenario: Sync fails with accurate error when only API token is configured
+    Given the BGG API token has been set in user-secrets under "Bgg:ApiToken"
+    And the BGG username has NOT been configured
+    When I trigger a board game sync
+    Then the sync returns a 503 Service Unavailable response
+    And the error title indicates BGG credentials are not configured
+    And the error detail mentions that both username and API token are required
+
+  Scenario: Sync fails with accurate error when only username is configured
+    Given the BGG username has been set in user-secrets under "Bgg:Username"
+    And the BGG API token has NOT been configured
+    When I trigger a board game sync
+    Then the sync returns a 503 Service Unavailable response
+    And the error title indicates BGG credentials are not configured
+    And the error detail mentions that both username and API token are required
+
+  Scenario: Sync fails with accurate error when neither credential is configured
+    Given the BGG username has NOT been configured
+    And the BGG API token has NOT been configured
+    When I trigger a board game sync
+    Then the sync returns a 503 Service Unavailable response
+    And the error title indicates BGG credentials are not configured
+    And the error detail mentions that both username and API token are required
+
+  Scenario: IsTokenConfigured checks both credentials
+    Given the BoardGamesSyncService class
+    When the IsTokenConfigured property is evaluated
+    Then it returns true only when both _options.Username and _options.ApiToken are non-empty
+    And it returns false if either credential is missing or empty
+```
+
+---
+
+## [ABM-066] Board Game Sync Fails With Duplicate Key Violation
+
+**Status:** Done
+**Priority:** High
+
+### Business Problem
+When syncing board games, the sync returns 0 results and fails with a database error: `DbUpdateException: duplicate key value violates unique constraint "ix_board_games_bgg_id"`. This occurs because the upsert repositories do not deduplicate incoming entities by their external ID before processing. If an external API (BGG, Discogs, Hardcover) returns duplicate items for the same entity (e.g., a user owns multiple copies of the same board game), two entities with the same external ID but different GUIDs are created and both attempt insertion — violating the unique index on the external ID column.
+
+### Affected Repositories
+- `BoardGamesRepository.UpsertCollectionAsync` — deduplicate by BggId
+- `ReleasesRepository.UpsertCollectionAsync` — deduplicate by DiscogsId
+- `BooksRepository.UpsertCollectionAsync` — deduplicate by HardcoverId
+- `WantlistRepository.UpsertCollectionAsync` — deduplicate by DiscogsId
+
+### Acceptance Criteria
+```gherkin
+Feature: Upsert repositories deduplicate incoming entities by external ID
+
+  Scenario: Board game sync handles duplicate BggIds from API
+    Given the BGG API returns a collection with two entries for the same board game (same BggId)
+    When a board game sync runs
+    Then the repository deduplicates the incoming list by BggId before upserting
+    And only one board game record is created or updated for that BggId
+    And the sync completes successfully without duplicate key errors
+
+  Scenario: Release sync handles duplicate DiscogsIds from API
+    Given the Discogs API returns a collection with two entries for the same release (same DiscogsId)
+    When a release sync runs
+    Then the repository deduplicates the incoming list by DiscogsId before upserting
+    And only one release record is created or updated for that DiscogsId
+    And the sync completes successfully without duplicate key errors
+
+  Scenario: Book sync handles duplicate HardcoverIds from API
+    Given the Hardcover API returns a collection with two entries for the same book (same HardcoverId)
+    When a book sync runs
+    Then the repository deduplicates the incoming list by HardcoverId before upserting
+    And only one book record is created or updated for that HardcoverId
+    And the sync completes successfully without duplicate key errors
+
+  Scenario: Wantlist sync handles duplicate DiscogsIds from API
+    Given the Discogs API returns a wantlist with two entries for the same release (same DiscogsId)
+    When a wantlist sync runs
+    Then the repository deduplicates the incoming list by DiscogsId before upserting
+    And only one wantlist record is created or updated for that DiscogsId
+    And the sync completes successfully without duplicate key errors
+
+  Scenario: Deduplication keeps the last occurrence
+    Given an external API returns multiple entries with the same external ID
+    And the entries have different metadata values
+    When the repository deduplicates the incoming list
+    Then the last occurrence in the list is kept
+    And earlier occurrences are discarded
+```
+
+---
+
+## [ABM-067] Display Board Game Designers as Individual Names
+
+**Status:** Ready
+**Priority:** Medium
+
+### Business Problem
+Board game designers are currently stored and displayed inconsistently. While the database schema supports multiple designers as a `text[]` array and the BGG API correctly returns individual designer names, historical data migrated from the old single-string column may contain comma-separated names within a single array element (e.g., `['Designer1, Designer2']` instead of `['Designer1', 'Designer2']`). Additionally, the frontend may simply join the array with commas rather than displaying each designer as a distinct, interactive element. Users cannot filter or interact with individual designers, and the display does not reflect that designers are discrete entities.
+
+### Acceptance Criteria
+```gherkin
+Feature: Board game designers displayed as individual names
+
+  Scenario: Newly synced designers are stored as individual array elements
+    Given a board game has multiple designers in the BGG API
+    And the API returns separate <link type="boardgamedesigner"> elements for each designer
+    When the board game is synced from BGG
+    Then each designer is stored as a separate element in the designers array
+    And no array element contains a comma-separated list of names
+
+  Scenario: Historical comma-separated designer data is cleaned up
+    Given a board game was migrated with designers stored as a single comma-separated string
+    And the designers array contains one element like "Designer1, Designer2"
+    When the data cleanup migration runs
+    Then the designers array is split into individual elements
+    And the result is ["Designer1", "Designer2"]
+
+  Scenario: Frontend displays designers as individual chips or links
+    Given a board game has multiple designers stored as separate array elements
+    When I view the board game detail page
+    Then each designer is displayed as a distinct visual element (chip, link, or badge)
+    And designers are not displayed as a single comma-joined string
+
+  Scenario: Frontend handles legacy comma-separated data gracefully
+    Given a board game has designers stored as a single comma-separated element
+    And the data cleanup has not yet run
+    When I view the board game detail page
+    Then each designer name is still displayed as a distinct visual element
+    And the frontend splits the comma-separated string for display purposes
+
+  Scenario: Board game list displays designers consistently
+    Given I am viewing the board game collection list
+    When a board game has multiple designers
+    Then each designer is displayed as a distinct visual element
+    And the display is consistent with the detail page
+
+  Scenario: Empty or whitespace-only designer names are excluded
+    Given a comma-separated designer string contains empty segments
+    For example: "Designer1, , Designer2, "
+    When the string is split into individual designers
+    Then empty and whitespace-only segments are excluded
+    And the result is ["Designer1", "Designer2"]
+```
+
+---
+
+## [ABM-068] Audit and Sanitize All User-Entered Data
+
+**Status:** Ready
+**Priority:** High
+
+### Business Problem
+The application accepts user input in multiple places (settings page, search filters, notes, ratings) but lacks a centralized sanitization strategy. Without consistent sanitization, the application risks logging sensitive data (API tokens, usernames), storing malformed or malicious input in the database, or inadvertently creating security vulnerabilities. A single user application still benefits from defense-in-depth practices, and a centralized sanitization utility ensures consistent handling across all input vectors.
+
+### Input Vectors to Audit
+1. **Settings page** — API tokens (Discogs, Hardcover, BGG), usernames (Discogs, BGG), theme preference
+2. **External API URL construction** — Usernames passed to Discogs and BGG API URLs
+3. **Logging statements** — Any log message that includes user-entered values
+4. **Search/filter inputs** — Query parameters passed from frontend to API for collection filtering
+5. **Notes and ratings** — User-entered text stored per release, book, or board game
+6. **Frontend display** — Any use of `innerHTML` or `[innerHtml]` binding that could bypass Angular's auto-escaping
+
+### Deliverables
+- A centralized sanitization utility (static class or string extension method) that can:
+  - Trim leading/trailing whitespace
+  - Strip control characters (except newlines where appropriate)
+  - Enforce maximum length limits
+  - Optionally redact for logging purposes
+- All code paths updated to call the sanitization utility before logging, storing, or using user input
+- An audit checklist documenting each input vector and its sanitization status
+
+### Acceptance Criteria
+```gherkin
+Feature: Centralized sanitization of user-entered data
+
+  Scenario: Sanitization utility trims whitespace
+    Given the sanitization utility is available
+    When I sanitize the string "  hello world  "
+    Then the result is "hello world"
+
+  Scenario: Sanitization utility strips control characters
+    Given the sanitization utility is available
+    When I sanitize a string containing control characters (e.g., null bytes, backspace)
+    Then control characters are removed from the result
+    And printable characters and standard whitespace remain intact
+
+  Scenario: Sanitization utility enforces maximum length
+    Given the sanitization utility is available
+    And the maximum length is set to 100 characters
+    When I sanitize a string longer than 100 characters
+    Then the result is truncated to 100 characters
+
+  Scenario: Sanitization utility preserves newlines in multi-line input
+    Given the sanitization utility is called with preserveNewlines option
+    When I sanitize a multi-line string
+    Then newline characters are preserved in the result
+    And other control characters are still removed
+
+  Scenario: Settings values are sanitized before storage
+    Given I am on the settings page
+    When I enter a username with leading/trailing whitespace
+    And I save the settings
+    Then the username is trimmed before being saved to the database
+    And control characters are stripped from the value
+
+  Scenario: API tokens are not logged in plaintext
+    Given BGG sync is triggered
+    When the sync service logs the start of the sync
+    Then the API token is not included in the log message
+    And sensitive credential values are redacted or omitted
+
+  Scenario: Usernames in logs are sanitized
+    Given a sync service logs a message that includes a username
+    When the log entry is written
+    Then the username is sanitized to remove any control characters
+    And the username does not exceed a reasonable display length
+
+  Scenario: Search filter values are sanitized before use
+    Given I am viewing the music collection
+    When I enter a search term with special characters
+    And the search is submitted to the API
+    Then the search term is sanitized before being used in the query
+    And the EF Core query uses parameterized values (not string concatenation)
+
+  Scenario: URL construction escapes user input
+    Given the Discogs client constructs an API URL with a username
+    When the username contains special characters (e.g., spaces, ampersands)
+    Then the username is URL-encoded before being included in the URL
+    And the resulting URL is valid and safe
+
+  Scenario: Frontend does not use unsafe innerHTML bindings
+    Given the Angular frontend codebase
+    When auditing for innerHTML or [innerHtml] usage
+    Then any such usage is verified to not include unsanitized user input
+    Or Angular's DomSanitizer is used to sanitize the content
+
+  Scenario: Notes and ratings are sanitized before storage
+    Given I am editing notes for a release
+    When I enter notes containing control characters
+    And I save the notes
+    Then control characters are stripped from the stored value
+    And the notes are trimmed of leading/trailing whitespace
+
+  Scenario: Sanitization is applied consistently across all input vectors
+    Given the audit checklist is complete
+    When reviewing each input vector
+    Then every vector has a documented sanitization status
+    And all vectors either use the centralized utility or have a documented exception with justification
+```

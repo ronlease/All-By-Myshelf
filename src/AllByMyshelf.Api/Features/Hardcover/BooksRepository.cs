@@ -71,7 +71,11 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
     /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<Book> books, CancellationToken cancellationToken)
     {
-        var incoming = books.ToList();
+        // Deduplicate by HardcoverId — keep the last occurrence if the API returns duplicates.
+        var incoming = books
+            .GroupBy(b => b.HardcoverId)
+            .Select(g => g.Last())
+            .ToList();
         var incomingIds = incoming.Select(b => b.HardcoverId).ToHashSet();
 
         // Load all existing records in one query.

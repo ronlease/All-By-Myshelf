@@ -74,7 +74,11 @@ public class BoardGamesRepository(AllByMyshelfDbContext db) : IBoardGamesReposit
     /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<BoardGame> boardGames, CancellationToken cancellationToken)
     {
-        var incoming = boardGames.ToList();
+        // Deduplicate by BggId — keep the last occurrence if the API returns duplicates.
+        var incoming = boardGames
+            .GroupBy(b => b.BggId)
+            .Select(g => g.Last())
+            .ToList();
         var incomingIds = incoming.Select(b => b.BggId).ToHashSet();
 
         // Load all existing records in one query.
