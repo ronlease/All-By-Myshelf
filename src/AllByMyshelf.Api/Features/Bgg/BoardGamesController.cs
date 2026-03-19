@@ -115,11 +115,11 @@ public class BoardGamesController(
     /// <returns>
     /// 202 Accepted when the sync starts successfully,
     /// 409 Conflict when a sync is already running,
-    /// 503 Service Unavailable when the BGG username is not configured.
+    /// 503 Service Unavailable when the BGG credentials are not configured.
     /// </returns>
     /// <response code="202">Sync started. The operation runs asynchronously in the background.</response>
     /// <response code="409">A sync is already in progress.</response>
-    /// <response code="503">The BGG username is not configured.</response>
+    /// <response code="503">The BGG credentials are not configured.</response>
     [HttpPost("sync")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -143,9 +143,9 @@ public class BoardGamesController(
                 new ProblemDetails
                 {
                     Status = StatusCodes.Status503ServiceUnavailable,
-                    Title = "BGG Username Not Configured",
-                    Detail = "The BGG username is not configured. " +
-                             "Set it via dotnet user-secrets with key 'Bgg:Username'."
+                    Title = "BGG Credentials Not Configured",
+                    Detail = "The BGG username and/or API token is not configured. " +
+                             "Set them via dotnet user-secrets with keys 'Bgg:Username' and 'Bgg:ApiToken'."
                 }),
 
             _ => StatusCode(StatusCodes.Status500InternalServerError)

@@ -46,7 +46,11 @@ public class WantlistRepository(AllByMyshelfDbContext db) : IWantlistRepository
     /// <inheritdoc/>
     public async Task UpsertAsync(IEnumerable<WantlistRelease> releases, CancellationToken cancellationToken)
     {
-        var incoming = releases.ToList();
+        // Deduplicate by DiscogsId — keep the last occurrence if the API returns duplicates.
+        var incoming = releases
+            .GroupBy(r => r.DiscogsId)
+            .Select(g => g.Last())
+            .ToList();
         var incomingIds = incoming.Select(r => r.DiscogsId).ToHashSet();
 
         // Load all existing records in one query.

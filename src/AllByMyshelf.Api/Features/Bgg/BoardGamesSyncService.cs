@@ -18,7 +18,7 @@ public class BoardGamesSyncService(
     private readonly BggOptions _options = options.Value;
 
     /// <inheritdoc/>
-    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken);
+    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken) && !string.IsNullOrWhiteSpace(_options.Username);
 
     /// <inheritdoc/>
     protected override ILogger Logger => logger;

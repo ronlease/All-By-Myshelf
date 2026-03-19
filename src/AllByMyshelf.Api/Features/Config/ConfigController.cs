@@ -20,7 +20,7 @@ public class ConfigController(
     [HttpGet("features")]
     public IActionResult GetFeatures() =>
         Ok(new FeaturesDto(
-            BggEnabled: !string.IsNullOrWhiteSpace(_bgg.ApiToken),
+            BggEnabled: !string.IsNullOrWhiteSpace(_bgg.ApiToken) && !string.IsNullOrWhiteSpace(_bgg.Username),
             DiscogsEnabled: !string.IsNullOrWhiteSpace(_discogs.PersonalAccessToken),
             HardcoverEnabled: !string.IsNullOrWhiteSpace(_hardcover.ApiToken)));
 }

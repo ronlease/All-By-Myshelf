@@ -12,6 +12,7 @@ public partial class MultipleCreators : Migration
     {
         // ── releases ────────────────────────────────────────────────────────
         migrationBuilder.Sql("""
+            ALTER TABLE releases RENAME COLUMN "AddedAt" TO added_at;
             ALTER TABLE releases ADD COLUMN artists text[] NOT NULL DEFAULT '{}';
             UPDATE releases SET artists = ARRAY[artist];
             ALTER TABLE releases DROP COLUMN artist;
@@ -52,6 +53,7 @@ public partial class MultipleCreators : Migration
             ALTER TABLE releases ADD COLUMN artist varchar(500) NOT NULL DEFAULT '';
             UPDATE releases SET artist = COALESCE(artists[1], '');
             ALTER TABLE releases DROP COLUMN artists;
+            ALTER TABLE releases RENAME COLUMN added_at TO "AddedAt";
             """);
 
         // ── books ───────────────────────────────────────────────────────────
