@@ -4125,7 +4125,7 @@ Feature: Upsert repositories deduplicate incoming entities by external ID
 
 ## [ABM-067] Display Board Game Designers as Individual Names
 
-**Status:** Ready
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -4180,7 +4180,7 @@ Feature: Board game designers displayed as individual names
 
 ## [ABM-068] Audit and Sanitize All User-Entered Data
 
-**Status:** Ready
+**Status:** Done
 **Priority:** High
 
 ### Business Problem
@@ -4280,4 +4280,59 @@ Feature: Centralized sanitization of user-entered data
     When reviewing each input vector
     Then every vector has a documented sanitization status
     And all vectors either use the centralized utility or have a documented exception with justification
+```
+
+---
+
+## [ABM-069] Display Music Artists as Individual Names
+
+**Status:** Ready
+**Priority:** Medium
+
+### Business Problem
+Music artists are stored correctly as a `List<string>` in the database and the Discogs API returns individual artist objects, but the frontend simply joins the array with commas (`artists.join(', ')`) rather than displaying each artist as a distinct, interactive element. This is inconsistent with the direction set in ABM-067 for board game designers. Historical data migrated from older sync logic may also contain comma-separated names within a single array element (e.g., `['Artist1, Artist2']` instead of `['Artist1', 'Artist2']`). Users cannot filter or interact with individual artists, and the display does not reflect that artists are discrete entities.
+
+### Acceptance Criteria
+```gherkin
+Feature: Music artists displayed as individual names
+
+  Scenario: Newly synced artists are stored as individual array elements
+    Given a release has multiple artists in the Discogs API
+    And the API returns separate artist objects for each artist
+    When the release is synced from Discogs
+    Then each artist is stored as a separate element in the artists list
+    And no list element contains a comma-separated list of names
+
+  Scenario: Historical comma-separated artist data is cleaned up
+    Given a release was migrated with artists stored as a single comma-separated string
+    And the artists list contains one element like "Artist1, Artist2"
+    When the data cleanup migration runs
+    Then the artists list is split into individual elements
+    And the result is ["Artist1", "Artist2"]
+
+  Scenario: Frontend displays artists as individual chips or links
+    Given a release has multiple artists stored as separate list elements
+    When I view the release detail page
+    Then each artist is displayed as a distinct visual element (chip, link, or badge)
+    And artists are not displayed as a single comma-joined string
+
+  Scenario: Frontend handles legacy comma-separated data gracefully
+    Given a release has artists stored as a single comma-separated element
+    And the data cleanup has not yet run
+    When I view the release detail page
+    Then each artist name is still displayed as a distinct visual element
+    And the frontend splits the comma-separated string for display purposes
+
+  Scenario: Music collection list displays artists consistently
+    Given I am viewing the music collection list
+    When a release has multiple artists
+    Then each artist is displayed as a distinct visual element
+    And the display is consistent with the detail page
+
+  Scenario: Empty or whitespace-only artist names are excluded
+    Given a comma-separated artist string contains empty segments
+    For example: "Artist1, , Artist2, "
+    When the string is split into individual artists
+    Then empty and whitespace-only segments are excluded
+    And the result is ["Artist1", "Artist2"]
 ```
