@@ -1,26 +1,32 @@
 {
   "permissions": {
     "allow": [
+      "Bash(cd:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
       "Bash(dotnet ef:*)",
+      "Bash(dotnet format:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet test:*)",
       "Bash(dotnet tool:*)",
       "Bash(dotnet-ef migrations:*)",
-      "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)",
-      "Bash(cd \"C:\\\\Projects\\\\All-By-Myshelf\\\\src\\\\AllByMyshelf.Web\" && npx ng build --configuration development 2>&1)",
-      "Bash(cd /c/Projects/All-By-Myshelf/src/AllByMyshelf.Web && npx ng build --configuration development 2>&1)",
-      "Bash(cd \"C:\\\\Projects\\\\All-By-Myshelf\\\\src\\\\AllByMyshelf.Web\" && npx ng build --configuration development 2>&1 | tail -10)",
-      "Skill(commit-commands:commit-push-pr)",
-      "WebSearch",
+      "Bash(gh api:*)",
+      "Bash(gh pr:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(git stash:*)",
+      "Bash(git status:*)",
+      "Bash(ls:*)",
+      "Bash(ng version:*)",
+      "Bash(npx ng:*)",
+      "Skill(commit-commands:commit-push-pr:*)",
       "WebFetch(domain:docs.hardcover.app)",
       "WebFetch(domain:github.com)",
-      "Bash(gh api:*)",
-      "Bash(git add:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr:*)",
-      "Bash(git stash:*)",
-      "Bash(git checkout:*)",
-      "Bash(dotnet format:*)",
-      "Bash(npx ng:*)"
+      "WebSearch"
     ]
   }
 }

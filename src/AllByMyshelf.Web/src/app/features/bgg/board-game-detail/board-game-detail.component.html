@@ -31,7 +31,11 @@
           <mat-card-header>
             <mat-card-title>{{ game()!.title }}</mat-card-title>
             @if (game()!.designers.length > 0) {
-              <mat-card-subtitle>{{ game()!.designers.join(', ') }}</mat-card-subtitle>
+              <mat-chip-set>
+                @for (designer of expandDesigners(game()!.designers); track designer) {
+                  <mat-chip>{{ designer }}</mat-chip>
+                }
+              </mat-chip-set>
             }
           </mat-card-header>
 
