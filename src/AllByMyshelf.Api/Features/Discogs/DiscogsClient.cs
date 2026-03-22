@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Serialization;
+using AllByMyshelf.Api.Infrastructure;
 using Microsoft.Extensions.Options;
 
 namespace AllByMyshelf.Api.Features.Discogs;
@@ -30,8 +31,8 @@ public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOption
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(60);
-                logger.LogWarning("Discogs rate limit hit. Backing off for {Seconds}s before retrying {Url}.",
-                    retryAfter.TotalSeconds, url);
+                logger.LogWarning("Discogs rate limit hit. Backing off for {Seconds}s before retrying.",
+                    retryAfter.TotalSeconds);
                 OnRateLimitPause?.Invoke((int)retryAfter.TotalSeconds);
                 await Task.Delay(retryAfter, cancellationToken);
                 OnRateLimitResume?.Invoke();
@@ -64,7 +65,8 @@ public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOption
 
         while (true)
         {
-            var url = $"/users/{_options.Username}/collection/folders/0/releases?per_page=100&page={page}";
+            var encodedUsername = Uri.EscapeDataString(_options.Username);
+            var url = $"/users/{encodedUsername}/collection/folders/0/releases?per_page=100&page={page}";
             var response = await FetchWithRetryAsync(url, cancellationToken);
 
             var pageData = await response.Content.ReadFromJsonAsync<DiscogsCollectionPage>(cancellationToken: cancellationToken);
@@ -135,7 +137,8 @@ public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOption
     /// <returns>A <see cref="DiscogsCollectionPage"/> containing wantlist items.</returns>
     public async Task<DiscogsCollectionPage?> GetWantlistPageAsync(string username, int page, CancellationToken cancellationToken)
     {
-        var url = $"/users/{username}/wants?page={page}&per_page=100";
+        var encodedUsername = Uri.EscapeDataString(username);
+        var url = $"/users/{encodedUsername}/wants?page={page}&per_page=100";
         try
         {
             var response = await FetchWithRetryAsync(url, cancellationToken);
@@ -143,7 +146,8 @@ public class DiscogsClient(HttpClient httpClient, IOptionsSnapshot<DiscogsOption
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Failed to fetch wantlist page {Page} for user {Username}. Skipping.", page, username);
+            var redactedUsername = InputSanitizer.Redact(username);
+            logger.LogWarning(ex, "Failed to fetch wantlist page {Page} for user {Username}. Skipping.", page, redactedUsername);
             return null;
         }
     }

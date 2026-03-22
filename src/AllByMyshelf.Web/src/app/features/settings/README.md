@@ -29,3 +29,4 @@ Unified settings page for managing API credentials and application preferences.
 - Form controls reset after successful save
 - Save state indicator
 - Feature flags refresh on settings update
+- Max length validation on all input fields (2000 for tokens, 100 for usernames)

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -14,6 +15,7 @@ import { BggService, BoardGameDetailDto } from '../bgg.service';
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatIconModule,
     MatListModule,
     MatProgressSpinnerModule,
@@ -31,6 +33,13 @@ export class BoardGameDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+
+  expandDesigners(designers: string[]): string[] {
+    return designers
+      .flatMap(d => d.split(','))
+      .map(d => d.trim())
+      .filter(d => d.length > 0);
+  }
 
   formatPlaytime(game: BoardGameDetailDto): string {
     if (game.minPlaytime === null && game.maxPlaytime === null) return '—';

@@ -57,7 +57,17 @@
           </ng-container>
           <ng-container matColumnDef="designer">
             <th mat-header-cell *matHeaderCellDef>Designer</th>
-            <td mat-cell *matCellDef="let game">{{ game.designers.length > 0 ? game.designers.join(', ') : '—' }}</td>
+            <td mat-cell *matCellDef="let game">
+              @if (game.designers.length > 0) {
+                <mat-chip-set>
+                  @for (designer of expandDesigners(game.designers); track designer) {
+                    <mat-chip>{{ designer }}</mat-chip>
+                  }
+                </mat-chip-set>
+              } @else {
+                —
+              }
+            </td>
           </ng-container>
           <ng-container matColumnDef="genre">
             <th mat-header-cell *matHeaderCellDef>Genre</th>

@@ -46,6 +46,9 @@
             type="password"
             [formControl]="discogsPersonalAccessTokenControl" />
           <mat-hint>Required for syncing your Discogs record collection</mat-hint>
+          @if (discogsPersonalAccessTokenControl.hasError('maxlength')) {
+            <mat-error>Maximum length exceeded (2000 characters)</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -55,6 +58,9 @@
             type="text"
             [formControl]="discogsUsernameControl" />
           <mat-hint>Your Discogs username</mat-hint>
+          @if (discogsUsernameControl.hasError('maxlength')) {
+            <mat-error>Maximum length exceeded (100 characters)</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -64,6 +70,9 @@
             type="password"
             [formControl]="hardcoverApiTokenControl" />
           <mat-hint>Required for syncing your Hardcover book collection</mat-hint>
+          @if (hardcoverApiTokenControl.hasError('maxlength')) {
+            <mat-error>Maximum length exceeded (2000 characters)</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -73,6 +82,9 @@
             type="password"
             [formControl]="bggApiTokenControl" />
           <mat-hint>Bearer token from your registered BGG application</mat-hint>
+          @if (bggApiTokenControl.hasError('maxlength')) {
+            <mat-error>Maximum length exceeded (2000 characters)</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -82,6 +94,9 @@
             type="text"
             [formControl]="bggUsernameControl" />
           <mat-hint>Your BGG username for syncing board game collection</mat-hint>
+          @if (bggUsernameControl.hasError('maxlength')) {
+            <mat-error>Maximum length exceeded (100 characters)</mat-error>
+          }
         </mat-form-field>
 
         <div class="actions">

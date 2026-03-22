@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,6 +26,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
     FormsModule,
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
@@ -77,6 +79,13 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
       case 'year': return g.yearPublished?.toString() ?? '—';
       default: return '';
     }
+  }
+
+  protected expandDesigners(designers: string[]): string[] {
+    return designers
+      .flatMap(d => d.split(','))
+      .map(d => d.trim())
+      .filter(d => d.length > 0);
   }
 
   protected detailRoute(game: BoardGameDto): string {
