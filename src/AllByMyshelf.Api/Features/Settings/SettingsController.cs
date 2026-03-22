@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Infrastructure;
 using AllByMyshelf.Api.Infrastructure.Configuration;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
@@ -24,6 +25,8 @@ public class SettingsController(
     private const string DiscogsUsernameKey = "Discogs:Username";
     private const string HardcoverApiTokenKey = "Hardcover:ApiToken";
     private const string ThemeKey = "App:Theme";
+
+    private static readonly HashSet<string> ValidThemes = ["light", "dark", "os-default"];
 
     /// <summary>
     /// Retrieves all application settings with sensitive values masked.
@@ -55,30 +58,61 @@ public class SettingsController(
     /// </summary>
     /// <param name="dto">The settings to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>204 No Content on success, 400 Bad Request if theme is invalid.</returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateSettingsAsync(
         [FromBody] UpdateSettingsDto dto,
         CancellationToken cancellationToken)
     {
-        if (dto.BggApiToken is not null)
-            await UpsertSettingAsync(BggApiTokenKey, dto.BggApiToken, cancellationToken);
+        // Validate and sanitize theme
+        if (dto.Theme is not null)
+        {
+            var sanitizedTheme = InputSanitizer.Sanitize(dto.Theme, maxLength: 20);
+            if (!ValidThemes.Contains(sanitizedTheme))
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Invalid Theme",
+                    Detail = "Theme must be one of: light, dark, os-default."
+                });
+            }
+            await UpsertSettingAsync(ThemeKey, sanitizedTheme, cancellationToken);
+        }
 
-        if (dto.BggUsername is not null)
-            await UpsertSettingAsync(BggUsernameKey, dto.BggUsername, cancellationToken);
+        // Sanitize and save token fields (maxLength 2000)
+        if (dto.BggApiToken is not null)
+        {
+            var sanitized = InputSanitizer.Sanitize(dto.BggApiToken, maxLength: 2000);
+            await UpsertSettingAsync(BggApiTokenKey, sanitized, cancellationToken);
+        }
 
         if (dto.DiscogsPersonalAccessToken is not null)
-            await UpsertSettingAsync(DiscogsPersonalAccessTokenKey, dto.DiscogsPersonalAccessToken, cancellationToken);
-
-        if (dto.DiscogsUsername is not null)
-            await UpsertSettingAsync(DiscogsUsernameKey, dto.DiscogsUsername, cancellationToken);
+        {
+            var sanitized = InputSanitizer.Sanitize(dto.DiscogsPersonalAccessToken, maxLength: 2000);
+            await UpsertSettingAsync(DiscogsPersonalAccessTokenKey, sanitized, cancellationToken);
+        }
 
         if (dto.HardcoverApiToken is not null)
-            await UpsertSettingAsync(HardcoverApiTokenKey, dto.HardcoverApiToken, cancellationToken);
+        {
+            var sanitized = InputSanitizer.Sanitize(dto.HardcoverApiToken, maxLength: 2000);
+            await UpsertSettingAsync(HardcoverApiTokenKey, sanitized, cancellationToken);
+        }
 
-        if (dto.Theme is not null)
-            await UpsertSettingAsync(ThemeKey, dto.Theme, cancellationToken);
+        // Sanitize and save username fields (maxLength 100)
+        if (dto.BggUsername is not null)
+        {
+            var sanitized = InputSanitizer.Sanitize(dto.BggUsername, maxLength: 100);
+            await UpsertSettingAsync(BggUsernameKey, sanitized, cancellationToken);
+        }
+
+        if (dto.DiscogsUsername is not null)
+        {
+            var sanitized = InputSanitizer.Sanitize(dto.DiscogsUsername, maxLength: 100);
+            await UpsertSettingAsync(DiscogsUsernameKey, sanitized, cancellationToken);
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
 

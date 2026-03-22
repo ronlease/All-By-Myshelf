@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -30,12 +30,12 @@ import { ThemeService } from '../../core/config/theme.service';
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
-  bggApiTokenControl = new FormControl<string>('');
-  bggUsernameControl = new FormControl<string>('');
-  discogsPersonalAccessTokenControl = new FormControl<string>('');
-  discogsUsernameControl = new FormControl<string>('');
+  bggApiTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
+  bggUsernameControl = new FormControl<string>('', [Validators.maxLength(100)]);
+  discogsPersonalAccessTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
+  discogsUsernameControl = new FormControl<string>('', [Validators.maxLength(100)]);
   private readonly featuresService = inject(FeaturesService);
-  hardcoverApiTokenControl = new FormControl<string>('');
+  hardcoverApiTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
   loading = signal<boolean>(true);
   saving = signal<boolean>(false);
   settings = signal<SettingsDto | null>(null);

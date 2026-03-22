@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Infrastructure;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -21,16 +22,28 @@ public class BooksRepository(AllByMyshelfDbContext db) : IBooksRepository
         if (filter is not null)
         {
             if (!string.IsNullOrWhiteSpace(filter.Author))
-                query = query.Where(b => b.Authors.Any(a => EF.Functions.ILike(a, $"%{filter.Author}%")));
+            {
+                var escapedAuthor = InputSanitizer.EscapeLikePattern(filter.Author);
+                query = query.Where(b => b.Authors.Any(a => EF.Functions.ILike(a, $"%{escapedAuthor}%")));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
-                query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{filter.Genre}%"));
+            {
+                var escapedGenre = InputSanitizer.EscapeLikePattern(filter.Genre);
+                query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{escapedGenre}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Title))
-                query = query.Where(b => EF.Functions.ILike(b.Title, $"%{filter.Title}%"));
+            {
+                var escapedTitle = InputSanitizer.EscapeLikePattern(filter.Title);
+                query = query.Where(b => EF.Functions.ILike(b.Title, $"%{escapedTitle}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Year))
-                query = query.Where(b => b.Year != null && EF.Functions.ILike(b.Year.Value.ToString(), $"%{filter.Year}%"));
+            {
+                var escapedYear = InputSanitizer.EscapeLikePattern(filter.Year);
+                query = query.Where(b => b.Year != null && EF.Functions.ILike(b.Year.Value.ToString(), $"%{escapedYear}%"));
+            }
         }
 
         query = query.OrderBy(b => b.Title);

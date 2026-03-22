@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Infrastructure;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -64,7 +65,8 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
         {
             if (!string.IsNullOrWhiteSpace(filter.Search))
             {
-                var term = $"%{filter.Search}%";
+                var escapedSearch = InputSanitizer.EscapeLikePattern(filter.Search);
+                var term = $"%{escapedSearch}%";
                 query = query.Where(r =>
                     r.Artists.Any(a => EF.Functions.ILike(a, term)) ||
                     EF.Functions.ILike(r.Format, term) ||
@@ -74,19 +76,34 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             }
 
             if (!string.IsNullOrWhiteSpace(filter.Artist))
-                query = query.Where(r => r.Artists.Any(a => EF.Functions.ILike(a, $"%{filter.Artist}%")));
+            {
+                var escapedArtist = InputSanitizer.EscapeLikePattern(filter.Artist);
+                query = query.Where(r => r.Artists.Any(a => EF.Functions.ILike(a, $"%{escapedArtist}%")));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Format))
-                query = query.Where(r => EF.Functions.ILike(r.Format, $"%{filter.Format}%"));
+            {
+                var escapedFormat = InputSanitizer.EscapeLikePattern(filter.Format);
+                query = query.Where(r => EF.Functions.ILike(r.Format, $"%{escapedFormat}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
-                query = query.Where(r => r.Genre != null && EF.Functions.ILike(r.Genre, $"%{filter.Genre}%"));
+            {
+                var escapedGenre = InputSanitizer.EscapeLikePattern(filter.Genre);
+                query = query.Where(r => r.Genre != null && EF.Functions.ILike(r.Genre, $"%{escapedGenre}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Title))
-                query = query.Where(r => EF.Functions.ILike(r.Title, $"%{filter.Title}%"));
+            {
+                var escapedTitle = InputSanitizer.EscapeLikePattern(filter.Title);
+                query = query.Where(r => EF.Functions.ILike(r.Title, $"%{escapedTitle}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Year))
-                query = query.Where(r => r.Year != null && EF.Functions.ILike(r.Year.Value.ToString(), $"%{filter.Year}%"));
+            {
+                var escapedYear = InputSanitizer.EscapeLikePattern(filter.Year);
+                query = query.Where(r => r.Year != null && EF.Functions.ILike(r.Year.Value.ToString(), $"%{escapedYear}%"));
+            }
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -134,10 +151,16 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             }
 
             if (!string.IsNullOrWhiteSpace(filter.Format))
-                query = query.Where(r => EF.Functions.ILike(r.Format, $"%{filter.Format}%"));
+            {
+                var escapedFormat = InputSanitizer.EscapeLikePattern(filter.Format);
+                query = query.Where(r => EF.Functions.ILike(r.Format, $"%{escapedFormat}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
-                query = query.Where(r => r.Genre != null && EF.Functions.ILike(r.Genre, $"%{filter.Genre}%"));
+            {
+                var escapedGenre = InputSanitizer.EscapeLikePattern(filter.Genre);
+                query = query.Where(r => r.Genre != null && EF.Functions.ILike(r.Genre, $"%{escapedGenre}%"));
+            }
         }
 
         var count = await query.CountAsync(cancellationToken);

@@ -1,4 +1,5 @@
 using AllByMyshelf.Api.Common;
+using AllByMyshelf.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -185,7 +186,12 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
             });
         }
 
-        var updated = await releasesService.UpdateNotesAndRatingAsync(id, dto.Notes, dto.Rating, cancellationToken);
+        // Sanitize notes with newlines preserved
+        var sanitizedNotes = dto.Notes is not null
+            ? InputSanitizer.Sanitize(dto.Notes, maxLength: 2000, preserveNewlines: true)
+            : null;
+
+        var updated = await releasesService.UpdateNotesAndRatingAsync(id, sanitizedNotes, dto.Rating, cancellationToken);
         if (!updated)
             return NotFound();
 

@@ -1,3 +1,4 @@
+using AllByMyshelf.Api.Infrastructure;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -29,19 +30,31 @@ public class BoardGamesRepository(AllByMyshelfDbContext db) : IBoardGamesReposit
         if (filter is not null)
         {
             if (!string.IsNullOrWhiteSpace(filter.Designer))
-                query = query.Where(b => b.Designers.Any(d => EF.Functions.ILike(d, $"%{filter.Designer}%")));
+            {
+                var escapedDesigner = InputSanitizer.EscapeLikePattern(filter.Designer);
+                query = query.Where(b => b.Designers.Any(d => EF.Functions.ILike(d, $"%{escapedDesigner}%")));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Genre))
-                query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{filter.Genre}%"));
+            {
+                var escapedGenre = InputSanitizer.EscapeLikePattern(filter.Genre);
+                query = query.Where(b => b.Genre != null && EF.Functions.ILike(b.Genre, $"%{escapedGenre}%"));
+            }
 
             if (filter.PlayerCount.HasValue)
                 query = query.Where(b => b.MinPlayers <= filter.PlayerCount && b.MaxPlayers >= filter.PlayerCount);
 
             if (!string.IsNullOrWhiteSpace(filter.Title))
-                query = query.Where(b => EF.Functions.ILike(b.Title, $"%{filter.Title}%"));
+            {
+                var escapedTitle = InputSanitizer.EscapeLikePattern(filter.Title);
+                query = query.Where(b => EF.Functions.ILike(b.Title, $"%{escapedTitle}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Year))
-                query = query.Where(b => b.YearPublished != null && EF.Functions.ILike(b.YearPublished.Value.ToString(), $"%{filter.Year}%"));
+            {
+                var escapedYear = InputSanitizer.EscapeLikePattern(filter.Year);
+                query = query.Where(b => b.YearPublished != null && EF.Functions.ILike(b.YearPublished.Value.ToString(), $"%{escapedYear}%"));
+            }
         }
 
         query = query.OrderBy(b => b.Title);
