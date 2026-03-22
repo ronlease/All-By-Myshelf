@@ -24,7 +24,7 @@ Manages the vinyl record collection and wantlist sourced from the Discogs REST A
 
 ## Key Components
 
-- **DiscogsClient** — HTTP client with rate-limit handling and pause/resume events
+- **DiscogsClient** — HTTP client with rate-limit handling and pause/resume events; URL-encodes usernames in API paths
 - **ReleasesService** — Business logic layer
 - **SyncService** — `BackgroundService` that syncs both collection and wantlist with progress tracking
 - **ReleasesRepository** — EF Core data access for releases
