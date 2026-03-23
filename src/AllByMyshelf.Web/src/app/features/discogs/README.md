@@ -33,10 +33,11 @@ Displays the vinyl record collection, wantlist, and collection management tools 
 ## UI Features
 
 - Advanced filtering: Artist, Format, Genre, Year multi-select
-- Sorting by column (title, artist, format, genre, year)
+- Multi-column sorting with persistence (default: artist → title); sort state saved to localStorage
 - Grouping by Artist, Decade, Format, Genre, or Year (collapsible)
-- Search with debouncing
-- Pagination (20 items per page)
+- Search with debouncing — searches artists, track artists (compilations), title, format, genre, year
+- Configurable page size (10/20/50/100) with persistence
+- Artists displayed as flat chips with Discogs disambiguation suffixes stripped
 - Price tracking (lowest/highest/median) in detail view
 - User notes and 1–5 star rating per record
 - Recently added sidebar on collection

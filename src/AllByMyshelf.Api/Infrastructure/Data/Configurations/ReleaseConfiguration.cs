@@ -82,5 +82,9 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
         builder.Property(r => r.LastSyncedAt)
             .HasColumnName("last_synced_at")
             .IsRequired();
+
+        builder.Property(r => r.TrackArtists)
+            .HasColumnName("track_artists")
+            .HasColumnType("text[]");
     }
 }

@@ -41,6 +41,9 @@ public class ReleaseDetailDto
     /// <summary>Release title.</summary>
     public string Title { get; init; } = string.Empty;
 
+    /// <summary>Unique artist names from the release tracklist; used for searching compilations.</summary>
+    public List<string> TrackArtists { get; init; } = [];
+
     /// <summary>Release year; null when unknown.</summary>
     public int? Year { get; init; }
 }

@@ -16,6 +16,7 @@ export interface ReleaseDetailDto {
   notes: string | null;
   rating: number | null;
   title: string;
+  trackArtists: string[];
   year: number | null;
 }
 
@@ -26,6 +27,7 @@ export interface ReleaseDto {
   id: string;
   thumbnailUrl: string | null;
   title: string;
+  trackArtists: string[];
   year: number | null;
 }
 

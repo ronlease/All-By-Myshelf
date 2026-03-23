@@ -10,7 +10,17 @@
             }
             <mat-card-content>
               <div class="recent-title">{{ release.title }}</div>
-              <div class="recent-artist">{{ release.artists.join(', ') }}</div>
+              <div class="recent-artist">
+                @if (release.artists.length > 0) {
+                  <mat-chip-set>
+                    @for (artist of expandArtists(release.artists); track artist) {
+                      <mat-chip>{{ artist }}</mat-chip>
+                    }
+                  </mat-chip-set>
+                } @else {
+                  —
+                }
+              </div>
             </mat-card-content>
           </mat-card>
         }
@@ -69,7 +79,17 @@
           </ng-container>
           <ng-container matColumnDef="artist">
             <th mat-header-cell *matHeaderCellDef>Artist</th>
-            <td mat-cell *matCellDef="let release">{{ release.artists.join(', ') }}</td>
+            <td mat-cell *matCellDef="let release">
+              @if (release.artists.length > 0) {
+                <mat-chip-set>
+                  @for (artist of expandArtists(release.artists); track artist) {
+                    <mat-chip>{{ artist }}</mat-chip>
+                  }
+                </mat-chip-set>
+              } @else {
+                —
+              }
+            </td>
           </ng-container>
           <ng-container matColumnDef="title">
             <th mat-header-cell *matHeaderCellDef>Title</th>
@@ -93,7 +113,7 @@
       </mat-expansion-panel>
     }
   } @else {
-    <table mat-table [dataSource]="pagedReleases" matSort (matSortChange)="onSortChange($event)" class="collection-table mat-elevation-z2">
+    <table mat-table [dataSource]="pagedReleases" matSort [matSortActive]="sortActive()" [matSortDirection]="sortDirection()" (matSortChange)="onSortChange($event)" class="collection-table mat-elevation-z2">
 
       <ng-container matColumnDef="thumbnail">
         <th mat-header-cell *matHeaderCellDef></th>
@@ -118,7 +138,17 @@
             </mat-form-field>
           </div>
         </th>
-        <td mat-cell *matCellDef="let release">{{ release.artists.join(', ') }}</td>
+        <td mat-cell *matCellDef="let release">
+          @if (release.artists.length > 0) {
+            <mat-chip-set>
+              @for (artist of expandArtists(release.artists); track artist) {
+                <mat-chip>{{ artist }}</mat-chip>
+              }
+            </mat-chip-set>
+          } @else {
+            —
+          }
+        </td>
       </ng-container>
 
       <ng-container matColumnDef="title">
@@ -183,9 +213,9 @@
 
     <mat-paginator
       [length]="totalFilteredCount"
-      [pageSize]="pageSize"
+      [pageSize]="currentPageSize()"
       [pageIndex]="currentPage() - 1"
-      [pageSizeOptions]="[20]"
+      [pageSizeOptions]="pageSizeOptions"
       (page)="onPageChange($event)"
       aria-label="Select page of releases"
     ></mat-paginator>

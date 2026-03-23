@@ -30,7 +30,17 @@
         <div class="release-detail-content">
           <mat-card-header>
             <mat-card-title>{{ release()!.title }}</mat-card-title>
-            <mat-card-subtitle>{{ release()!.artists.join(', ') }}</mat-card-subtitle>
+            <mat-card-subtitle>
+              @if (release()!.artists.length > 0) {
+                <mat-chip-set>
+                  @for (artist of expandArtists(release()!.artists); track artist) {
+                    <mat-chip>{{ artist }}</mat-chip>
+                  }
+                </mat-chip-set>
+              } @else {
+                —
+              }
+            </mat-card-subtitle>
           </mat-card-header>
 
           <mat-card-content>
