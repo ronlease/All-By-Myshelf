@@ -15,13 +15,13 @@ System_Boundary(app, "All By Myshelf") {
 
     Container(api, "API", "ASP.NET Core 10 Web API", "Serves local collections via GET /api/v1/releases, /api/v1/books, /api/v1/boardgames, /api/v1/wantlist, and /api/v1/statistics. Provides maintenance, recently added, random picks, duplicate detection, unified statistics (format/genre/decade breakdowns). Exposes GET/PUT /api/v1/settings for user preferences, GET /api/v1/config/features for enabled external APIs, and sync status via GET /api/v1/sync/status, /api/v1/boardgames/sync/status, /api/v1/books/sync/status. Supports PUT /api/v1/releases/{id}/notes-rating for user notes and ratings. Accepts POST /api/v1/sync, /api/v1/books/sync, and /api/v1/boardgames/sync to start background syncs. Validates Auth0 JWTs on all requests.")
 
-    Container(discogsSyncWorker, "Discogs Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches all releases and wantlist items from the Discogs API with detail and marketplace pricing, respects rate limits (retries on HTTP 429), and upserts results into the database. Prevents concurrent runs.")
+    Container(discogsSyncWorker, "Discogs Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches all releases and wantlist items from the Discogs API with detail (genre, track artists) and marketplace pricing, respects rate limits (retries on HTTP 429), strips Discogs disambiguation suffixes from artist names, skips detail/pricing fetches for previously synced releases, and upserts results into the database. Prevents concurrent runs.")
 
     Container(bggSyncWorker, "BGG Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches owned board games from the BoardGameGeek XML API2, handles 202 retry with exponential backoff, enriches with thing details (designer, category, description), and upserts results into the database. Prevents concurrent runs.")
 
     Container(hardcoverSyncWorker, "Hardcover Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches read books from the Hardcover GraphQL API, extracts genre from cached_tags, and upserts results into the database. Prevents concurrent runs.")
 
-    ContainerDb(db, "Collection Database", "PostgreSQL 17", "Stores local copies of Discogs releases (with pricing, artwork, genre, AddedAt timestamp, user notes and ratings), Discogs wantlist items, Hardcover books (with author, genre, cover art), and BoardGameGeek board games (with designer, genre, player count, playtime).")
+    ContainerDb(db, "Collection Database", "PostgreSQL 17", "Stores local copies of Discogs releases (with pricing, artwork, genre, track artists, AddedAt timestamp, user notes and ratings), Discogs wantlist items, Hardcover books (with author, genre, cover art), and BoardGameGeek board games (with designer, genre, player count, playtime).")
 }
 
 Rel(user, web, "Uses", "HTTPS")

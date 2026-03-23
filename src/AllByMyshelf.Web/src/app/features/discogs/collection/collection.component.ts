@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -19,6 +20,11 @@ import { DiscogsService, ReleaseDto } from '../discogs.service';
 import { FormatIconPipe } from '../format-icon.pipe';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
+interface SortColumn {
+  active: string;
+  direction: 'asc' | 'desc';
+}
+
 @Component({
   selector: 'app-collection',
   standalone: true,
@@ -28,6 +34,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
     FormsModule,
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
@@ -58,9 +65,12 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     { label: 'Genre', value: 'genre' },
     { label: 'Year', value: 'year' },
   ];
-  protected readonly pageSize = 20;
+  protected readonly pageSize = 20; // Base class requirement; actual size is in currentPageSize
+  currentPageSize = signal(parseInt(localStorage.getItem('music-page-size') ?? '20', 10));
+  pageSizeOptions = [10, 20, 50, 100];
   recentReleases = signal<ReleaseDto[]>([]);
-  sortActive = signal('title');
+  sortActive = signal('artist');
+  sortColumns = signal<SortColumn[]>(this.loadSortColumns());
   sortDirection = signal<'asc' | 'desc'>('asc');
   yearFilter = signal<string[]>([]);
 
@@ -74,6 +84,7 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     if (term) {
       releases = releases.filter(r =>
         r.artists.some(a => a.toLowerCase().includes(term)) ||
+        (r.trackArtists ?? []).some(a => a.toLowerCase().includes(term)) ||
         r.title.toLowerCase().includes(term) ||
         r.format.toLowerCase().includes(term) ||
         (r.genre ?? '').toLowerCase().includes(term) ||
@@ -94,14 +105,18 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     const yf = this.yearFilter();
     if (yf.length) releases = releases.filter(r => yf.includes(this.columnValue(r, 'year')));
 
-    // Apply sorting (Discogs-specific)
-    const sortCol = this.sortActive();
-    const sortDir = this.sortDirection();
+    // Apply multi-column sorting
+    const cols = this.sortColumns();
     releases = [...releases].sort((a, b) => {
-      const aVal = this.columnValue(a, sortCol);
-      const bVal = this.columnValue(b, sortCol);
-      const comparison = aVal.localeCompare(bVal);
-      return sortDir === 'asc' ? comparison : -comparison;
+      for (const col of cols) {
+        const aVal = this.columnValue(a, col.active);
+        const bVal = this.columnValue(b, col.active);
+        const comparison = aVal.localeCompare(bVal);
+        if (comparison !== 0) {
+          return col.direction === 'asc' ? comparison : -comparison;
+        }
+      }
+      return 0;
     });
 
     return releases;
@@ -128,6 +143,13 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
       seen.add(this.columnValue(r, col));
     }
     return Array.from(seen).sort((a, b) => a.localeCompare(b));
+  }
+
+  protected expandArtists(artists: string[]): string[] {
+    return artists
+      .flatMap(a => a.split(','))
+      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter(a => a.length > 0);
   }
 
   // Alias for template compatibility
@@ -174,6 +196,21 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     });
   }
 
+  private loadSortColumns(): SortColumn[] {
+    const saved = localStorage.getItem('music-sort-columns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // Fall through to default
+      }
+    }
+    return [
+      { active: 'artist', direction: 'asc' },
+      { active: 'title', direction: 'asc' },
+    ];
+  }
+
   override ngOnInit(): void {
     localStorage.setItem('last-collection', this.collectionKey);
 
@@ -183,6 +220,13 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     }
     if (params['expand']) {
       this.expandedGroups.set(new Set([params['expand']]));
+    }
+
+    // Restore persisted sort state to mat-sort header
+    const cols = this.sortColumns();
+    if (cols.length > 0) {
+      this.sortActive.set(cols[0].active);
+      this.sortDirection.set(cols[0].direction);
     }
 
     this.loadAll();
@@ -203,14 +247,31 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     this.currentPage.set(1);
   }
 
+  override onPageChange(event: PageEvent): void {
+    this.currentPage.set(event.pageIndex + 1);
+    if (event.pageSize !== this.currentPageSize()) {
+      this.currentPageSize.set(event.pageSize);
+      localStorage.setItem('music-page-size', event.pageSize.toString());
+      this.currentPage.set(1);
+    }
+  }
+
   onSortChange(sort: Sort): void {
     this.sortActive.set(sort.active);
     this.sortDirection.set(sort.direction as 'asc' | 'desc' || 'asc');
+
+    const dir = (sort.direction as 'asc' | 'desc') || 'asc';
+    const cols = this.sortColumns().filter(c => c.active !== sort.active);
+    cols.unshift({ active: sort.active, direction: dir });
+    this.sortColumns.set(cols);
+    localStorage.setItem('music-sort-columns', JSON.stringify(cols));
   }
 
   // Alias for template compatibility
   get pagedReleases(): ReleaseDto[] {
-    return this.pagedItems;
+    const size = this.currentPageSize();
+    const start = (this.currentPage() - 1) * size;
+    return this.filteredItems.slice(start, start + size);
   }
 
   protected syncCompletedObservable(): Observable<void> {

@@ -4336,3 +4336,169 @@ Feature: Music artists displayed as individual names
     Then empty and whitespace-only segments are excluded
     And the result is ["Artist1", "Artist2"]
 ```
+
+---
+
+## [ABM-070] Squash EF Core Migrations to Single Baseline
+
+**Status:** Ready
+**Priority:** Low
+
+### Business Problem
+Over time, the project has accumulated many incremental EF Core migrations. This adds unnecessary complexity, slows down fresh database setups, and makes the migration history harder to reason about. Squashing them into a single baseline migration simplifies the codebase.
+
+### Acceptance Criteria
+```gherkin
+Feature: Squash EF Core migrations to single baseline
+
+  Scenario: All existing migrations are replaced by a single baseline migration
+    Given the project has multiple incremental EF Core migrations
+    When the migration squash is performed
+    Then all existing migrations are removed
+    And a single baseline migration exists that produces the same database schema
+
+  Scenario: Baseline migration creates the database from scratch
+    Given no database exists
+    When the single baseline migration is applied
+    Then the database is created successfully
+    And the schema matches the previous cumulative result of all migrations
+
+  Scenario: All existing tests pass against the new migration
+    Given the baseline migration has been applied
+    When the full test suite is executed
+    Then all unit tests pass
+    And all integration tests pass
+
+  Scenario: Migration snapshot is consistent with the single migration
+    Given the baseline migration exists
+    When the EF Core model snapshot is examined
+    Then the snapshot reflects the single baseline migration
+    And there are no inconsistencies between the snapshot and the migration
+```
+
+---
+
+## [ABM-071] Store Sync Date Per Release and Selective Re-Sync Options
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+The incremental sync currently skips detail/pricing fetches for all previously synced releases. This is fast but means stale data (e.g., outdated marketplace pricing or missing track artists from older syncs) is never refreshed. I need control over when to refresh data: sync everything, sync records older than a configurable threshold, or just sync new additions.
+
+### Acceptance Criteria
+```gherkin
+Feature: Selective re-sync options for Discogs releases
+
+  # --- Data model ---
+
+  Scenario: Each release stores a detail sync timestamp
+    Given a release has been synced from Discogs
+    When the detail and pricing data is fetched
+    Then a detail_synced_at timestamp is stored for that release
+    And the timestamp reflects when the detail/pricing was last fetched
+
+  # --- Sync options UI ---
+
+  Scenario: Sync options dropdown is available
+    Given I am logged in
+    And the Discogs API token is configured
+    When I open the sync options
+    Then I see options for "Sync new only", "Re-sync all", and "Re-sync older than X days"
+    And "Sync new only" is selected by default
+
+  Scenario: "Sync new only" retains current incremental behavior
+    Given I select "Sync new only"
+    When I trigger a sync
+    Then the sync fetches collection changes from Discogs
+    And existing releases with detail_synced_at populated are skipped
+    And only new releases have their detail/pricing fetched
+
+  Scenario: "Re-sync all" forces detail/pricing fetch for every release
+    Given I select "Re-sync all"
+    When I trigger a sync
+    Then the sync fetches detail/pricing for every release in the collection
+    And the detail_synced_at timestamp is updated for all releases
+    And no releases are skipped regardless of existing data
+
+  Scenario: "Re-sync older than X days" fetches stale releases
+    Given I select "Re-sync older than X days"
+    And I set the threshold to 30 days
+    When I trigger a sync
+    Then the sync fetches detail/pricing for releases where detail_synced_at is older than 30 days
+    And releases synced within the last 30 days are skipped
+    And new releases without detail_synced_at are always fetched
+
+  Scenario: Threshold value is persisted in settings
+    Given I select "Re-sync older than X days"
+    And I set the threshold to 14 days
+    When I close and reopen the sync options
+    Then the threshold value is still set to 14 days
+    And the selected mode is still "Re-sync older than X days"
+
+  # --- Progress indicator ---
+
+  Scenario: Sync progress reflects chosen mode
+    Given I have selected a sync mode
+    When a sync is in progress
+    Then the progress indicator shows the number of releases being processed
+    And the count reflects the chosen mode (all, new only, or older than X days)
+```
+
+---
+
+## [ABM-072] Single Release Re-Sync from Detail View
+
+**Status:** Backlog
+**Priority:** Medium
+
+### Business Problem
+Sometimes a specific release has stale or missing data (wrong genre, missing pricing, no track artists) and I want to refresh just that one record without triggering a full collection sync. There is currently no way to re-sync a single release.
+
+### Acceptance Criteria
+```gherkin
+Feature: Single release re-sync from detail view
+
+  Scenario: Re-sync button is visible on release detail view
+    Given I am logged in
+    And the Discogs API token is configured
+    When I view the detail page for a release
+    Then a "Re-sync" button (e.g., a refresh icon) is visible
+
+  Scenario: Re-sync button is hidden when Discogs token is not configured
+    Given the Discogs API token is not configured
+    When I view the detail page for a release
+    Then the "Re-sync" button is not visible
+
+  Scenario: Clicking re-sync fetches updated data from Discogs
+    Given I am viewing the detail page for a release
+    When I click the "Re-sync" button
+    Then the application fetches the release detail and marketplace data from Discogs
+    And only this single release is fetched (not the full collection)
+
+  Scenario: Re-sync button shows loading state during sync
+    Given I am viewing the detail page for a release
+    When I click the "Re-sync" button
+    Then the button shows a loading spinner
+    And the button is disabled until the sync completes
+
+  Scenario: Detail view refreshes on successful re-sync
+    Given I am viewing the detail page for a release
+    When the re-sync completes successfully
+    Then the detail view updates with the newly fetched data
+    And the loading spinner is removed
+    And any changed fields (genre, pricing, track artists) reflect the updated values
+
+  Scenario: detail_synced_at timestamp is updated after successful re-sync
+    Given I am viewing the detail page for a release
+    When the re-sync completes successfully
+    Then the release's detail_synced_at timestamp is updated to the current time
+
+  Scenario: Error during re-sync shows snackbar notification
+    Given I am viewing the detail page for a release
+    When the re-sync fails (e.g., API error, network issue)
+    Then a snackbar error message is displayed
+    And the error message indicates the sync failed
+    And the original data remains unchanged
+    And the re-sync button is re-enabled for retry
+```

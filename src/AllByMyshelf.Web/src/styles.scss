@@ -308,3 +308,22 @@ html.dark-theme .release-art-icon {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+// Flatten artist/designer chips — remove background and border so they
+// look like plain comma-separated text but remain discrete elements.
+.collection-table,
+.release-detail-card,
+.recent-card {
+  .mat-mdc-chip-set {
+    display: inline;
+
+    .mat-mdc-chip {
+      --mdc-chip-elevated-container-color: transparent;
+      --mdc-chip-container-height: auto;
+      border: none;
+      font-size: inherit;
+      min-height: 0;
+      padding: 0 2px;
+    }
+  }
+}

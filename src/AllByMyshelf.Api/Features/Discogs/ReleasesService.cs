@@ -30,6 +30,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Notes = release.Notes,
             Rating = release.Rating,
             Title = release.Title,
+            TrackArtists = release.TrackArtists,
             Year = release.Year,
         };
     }
@@ -94,6 +95,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Notes = release.Notes,
             Rating = release.Rating,
             Title = release.Title,
+            TrackArtists = release.TrackArtists,
             Year = release.Year,
         };
     }
@@ -110,6 +112,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Id = r.Id,
             ThumbnailUrl = r.ThumbnailUrl,
             Title = r.Title,
+            TrackArtists = r.TrackArtists,
             Year = r.Year,
         }).ToList();
     }
@@ -130,6 +133,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             Id = r.Id,
             ThumbnailUrl = r.ThumbnailUrl,
             Title = r.Title,
+            TrackArtists = r.TrackArtists,
             Year = r.Year,
         }).ToList();
 

@@ -35,6 +35,9 @@ Manages the vinyl record collection and wantlist sourced from the Discogs REST A
 
 - Background worker with detailed progress tracking (current/total/status/retryAfterSeconds)
 - Fetches full collection (100 per page), then for each release fetches detail and marketplace stats
+- **Incremental sync** — skips detail/pricing API calls for previously synced releases; only fetches for new additions
+- Extracts unique track-level artists from release tracklists (for searching compilations/soundtracks)
+- Strips Discogs disambiguation suffixes (e.g., "(2)") from artist names
 - Handles 429 rate-limit with exponential backoff
 - Syncs wantlist after collection; removes items no longer on user's wantlist
 

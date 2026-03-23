@@ -232,8 +232,27 @@ public class DiscogsFormat
 /// <summary>Extended detail for a single Discogs release (GET /releases/{id}).</summary>
 public class DiscogsReleaseDetail
 {
+    [JsonPropertyName("extraartists")]
+    public List<DiscogsArtist> ExtraArtists { get; init; } = [];
+
     [JsonPropertyName("genres")]
     public List<string> Genres { get; init; } = [];
+
+    [JsonPropertyName("tracklist")]
+    public List<DiscogsTrack> Tracklist { get; init; } = [];
+}
+
+/// <summary>A single track within a Discogs release tracklist.</summary>
+public class DiscogsTrack
+{
+    [JsonPropertyName("artists")]
+    public List<DiscogsArtist> Artists { get; init; } = [];
+
+    [JsonPropertyName("position")]
+    public string Position { get; init; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string Title { get; init; } = string.Empty;
 }
 
 /// <summary>Marketplace pricing statistics for a release (GET /marketplace/stats/{id}).</summary>

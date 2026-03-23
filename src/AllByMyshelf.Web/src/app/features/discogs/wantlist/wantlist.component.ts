@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -17,6 +18,7 @@ import { FormatIconPipe } from '../format-icon.pipe';
     CommonModule,
     FormatIconPipe,
     MatCardModule,
+    MatChipsModule,
     MatIconModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
@@ -37,6 +39,13 @@ export class WantlistComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   totalCount = signal(0);
   private readonly wantlistService = inject(WantlistService);
+
+  protected expandArtists(artists: string[]): string[] {
+    return artists
+      .flatMap(a => a.split(','))
+      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter(a => a.length > 0);
+  }
 
   private loadWantlist(): void {
     this.loading.set(true);

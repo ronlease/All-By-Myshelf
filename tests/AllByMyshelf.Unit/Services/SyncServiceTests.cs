@@ -359,6 +359,8 @@ public class SyncServiceTests
         // Arrange
         var mockHandler = CreateMockHttpMessageHandler();
         var mockRepository = new Mock<IReleasesRepository>();
+        mockRepository.Setup(r => r.GetAllByDiscogsIdAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<int, Release>());
         var sut = CreateServiceWithRealScope(mockHandler, mockRepository.Object);
 
         // Act
@@ -379,6 +381,8 @@ public class SyncServiceTests
         // Arrange
         var mockHandler = CreateMockHttpMessageHandler();
         var mockRepository = new Mock<IReleasesRepository>();
+        mockRepository.Setup(r => r.GetAllByDiscogsIdAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<int, Release>());
         var sut = CreateServiceWithRealScope(mockHandler, mockRepository.Object);
 
         // Act

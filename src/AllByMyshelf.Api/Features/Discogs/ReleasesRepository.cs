@@ -11,6 +11,14 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
 {
     /// <inheritdoc/>
+    public async Task<Dictionary<int, Release>> GetAllByDiscogsIdAsync(CancellationToken cancellationToken)
+    {
+        return await db.Releases
+            .AsNoTracking()
+            .ToDictionaryAsync(r => r.DiscogsId, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.Releases
@@ -222,6 +230,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 existingRelease.MedianPrice = release.MedianPrice;
                 existingRelease.ThumbnailUrl = release.ThumbnailUrl;
                 existingRelease.Title = release.Title;
+                existingRelease.TrackArtists = release.TrackArtists;
                 existingRelease.Year = release.Year;
             }
             else

@@ -8,6 +8,11 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public interface IReleasesRepository
 {
     /// <summary>
+    /// Returns all releases indexed by their Discogs ID for fast lookup during sync.
+    /// </summary>
+    Task<Dictionary<int, Release>> GetAllByDiscogsIdAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns the release with the specified application ID, or null if not found.
     /// </summary>
     /// <param name="id">The application-generated GUID for the release.</param>

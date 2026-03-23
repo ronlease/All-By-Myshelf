@@ -24,7 +24,17 @@
 
       <ng-container matColumnDef="artist">
         <th mat-header-cell *matHeaderCellDef>Artist</th>
-        <td mat-cell *matCellDef="let release">{{ release.artists.join(', ') }}</td>
+        <td mat-cell *matCellDef="let release">
+          @if (release.artists.length > 0) {
+            <mat-chip-set>
+              @for (artist of expandArtists(release.artists); track artist) {
+                <mat-chip>{{ artist }}</mat-chip>
+              }
+            </mat-chip-set>
+          } @else {
+            —
+          }
+        </td>
       </ng-container>
 
       <ng-container matColumnDef="title">

@@ -3,6 +3,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +21,7 @@ import { FormatIconPipe } from '../format-icon.pipe';
     FormatIconPipe,
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -45,6 +47,13 @@ export class ReleaseDetailComponent implements OnInit {
   private readonly router = inject(Router);
   saving = signal<boolean>(false);
   private readonly snackBar = inject(MatSnackBar);
+
+  protected expandArtists(artists: string[]): string[] {
+    return artists
+      .flatMap(a => a.split(','))
+      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter(a => a.length > 0);
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');

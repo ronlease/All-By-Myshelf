@@ -47,6 +47,9 @@ public class Release
     /// <summary>Release title as returned by Discogs.</summary>
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>Unique artist names extracted from the release tracklist; used for searching compilations.</summary>
+    public List<string> TrackArtists { get; set; } = [];
+
     /// <summary>Thumbnail image URL as returned by Discogs; null when not provided.</summary>
     public string? ThumbnailUrl { get; set; }
 
