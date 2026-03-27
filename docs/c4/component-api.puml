@@ -1,0 +1,39 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram — API Container
+
+Container_Boundary(api, "API — ASP.NET Core 10 Web API") {
+    Component(boardGameGeek, "BoardGameGeek", "Controller, Service, Repository, Client", "Board game collection CRUD, sync trigger, and BoardGameGeek XML API client")
+    Component(config, "Config", "Controller", "Feature flag endpoint — reports which integrations are enabled")
+    Component(discogs, "Discogs", "Controller, Service, Repository, Client", "Vinyl release collection CRUD, sync trigger, wantlist, duplicates, maintenance, and Discogs API client")
+    Component(hardcover, "Hardcover", "Controller, Service, Repository, Client", "Book collection CRUD, sync trigger, and Hardcover GraphQL client")
+    Component(settings, "Settings", "Controller", "Read/write app settings (API tokens, theme) stored in database")
+    Component(statistics, "Statistics", "Controller, Repository", "Unified cross-collection statistics with format/genre/decade breakdowns")
+    Component(wantlist, "Wantlist", "Controller, Repository", "Discogs wantlist releases")
+
+    Component(dbContext, "AllByMyshelfDbContext", "EF Core DbContext", "Central data access — BoardGames, Books, Releases, WantlistReleases, AppSettings, Tracks")
+    Component(dbConfig, "DbConfigurationProvider", "IConfigurationProvider", "Loads settings from app_settings table into IConfiguration")
+}
+
+System_Ext(boardGameGeekApi, "BoardGameGeek API", "XML API2")
+System_Ext(discogsApi, "Discogs API", "REST/JSON")
+System_Ext(hardcoverApi, "Hardcover API", "GraphQL")
+ContainerDb(db, "PostgreSQL", "Collection Database")
+
+Rel(boardGameGeek, boardGameGeekApi, "Fetches collection and thing details", "HTTPS/XML")
+Rel(discogs, discogsApi, "Fetches collection, wantlist, details, pricing", "HTTPS/JSON")
+Rel(hardcover, hardcoverApi, "Fetches read books", "HTTPS/GraphQL")
+
+Rel(boardGameGeek, dbContext, "Reads/writes board games")
+Rel(discogs, dbContext, "Reads/writes releases and wantlist")
+Rel(hardcover, dbContext, "Reads/writes books")
+Rel(settings, dbContext, "Reads/writes app_settings")
+Rel(statistics, dbContext, "Reads aggregated statistics")
+Rel(wantlist, dbContext, "Reads wantlist releases")
+Rel(config, settings, "Checks configured credentials")
+
+Rel(dbContext, db, "EF Core / Npgsql")
+Rel(dbConfig, db, "Reads app_settings at startup")
+
+@enduml

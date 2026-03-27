@@ -1,0 +1,37 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram — Web App Container
+
+Container_Boundary(web, "Web App — Angular 21") {
+    Component(layout, "Layout", "AppShellComponent", "Side drawer navigation, app bar, sync controls")
+
+    Component(boardGameGeek, "BoardGameGeek Feature", "BoardGamesComponent, BoardGameDetailComponent, BoardGameGeekService", "Board game list with filtering, detail view with BoardGameGeek link")
+    Component(discogs, "Discogs Feature", "CollectionComponent, ReleaseDetailComponent, WantlistComponent, DuplicatesComponent, MaintenanceComponent, RandomPickerComponent, DiscogsService", "Vinyl collection list, detail with tracks/pricing/notes/ratings, wantlist, duplicates, maintenance, random picker")
+    Component(hardcover, "Hardcover Feature", "BooksComponent, BookDetailComponent, HardcoverService", "Book list with filtering/grouping/search, detail view with Hardcover link")
+    Component(settingsFeature, "Settings Feature", "SettingsComponent", "API token and username configuration, theme selector")
+    Component(statisticsFeature, "Statistics Feature", "StatisticsComponent", "Unified cross-collection statistics dashboard")
+    Component(storeFinder, "Store Finder Feature", "StoreFinderComponent", "Context-aware local record/book/game store finder")
+
+    Component(syncService, "SyncStateService", "Core Service", "Manages sync triggers and polls sync status for all integrations")
+    Component(featuresService, "FeaturesService", "Core Service", "Fetches feature flags from /api/v1/config/features")
+    Component(settingsService, "SettingsService", "Core Service", "CRUD for settings via /api/v1/settings")
+}
+
+Container(api, "API", "ASP.NET Core 10 Web API")
+
+Rel(layout, featuresService, "Checks enabled features for nav items")
+Rel(layout, syncService, "Triggers and monitors syncs")
+
+Rel(boardGameGeek, api, "GET /api/v1/boardgames, POST /sync", "HTTPS/JSON")
+Rel(discogs, api, "GET /api/v1/releases, /wantlist, POST /sync", "HTTPS/JSON")
+Rel(hardcover, api, "GET /api/v1/books, POST /sync", "HTTPS/JSON")
+Rel(settingsFeature, settingsService, "Reads/writes settings")
+Rel(statisticsFeature, api, "GET /api/v1/statistics", "HTTPS/JSON")
+Rel(storeFinder, api, "Uses collection context", "HTTPS/JSON")
+
+Rel(syncService, api, "POST sync triggers, GET sync status", "HTTPS/JSON")
+Rel(featuresService, api, "GET /api/v1/config/features", "HTTPS/JSON")
+Rel(settingsService, api, "GET/PUT /api/v1/settings", "HTTPS/JSON")
+
+@enduml

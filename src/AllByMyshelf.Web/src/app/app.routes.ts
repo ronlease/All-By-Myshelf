@@ -22,14 +22,14 @@ export const routes: Routes = [
       {
         path: 'board-games',
         loadComponent: () =>
-          import('./features/bgg/board-games/board-games.component').then(
+          import('./features/board-game-geek/board-games/board-games.component').then(
             (m) => m.BoardGamesComponent,
           ),
       },
       {
         path: 'board-games/:id',
         loadComponent: () =>
-          import('./features/bgg/board-game-detail/board-game-detail.component').then(
+          import('./features/board-game-geek/board-game-detail/board-game-detail.component').then(
             (m) => m.BoardGameDetailComponent,
           ),
       },

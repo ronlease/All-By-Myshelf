@@ -1,7 +1,7 @@
 ---
 name: qa-engineer
 description: Invoke when writing Gherkin scenarios, xUnit tests, integration tests, or reviewing test coverage. Triggers on keywords like test, gherkin, scenario, given/when/then, coverage, xunit, verify, validate.
-model: claude-sonnet-4-5
+model: sonnet
 ---
 
 # QA Engineer Agent
@@ -21,11 +21,12 @@ feature implementation, you write tests before the next feature begins.
 ```
 tests/
   AllByMyshelf.Unit/
-    Controllers/
-    Services/
-    Repositories/
+    Infrastructure/     # Client tests (DiscogsClient, HardcoverClient, InputSanitizer)
+    Repositories/       # Repository tests (Books, Releases, Statistics, Wantlist)
+    Services/           # Service and controller tests
+    TestDoubles/        # Shared test helpers (e.g., HttpMessageHandlers)
   AllByMyshelf.Integration/
-    Api/              # Integration tests against in-memory EF Core
+    Api/                # Full-pipeline endpoint tests using WebApplicationFactory
 ```
 
 ## Gherkin Ownership

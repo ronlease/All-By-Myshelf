@@ -1,6 +1,6 @@
 using AllByMyshelf.Api.Common;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Business logic contract for board games.

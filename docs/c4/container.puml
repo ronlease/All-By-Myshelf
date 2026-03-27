@@ -7,7 +7,7 @@ Person(user, "Owner", "Single authenticated user")
 
 System_Ext(auth0, "Auth0", "Identity provider. Issues and validates JWT tokens.")
 System_Ext(discogs, "Discogs API", "External vinyl record collection API. Rate-limited; returns collection data in paginated responses.")
-System_Ext(bgg, "BoardGameGeek API", "External board game collection API. XML API2 with 202 retry behavior; returns owned games with metadata.")
+System_Ext(boardGameGeek, "BoardGameGeek API", "External board game collection API. XML API2 with 202 retry behavior; returns owned games with metadata.")
 System_Ext(hardcover, "Hardcover API", "External read-books API. GraphQL endpoint returning books with metadata.")
 
 System_Boundary(app, "All By Myshelf") {
@@ -17,7 +17,7 @@ System_Boundary(app, "All By Myshelf") {
 
     Container(discogsSyncWorker, "Discogs Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches all releases and wantlist items from the Discogs API with detail (genre, track artists) and marketplace pricing, respects rate limits (retries on HTTP 429), strips Discogs disambiguation suffixes from artist names, skips detail/pricing fetches for previously synced releases, and upserts results into the database. Prevents concurrent runs.")
 
-    Container(bggSyncWorker, "BGG Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches owned board games from the BoardGameGeek XML API2, handles 202 retry with exponential backoff, enriches with thing details (designer, category, description), and upserts results into the database. Prevents concurrent runs.")
+    Container(boardGameGeekSyncWorker, "BoardGameGeek Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches owned board games from the BoardGameGeek XML API2, handles 202 retry with exponential backoff, enriches with thing details (designer, category, description), and upserts results into the database. Prevents concurrent runs.")
 
     Container(hardcoverSyncWorker, "Hardcover Sync Worker", "BackgroundService inside AllByMyshelf.Api", "Fetches read books from the Hardcover GraphQL API, extracts genre from cached_tags, and upserts results into the database. Prevents concurrent runs.")
 
@@ -29,10 +29,10 @@ Rel(web, auth0, "Redirects for login, receives JWT", "HTTPS/OIDC")
 Rel(web, api, "REST API calls with Bearer JWT", "HTTPS/JSON")
 Rel(api, auth0, "Validates JWT on each request", "HTTPS/OIDC")
 Rel(api, discogsSyncWorker, "Enqueues sync job on POST /api/v1/sync", "In-process")
-Rel(api, bggSyncWorker, "Enqueues sync job on POST /api/v1/boardgames/sync", "In-process")
+Rel(api, boardGameGeekSyncWorker, "Enqueues sync job on POST /api/v1/boardgames/sync", "In-process")
 Rel(api, hardcoverSyncWorker, "Enqueues sync job on POST /api/v1/books/sync", "In-process")
-Rel(bggSyncWorker, bgg, "Fetches owned games collection and thing details", "HTTPS/XML")
-Rel(bggSyncWorker, db, "Upserts board games", "EF Core / Npgsql")
+Rel(boardGameGeekSyncWorker, boardGameGeek, "Fetches owned games collection and thing details", "HTTPS/XML")
+Rel(boardGameGeekSyncWorker, db, "Upserts board games", "EF Core / Npgsql")
 Rel(discogsSyncWorker, discogs, "Fetches paginated collection, wantlist, release detail, and marketplace stats", "HTTPS/JSON")
 Rel(hardcoverSyncWorker, hardcover, "Fetches read books via GraphQL", "HTTPS/GraphQL")
 Rel(discogsSyncWorker, db, "Upserts releases and wantlist items", "EF Core / Npgsql")

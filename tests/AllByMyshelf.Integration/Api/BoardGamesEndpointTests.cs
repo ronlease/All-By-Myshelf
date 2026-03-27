@@ -38,7 +38,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using AllByMyshelf.Api.Common;
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
@@ -102,7 +102,7 @@ public class BoardGamesEndpointTests
 
         var body = await response.Content.ReadFromJsonAsync<BoardGameDetailDto>();
         body.Should().NotBeNull();
-        body!.BggId.Should().Be(1);
+        body!.BoardGameGeekId.Should().Be(1);
         body.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
         body.Genre.Should().Be("Strategy");
         body.Id.Should().Be(boardGame.Id);
@@ -188,7 +188,7 @@ public class BoardGamesEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<BoardGameDto>();
         body.Should().NotBeNull();
-        body!.BggId.Should().Be(1);
+        body!.BoardGameGeekId.Should().Be(1);
         body.Title.Should().Be("Catan");
     }
 
@@ -212,7 +212,7 @@ public class BoardGamesEndpointTests
     private static BoardGame MakeBoardGame(int bggId, string title, string? designer = null, string? genre = null, int? yearPublished = null) =>
         new()
         {
-            BggId = bggId,
+            BoardGameGeekId = bggId,
             CoverImageUrl = null,
             Description = null,
             Designers = designer != null ? new List<string> { designer } : new List<string>(),

@@ -15,17 +15,21 @@ public class BoardGameConfiguration : IEntityTypeConfiguration<BoardGame>
 
         builder.HasKey(b => b.Id);
 
+        builder.Property(b => b.BoardGameGeekId)
+            .HasColumnName("board_game_geek_id")
+            .IsRequired();
+
+        builder.HasIndex(b => b.BoardGameGeekId)
+            .IsUnique()
+            .HasDatabaseName("ix_board_games_board_game_geek_id");
+
+        builder.Property(b => b.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
         builder.Property(b => b.Id)
             .HasColumnName("id")
             .ValueGeneratedNever();
-
-        builder.Property(b => b.BggId)
-            .HasColumnName("bgg_id")
-            .IsRequired();
-
-        builder.HasIndex(b => b.BggId)
-            .IsUnique()
-            .HasDatabaseName("ix_board_games_bgg_id");
 
         builder.Property(b => b.CoverImageUrl)
             .HasColumnName("cover_image_url")

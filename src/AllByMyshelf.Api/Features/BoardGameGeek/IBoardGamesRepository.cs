@@ -1,6 +1,6 @@
 using AllByMyshelf.Api.Models.Entities;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Data access contract for board games.

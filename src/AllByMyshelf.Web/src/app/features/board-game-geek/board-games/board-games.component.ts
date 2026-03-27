@@ -15,7 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Observable } from 'rxjs';
-import { BggService, BoardGameDto } from '../bgg.service';
+import { BoardGameGeekService, BoardGameDto } from '../board-game-geek.service';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
 @Component({
@@ -42,7 +42,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
 })
 export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
   protected allItems = signal<BoardGameDto[]>([]);
-  private readonly bggService = inject(BggService);
+  private readonly boardGameGeekService = inject(BoardGameGeekService);
   protected readonly collectionKey = 'board-games';
   protected readonly displayedColumns = ['thumbnail', 'title', 'designer', 'genre', 'players', 'yearPublished'];
   protected readonly groupByOptions = [
@@ -114,7 +114,7 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
 
   protected loadAll(): void {
     this.loading.set(true);
-    this.bggService.getBoardGames(1, 10000).subscribe({
+    this.boardGameGeekService.getBoardGames(1, 10000).subscribe({
       next: (result) => {
         this.allItems.set(result.items);
         this.loading.set(false);

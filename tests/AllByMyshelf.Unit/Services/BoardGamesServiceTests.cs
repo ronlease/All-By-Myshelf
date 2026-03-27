@@ -20,7 +20,7 @@
 //   When GetRandomAsync is called
 //   Then null is returned
 
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using AllByMyshelf.Api.Models.Entities;
 using FluentAssertions;
 using Moq;
@@ -55,7 +55,7 @@ public class BoardGamesServiceTests
         string? thumbnailUrl = null) =>
         new()
         {
-            BggId = bggId,
+            BoardGameGeekId = bggId,
             CoverImageUrl = coverImageUrl,
             Description = description,
             Designers = designer != null ? new List<string> { designer } : new List<string>(),
@@ -101,7 +101,7 @@ public class BoardGamesServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.BggId.Should().Be(1);
+        result!.BoardGameGeekId.Should().Be(1);
         result.CoverImageUrl.Should().Be("https://cf.geekdo-images.com/cover.jpg");
         result.Description.Should().Be("Trade, build, settle");
         result.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
@@ -160,7 +160,7 @@ public class BoardGamesServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.BggId.Should().Be(1);
+        result!.BoardGameGeekId.Should().Be(1);
         result.Designers.Should().BeEquivalentTo(new[] { "Klaus Teuber" });
         result.Genre.Should().Be("Strategy");
         result.MaxPlayers.Should().Be(4);

@@ -15,6 +15,10 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
 
         builder.HasKey(b => b.Id);
 
+        builder.Property(b => b.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
         builder.Property(b => b.Id)
             .HasColumnName("id")
             .ValueGeneratedNever();

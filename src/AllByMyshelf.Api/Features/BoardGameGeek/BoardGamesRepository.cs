@@ -3,7 +3,7 @@ using AllByMyshelf.Api.Infrastructure.Data;
 using AllByMyshelf.Api.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// EF Core implementation of <see cref="IBoardGamesRepository"/>.
@@ -87,26 +87,26 @@ public class BoardGamesRepository(AllByMyshelfDbContext db) : IBoardGamesReposit
     /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<BoardGame> boardGames, CancellationToken cancellationToken)
     {
-        // Deduplicate by BggId — keep the last occurrence if the API returns duplicates.
+        // Deduplicate by BoardGameGeekId — keep the last occurrence if the API returns duplicates.
         var incoming = boardGames
-            .GroupBy(b => b.BggId)
+            .GroupBy(b => b.BoardGameGeekId)
             .Select(g => g.Last())
             .ToList();
-        var incomingIds = incoming.Select(b => b.BggId).ToHashSet();
+        var incomingIds = incoming.Select(b => b.BoardGameGeekId).ToHashSet();
 
         // Load all existing records in one query.
-        var existing = await db.BoardGames.ToDictionaryAsync(b => b.BggId, cancellationToken);
+        var existing = await db.BoardGames.ToDictionaryAsync(b => b.BoardGameGeekId, cancellationToken);
 
-        // Remove records that no longer exist in the BGG collection.
+        // Remove records that no longer exist in the BoardGameGeek collection.
         var toRemove = existing.Values
-            .Where(b => !incomingIds.Contains(b.BggId))
+            .Where(b => !incomingIds.Contains(b.BoardGameGeekId))
             .ToList();
         db.BoardGames.RemoveRange(toRemove);
 
         // Upsert each incoming record.
         foreach (var boardGame in incoming)
         {
-            if (existing.TryGetValue(boardGame.BggId, out var existingBoardGame))
+            if (existing.TryGetValue(boardGame.BoardGameGeekId, out var existingBoardGame))
             {
                 // Update in-place so EF tracks the change.
                 existingBoardGame.CoverImageUrl = boardGame.CoverImageUrl;

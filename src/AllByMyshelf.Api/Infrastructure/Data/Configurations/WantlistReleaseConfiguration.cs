@@ -15,6 +15,10 @@ public class WantlistReleaseConfiguration : IEntityTypeConfiguration<WantlistRel
 
         builder.HasKey(w => w.Id);
 
+        builder.Property(w => w.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
         builder.Property(w => w.Id)
             .HasColumnName("id")
             .ValueGeneratedNever();

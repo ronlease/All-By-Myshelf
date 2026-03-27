@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface BoardGameDetailDto {
-  bggId: number;
+  boardGameGeekId: number;
   coverImageUrl: string | null;
   description: string | null;
   designers: string[];
@@ -20,7 +20,7 @@ export interface BoardGameDetailDto {
 }
 
 export interface BoardGameDto {
-  bggId: number;
+  boardGameGeekId: number;
   designers: string[];
   genre: string | null;
   id: string;
@@ -40,7 +40,7 @@ export interface PagedResult<T> {
 }
 
 @Injectable({ providedIn: 'root' })
-export class BggService {
+export class BoardGameGeekService {
   private readonly baseUrl = environment.apiBaseUrl;
   private readonly http = inject(HttpClient);
 

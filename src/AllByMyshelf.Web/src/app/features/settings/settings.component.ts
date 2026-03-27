@@ -30,8 +30,8 @@ import { ThemeService } from '../../core/config/theme.service';
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
-  bggApiTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
-  bggUsernameControl = new FormControl<string>('', [Validators.maxLength(100)]);
+  boardGameGeekApiTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
+  boardGameGeekUsernameControl = new FormControl<string>('', [Validators.maxLength(100)]);
   discogsPersonalAccessTokenControl = new FormControl<string>('', [Validators.maxLength(2000)]);
   discogsUsernameControl = new FormControl<string>('', [Validators.maxLength(100)]);
   private readonly featuresService = inject(FeaturesService);
@@ -49,8 +49,8 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getSettings().subscribe({
       next: (s) => {
         this.settings.set(s);
-        this.bggApiTokenControl.setValue(s.bggApiToken || '');
-        this.bggUsernameControl.setValue(s.bggUsername || '');
+        this.boardGameGeekApiTokenControl.setValue(s.boardGameGeekApiToken || '');
+        this.boardGameGeekUsernameControl.setValue(s.boardGameGeekUsername || '');
         this.discogsPersonalAccessTokenControl.setValue(s.discogsPersonalAccessToken || '');
         this.discogsUsernameControl.setValue(s.discogsUsername || '');
         this.hardcoverApiTokenControl.setValue(s.hardcoverApiToken || '');
@@ -74,14 +74,14 @@ export class SettingsComponent implements OnInit {
     const dto: UpdateSettingsDto = {};
     const current = this.settings();
 
-    const bggApiToken = this.bggApiTokenControl.value?.trim();
-    if (bggApiToken && bggApiToken !== current?.bggApiToken) {
-      dto.bggApiToken = bggApiToken;
+    const bggApiToken = this.boardGameGeekApiTokenControl.value?.trim();
+    if (bggApiToken && bggApiToken !== current?.boardGameGeekApiToken) {
+      dto.boardGameGeekApiToken = bggApiToken;
     }
 
-    const bggUsername = this.bggUsernameControl.value?.trim();
-    if (bggUsername && bggUsername !== current?.bggUsername) {
-      dto.bggUsername = bggUsername;
+    const bggUsername = this.boardGameGeekUsernameControl.value?.trim();
+    if (bggUsername && bggUsername !== current?.boardGameGeekUsername) {
+      dto.boardGameGeekUsername = bggUsername;
     }
 
     const discogsToken = this.discogsPersonalAccessTokenControl.value?.trim();
@@ -103,8 +103,8 @@ export class SettingsComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.snackBar.open('Settings saved', 'Close', { duration: 3000 });
-        this.bggApiTokenControl.reset();
-        this.bggUsernameControl.reset();
+        this.boardGameGeekApiTokenControl.reset();
+        this.boardGameGeekUsernameControl.reset();
         this.discogsPersonalAccessTokenControl.reset();
         this.discogsUsernameControl.reset();
         this.hardcoverApiTokenControl.reset();

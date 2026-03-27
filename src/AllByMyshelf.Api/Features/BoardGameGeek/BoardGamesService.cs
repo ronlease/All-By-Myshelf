@@ -1,6 +1,6 @@
 using AllByMyshelf.Api.Common;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Business logic implementation for board games.
@@ -16,7 +16,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
 
         return new BoardGameDetailDto
         {
-            BggId = boardGame.BggId,
+            BoardGameGeekId = boardGame.BoardGameGeekId,
             CoverImageUrl = boardGame.CoverImageUrl,
             Description = boardGame.Description,
             Designers = boardGame.Designers,
@@ -42,7 +42,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
         var (items, totalCount) = await boardGamesRepository.GetPagedAsync(page, pageSize, cancellationToken, filter);
 
         var dtos = items.Select(b => new BoardGameDto(
-            BggId: b.BggId,
+            BoardGameGeekId: b.BoardGameGeekId,
             Designers: b.Designers,
             Genre: b.Genre,
             Id: b.Id,
@@ -70,7 +70,7 @@ public class BoardGamesService(IBoardGamesRepository boardGamesRepository) : IBo
             return null;
 
         return new BoardGameDto(
-            BggId: boardGame.BggId,
+            BoardGameGeekId: boardGame.BoardGameGeekId,
             Designers: boardGame.Designers,
             Genre: boardGame.Genre,
             Id: boardGame.Id,

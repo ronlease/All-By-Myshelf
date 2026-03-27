@@ -3,26 +3,26 @@ using System.Net.Http.Headers;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Client for the BoardGameGeek XML API.
 /// Sends an Authorization: Bearer header when an API token is configured.
 /// </summary>
-public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILogger<BggClient> logger)
+public class BoardGameGeekClient(HttpClient httpClient, IOptions<BoardGameGeekOptions> options, ILogger<BoardGameGeekClient> logger)
 {
-    private readonly BggOptions _options = options.Value;
+    private readonly BoardGameGeekOptions _options = options.Value;
 
     private const int MaxRetries = 5;
 
     /// <summary>
-    /// Fetches all board games marked as owned from the specified username's BGG collection.
-    /// The BGG collection API sometimes returns HTTP 202 (request queued) which requires retrying with exponential backoff.
+    /// Fetches all board games marked as owned from the specified username's BoardGameGeek collection.
+    /// The BoardGameGeek collection API sometimes returns HTTP 202 (request queued) which requires retrying with exponential backoff.
     /// </summary>
-    /// <param name="username">The BGG username.</param>
+    /// <param name="username">The BoardGameGeek username.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of collection items with basic game info and stats.</returns>
-    public async Task<IReadOnlyList<BggCollectionItem>> GetCollectionAsync(string username, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<BoardGameGeekCollectionItem>> GetCollectionAsync(string username, CancellationToken cancellationToken)
     {
         var url = $"/xmlapi2/collection?username={Uri.EscapeDataString(username)}&own=1&stats=1&subtype=boardgame";
 
@@ -35,7 +35,7 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
             if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
             {
                 var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
-                logger.LogInformation("BGG returned 202, retrying in {Delay}s (attempt {Attempt}/{Max})", delay.TotalSeconds, attempt + 1, MaxRetries);
+                logger.LogInformation("BoardGameGeek returned 202, retrying in {Delay}s (attempt {Attempt}/{Max})", delay.TotalSeconds, attempt + 1, MaxRetries);
                 await Task.Delay(delay, cancellationToken);
                 continue;
             }
@@ -45,17 +45,17 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
             return ParseCollection(xml);
         }
 
-        throw new InvalidOperationException("BGG collection request failed after max retries.");
+        throw new InvalidOperationException("BoardGameGeek collection request failed after max retries.");
     }
 
     /// <summary>
     /// Fetches detailed information (description, designer, category) for the specified game IDs.
     /// Accepts a batch of IDs as a comma-separated list.
     /// </summary>
-    /// <param name="ids">BGG game IDs to fetch.</param>
+    /// <param name="ids">BoardGameGeek game IDs to fetch.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of detailed game information.</returns>
-    public async Task<IReadOnlyList<BggThingDetail>> GetThingDetailsAsync(IEnumerable<int> ids, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<BoardGameGeekThingDetail>> GetThingDetailsAsync(IEnumerable<int> ids, CancellationToken cancellationToken)
     {
         var idList = string.Join(",", ids);
         var url = $"/xmlapi2/thing?id={idList}&stats=1";
@@ -76,14 +76,14 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
         }
     }
 
-    private static IReadOnlyList<BggCollectionItem> ParseCollection(string xml)
+    private static IReadOnlyList<BoardGameGeekCollectionItem> ParseCollection(string xml)
     {
         var doc = XDocument.Parse(xml);
-        var items = new List<BggCollectionItem>();
+        var items = new List<BoardGameGeekCollectionItem>();
 
         foreach (var item in doc.Descendants("item"))
         {
-            var bggId = int.Parse(item.Attribute("objectid")?.Value ?? "0");
+            var boardGameGeekId = int.Parse(item.Attribute("objectid")?.Value ?? "0");
             var name = item.Element("name")?.Value;
             var yearPublished = int.TryParse(item.Element("yearpublished")?.Value, out var y) ? y : (int?)null;
             var thumbnail = item.Element("thumbnail")?.Value;
@@ -93,19 +93,19 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
             var minPlaytime = int.TryParse(item.Element("stats")?.Attribute("minplaytime")?.Value, out var minT) ? minT : (int?)null;
             var maxPlaytime = int.TryParse(item.Element("stats")?.Attribute("maxplaytime")?.Value, out var maxT) ? maxT : (int?)null;
 
-            if (bggId > 0 && !string.IsNullOrWhiteSpace(name))
+            if (boardGameGeekId > 0 && !string.IsNullOrWhiteSpace(name))
             {
-                items.Add(new BggCollectionItem(bggId, image, maxPlayers, maxPlaytime, minPlayers, minPlaytime, name, thumbnail, yearPublished));
+                items.Add(new BoardGameGeekCollectionItem(boardGameGeekId, image, maxPlayers, maxPlaytime, minPlayers, minPlaytime, name, thumbnail, yearPublished));
             }
         }
 
         return items;
     }
 
-    private static IReadOnlyList<BggThingDetail> ParseThingDetails(string xml)
+    private static IReadOnlyList<BoardGameGeekThingDetail> ParseThingDetails(string xml)
     {
         var doc = XDocument.Parse(xml);
-        var details = new List<BggThingDetail>();
+        var details = new List<BoardGameGeekThingDetail>();
 
         foreach (var item in doc.Descendants("item"))
         {
@@ -124,7 +124,7 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
 
             if (id > 0)
             {
-                details.Add(new BggThingDetail(category, description, designers, id));
+                details.Add(new BoardGameGeekThingDetail(category, description, designers, id));
             }
         }
 
@@ -133,10 +133,10 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
 }
 
 /// <summary>
-/// Represents a single item from the BGG collection API response.
+/// Represents a single item from the BoardGameGeek collection API response.
 /// Contains basic game info and player/playtime stats.
 /// </summary>
-/// <param name="BggId">BGG game ID.</param>
+/// <param name="BoardGameGeekId">BoardGameGeek game ID.</param>
 /// <param name="CoverImageUrl">Full image URL.</param>
 /// <param name="MaxPlayers">Maximum number of players.</param>
 /// <param name="MaxPlaytime">Maximum playtime in minutes.</param>
@@ -146,8 +146,8 @@ public class BggClient(HttpClient httpClient, IOptions<BggOptions> options, ILog
 /// <param name="ThumbnailUrl">Thumbnail image URL.</param>
 /// <param name="YearPublished">Year the game was published.</param>
 [ExcludeFromCodeCoverage]
-public record BggCollectionItem(
-    int BggId,
+public record BoardGameGeekCollectionItem(
+    int BoardGameGeekId,
     string? CoverImageUrl,
     int? MaxPlayers,
     int? MaxPlaytime,
@@ -158,15 +158,15 @@ public record BggCollectionItem(
     int? YearPublished);
 
 /// <summary>
-/// Represents detailed information fetched from the BGG thing API.
+/// Represents detailed information fetched from the BoardGameGeek thing API.
 /// Contains enrichment data like description, designers, and category.
 /// </summary>
 /// <param name="Category">Primary category/genre.</param>
 /// <param name="Description">Game description.</param>
 /// <param name="Designers">List of designer names.</param>
-/// <param name="Id">BGG game ID.</param>
+/// <param name="Id">BoardGameGeek game ID.</param>
 [ExcludeFromCodeCoverage]
-public record BggThingDetail(
+public record BoardGameGeekThingDetail(
     string? Category,
     string? Description,
     List<string> Designers,

@@ -1,4 +1,4 @@
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Features.Hardcover;
 using AllByMyshelf.Api.Features.Statistics;
@@ -23,12 +23,12 @@ builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 builder.Services.AddDbContext<AllByMyshelfDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// ── BGG configuration ─────────────────────────────────────────────────────────
-builder.Services.AddOptions<BggOptions>()
-    .Bind(builder.Configuration.GetSection(BggOptions.SectionName));
+// ── BoardGameGeek configuration ──────────────────────────────────────────────
+builder.Services.AddOptions<BoardGameGeekOptions>()
+    .Bind(builder.Configuration.GetSection(BoardGameGeekOptions.SectionName));
 
-// ── BGG HTTP client ───────────────────────────────────────────────────────────
-builder.Services.AddHttpClient<BggClient>(client =>
+// ── BoardGameGeek HTTP client ───────────────────────────────────────────────
+builder.Services.AddHttpClient<BoardGameGeekClient>(client =>
 {
     client.BaseAddress = new Uri("https://boardgamegeek.com");
     client.DefaultRequestHeaders.Add("User-Agent", "AllByMyshelf/1.0");

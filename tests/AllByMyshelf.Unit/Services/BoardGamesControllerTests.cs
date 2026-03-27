@@ -41,7 +41,7 @@
 //   Then the controller returns 503 Service Unavailable
 
 using AllByMyshelf.Api.Common;
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;

@@ -4,7 +4,7 @@ import { Observable, ReplaySubject, shareReplay, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface FeaturesDto {
-  bggEnabled: boolean;
+  boardGameGeekEnabled: boolean;
   discogsEnabled: boolean;
   hardcoverEnabled: boolean;
 }

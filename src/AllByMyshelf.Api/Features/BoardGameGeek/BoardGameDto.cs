@@ -1,9 +1,9 @@
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Public representation of a board game for API list responses.
 /// </summary>
-/// <param name="BggId">BGG game ID.</param>
+/// <param name="BoardGameGeekId">BoardGameGeek game ID.</param>
 /// <param name="Designers">List of designer names.</param>
 /// <param name="Genre">Primary category/genre; null when not available.</param>
 /// <param name="Id">Application-generated GUID.</param>
@@ -13,7 +13,7 @@ namespace AllByMyshelf.Api.Features.Bgg;
 /// <param name="Title">Board game title.</param>
 /// <param name="YearPublished">Year published; null when not available.</param>
 public record BoardGameDto(
-    int BggId,
+    int BoardGameGeekId,
     IReadOnlyList<string> Designers,
     string? Genre,
     Guid Id,
