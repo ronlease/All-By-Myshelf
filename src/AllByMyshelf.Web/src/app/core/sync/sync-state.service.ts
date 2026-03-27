@@ -4,7 +4,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { BggService } from '../../features/bgg/bgg.service';
 import { DiscogsService, SyncOptionsDto, SyncProgressDto } from '../../features/discogs/discogs.service';
-import { SyncOptionsDialogComponent } from '../../features/discogs/sync-options-dialog/sync-options-dialog.component';
 import { HardcoverService } from '../../features/hardcover/hardcover.service';
 
 @Injectable({ providedIn: 'root' })
@@ -171,8 +170,12 @@ export class SyncStateService {
     });
   }
 
-  startDiscogsSync(): void {
+  async startDiscogsSync(): Promise<void> {
     if (this.discogsSyncing()) return;
+
+    const { SyncOptionsDialogComponent } = await import(
+      '../../features/discogs/sync-options-dialog/sync-options-dialog.component'
+    );
 
     const dialogRef = this.dialog.open(SyncOptionsDialogComponent, {
       width: '420px',

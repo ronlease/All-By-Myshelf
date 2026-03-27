@@ -35,6 +35,9 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
             .HasColumnType("text[]")
             .IsRequired();
 
+        builder.Property(r => r.DetailSyncedAt)
+            .HasColumnName("detail_synced_at");
+
         builder.Property(r => r.CoverImageUrl)
             .HasColumnName("cover_image_url")
             .HasMaxLength(2000);

@@ -34,6 +34,14 @@ public interface IReleasesService
     Task<ReleaseDetailDto?> GetRandomAsync(RandomReleaseFilter? filter, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Re-syncs a single release from the Discogs API (detail and pricing).
+    /// Returns the updated release detail, or null if the release was not found.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ReleaseDetailDto?> ResyncAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Returns the most recently added releases (up to 10, within the last 30 days).
     /// </summary>
     Task<IReadOnlyList<ReleaseDto>> GetRecentlyAddedAsync(CancellationToken cancellationToken);

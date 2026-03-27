@@ -99,6 +99,13 @@
 //   When I request GET /api/v1/releases/random
 //   Then the response is HTTP 404 Not Found
 //
+// Feature: Single release re-sync from detail view (ABM-072)
+//
+// Scenario: POST /api/v1/releases/{id}/resync returns 404 when release not found
+//   Given a release ID that does not exist in the database
+//   When I send POST /api/v1/releases/{id}/resync
+//   Then the response is HTTP 404 Not Found
+//
 // Feature: Pagination validation
 //
 // Scenario: GET /api/v1/releases?page=-1 defaults invalid page to 1
@@ -757,6 +764,22 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
         body.Should().HaveCount(1);
         body![0].Artists.Should().BeEquivalentTo(new[] { "Incomplete Artist" });
         body[0].MissingFields.Should().Contain("Cover Art");
+    }
+
+    // ── POST /api/v1/releases/{id}/resync — 404 when not found (ABM-072) ────
+
+    [Fact]
+    public async Task ResyncRelease_NonexistentRelease_Returns404()
+    {
+        // Arrange
+        var client = CreateClientWithSeededData(Array.Empty<Release>());
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.PostAsync($"/api/v1/releases/{unknownId}/resync", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

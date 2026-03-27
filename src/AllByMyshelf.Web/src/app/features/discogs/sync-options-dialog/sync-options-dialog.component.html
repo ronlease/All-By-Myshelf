@@ -30,11 +30,22 @@
         <div class="option-label">Incremental</div>
         <div class="option-desc">Only fetch details for new releases</div>
       </mat-radio-button>
+      <mat-radio-button value="stale">
+        <div class="option-label">Re-sync older than</div>
+        <div class="option-desc">Re-fetch releases not synced within a number of days</div>
+      </mat-radio-button>
       <mat-radio-button value="full">
         <div class="option-label">Full</div>
         <div class="option-desc">Re-fetch details for all releases</div>
       </mat-radio-button>
     </mat-radio-group>
+
+    @if (mode === 'stale') {
+      <mat-form-field appearance="outline" class="stale-days-field">
+        <mat-label>Days</mat-label>
+        <input matInput type="number" [(ngModel)]="staleDays" min="1" max="365">
+      </mat-form-field>
+    }
 
     <h3>Data Categories</h3>
     <div class="category-options">

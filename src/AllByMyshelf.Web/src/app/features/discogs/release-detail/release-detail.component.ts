@@ -47,6 +47,7 @@ export class ReleaseDetailComponent implements OnInit {
   notesControl = new FormControl<string>('');
   rating = signal<number | null>(null);
   release = signal<ReleaseDetailDto | null>(null);
+  resyncing = signal(false);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   saving = signal<boolean>(false);
@@ -83,6 +84,26 @@ export class ReleaseDetailComponent implements OnInit {
 
   onBackClick(): void {
     this.router.navigate(['/']);
+  }
+
+  resyncRelease(): void {
+    const releaseId = this.release()?.id;
+    if (!releaseId) return;
+
+    this.resyncing.set(true);
+    this.discogsService.resyncRelease(releaseId).subscribe({
+      next: (detail) => {
+        this.release.set(detail);
+        this.notesControl.setValue(detail.notes ?? '');
+        this.rating.set(detail.rating);
+        this.resyncing.set(false);
+        this.snackBar.open('Re-sync complete!', undefined, { duration: 2000 });
+      },
+      error: () => {
+        this.resyncing.set(false);
+        this.snackBar.open('Re-sync failed.', 'Dismiss', { duration: 5000 });
+      },
+    });
   }
 
   saveNotesAndRating(): void {

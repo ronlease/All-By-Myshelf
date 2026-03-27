@@ -11,12 +11,12 @@
 }
 
 .estimate-label {
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 14px;
 }
 
 .estimate-summary {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--mat-sys-surface-variant);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -30,11 +30,12 @@
   font-weight: 500;
 
   &.highlight {
-    color: #1976d2;
+    color: var(--mat-sys-primary);
   }
 }
 
 h3 {
+  color: var(--mat-sys-on-surface);
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
@@ -57,10 +58,16 @@ h3 {
 }
 
 .option-desc {
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 12px;
 }
 
 .option-label {
   font-weight: 500;
+}
+
+.stale-days-field {
+  margin-left: 32px;
+  margin-top: 8px;
+  width: 100px;
 }

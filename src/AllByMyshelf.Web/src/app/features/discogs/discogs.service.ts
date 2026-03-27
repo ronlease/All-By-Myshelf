@@ -54,7 +54,8 @@ export interface SyncOptionsDto {
   includeDetails: boolean;
   includePricing: boolean;
   includeWantlist: boolean;
-  mode: 'incremental' | 'full';
+  mode: 'incremental' | 'full' | 'stale';
+  staleDays: number;
 }
 
 export interface SyncProgressDto {
@@ -153,6 +154,10 @@ export class DiscogsService {
 
   getRelease(id: string): Observable<ReleaseDetailDto> {
     return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/${id}`);
+  }
+
+  resyncRelease(id: string): Observable<ReleaseDetailDto> {
+    return this.http.post<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/${id}/resync`, null);
   }
 
   getSyncEstimate(): Observable<SyncEstimateDto> {

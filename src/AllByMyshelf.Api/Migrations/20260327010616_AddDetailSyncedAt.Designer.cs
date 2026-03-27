@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AllByMyshelf.Api.Migrations
 {
     [DbContext(typeof(AllByMyshelfDbContext))]
-    [Migration("20260323013845_AddReleaseTrackArtists")]
-    partial class AddReleaseTrackArtists
+    [Migration("20260327010616_AddDetailSyncedAt")]
+    partial class AddDetailSyncedAt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,6 +195,10 @@ namespace AllByMyshelf.Api.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("cover_image_url");
 
+                    b.Property<DateTimeOffset?>("DetailSyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detail_synced_at");
+
                     b.Property<int>("DiscogsId")
                         .HasColumnType("integer")
                         .HasColumnName("discogs_id");
@@ -267,6 +271,41 @@ namespace AllByMyshelf.Api.Migrations
                     b.ToTable("releases", (string)null);
                 });
 
+            modelBuilder.Entity("AllByMyshelf.Api.Models.Entities.Track", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<List<string>>("Artists")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("artists");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("ReleaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("release_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReleaseId")
+                        .HasDatabaseName("ix_tracks_release_id");
+
+                    b.ToTable("tracks", (string)null);
+                });
+
             modelBuilder.Entity("AllByMyshelf.Api.Models.Entities.WantlistRelease", b =>
                 {
                     b.Property<Guid>("Id")
@@ -328,6 +367,20 @@ namespace AllByMyshelf.Api.Migrations
                         .HasDatabaseName("ix_wantlist_releases_discogs_id");
 
                     b.ToTable("wantlist_releases", (string)null);
+                });
+
+            modelBuilder.Entity("AllByMyshelf.Api.Models.Entities.Track", b =>
+                {
+                    b.HasOne("AllByMyshelf.Api.Models.Entities.Release", null)
+                        .WithMany("Tracks")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AllByMyshelf.Api.Models.Entities.Release", b =>
+                {
+                    b.Navigation("Tracks");
                 });
 #pragma warning restore 612, 618
         }

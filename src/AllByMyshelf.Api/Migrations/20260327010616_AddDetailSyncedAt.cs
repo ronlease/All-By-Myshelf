@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AllByMyshelf.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddReleaseAddedAt : Migration
+    public partial class AddDetailSyncedAt : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTimeOffset>(
-                name: "AddedAt",
+                name: "detail_synced_at",
                 table: "releases",
                 type: "timestamp with time zone",
                 nullable: true);
@@ -22,7 +22,7 @@ namespace AllByMyshelf.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "AddedAt",
+                name: "detail_synced_at",
                 table: "releases");
         }
     }

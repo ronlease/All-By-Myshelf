@@ -108,11 +108,37 @@
 //   Given the repository returns a release with no tracks
 //   When GetByIdAsync is called
 //   Then the returned ReleaseDetailDto has an empty Tracks list
+//
+// Scenario: ResyncAsync fetches detail and pricing for a single release (ABM-072)
+//   Given a release exists in the database
+//   When ResyncAsync is called with that release's ID
+//   Then the DiscogsClient fetches detail and marketplace stats
+//   And UpdateResyncedReleaseAsync is called with the updated release
+//   And the updated ReleaseDetailDto is returned
+//
+// Scenario: ResyncAsync sets DetailSyncedAt timestamp (ABM-071)
+//   Given a release exists in the database
+//   When ResyncAsync is called
+//   Then the release's DetailSyncedAt is set to UtcNow
+//
+// Scenario: ResyncAsync returns null when release not found (ABM-072)
+//   Given a release ID that does not exist
+//   When ResyncAsync is called with that ID
+//   Then null is returned
+//   And no API calls are made
+//
+// Scenario: ResyncAsync updates genre and pricing (ABM-072)
+//   Given a release exists in the database
+//   And Discogs API returns updated detail and pricing
+//   When ResyncAsync is called
+//   Then the release's Genre, pricing fields, and tracks are updated
 
 using AllByMyshelf.Api.Common;
 using AllByMyshelf.Api.Features.Discogs;
 using AllByMyshelf.Api.Models.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace AllByMyshelf.Unit.Services;
@@ -125,7 +151,15 @@ public class ReleasesServiceTests
     public ReleasesServiceTests()
     {
         _repositoryMock = new Mock<IReleasesRepository>(MockBehavior.Strict);
-        _sut = new ReleasesService(_repositoryMock.Object);
+
+        var optionsMock = new Mock<IOptionsSnapshot<DiscogsOptions>>();
+        optionsMock.Setup(o => o.Value).Returns(new DiscogsOptions());
+        var discogsClient = new DiscogsClient(
+            new HttpClient(),
+            optionsMock.Object,
+            Mock.Of<ILogger<DiscogsClient>>());
+
+        _sut = new ReleasesService(_repositoryMock.Object, discogsClient);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -761,5 +795,109 @@ public class ReleasesServiceTests
         result.Tracks[0].Artists.Should().BeEmpty();
         result.Tracks[0].Position.Should().Be("A1");
         result.Tracks[0].Title.Should().Be("Acknowledgement");
+    }
+
+    // ── ResyncAsync (ABM-072) — not found ─────────────────────────────────────
+
+    [Fact]
+    public async Task ResyncAsync_NonexistentRelease_ReturnsNull()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Release?)null);
+
+        // Act
+        var result = await _sut.ResyncAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    // ── ResyncAsync (ABM-072) — success ───────────────────────────────────────
+
+    [Fact]
+    public async Task ResyncAsync_ExistingRelease_CallsUpdateResyncedReleaseAsync()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 888);
+        release.DetailSyncedAt = DateTimeOffset.UtcNow.AddDays(-60);
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+        _repositoryMock
+            .Setup(r => r.UpdateResyncedReleaseAsync(It.IsAny<Release>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _sut.ResyncAsync(id, CancellationToken.None);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.UpdateResyncedReleaseAsync(
+                It.Is<Release>(rel => rel.Id == id),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ResyncAsync_ExistingRelease_ReturnsMappedDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 889);
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+        _repositoryMock
+            .Setup(r => r.UpdateResyncedReleaseAsync(It.IsAny<Release>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.ResyncAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(id);
+        result.DiscogsId.Should().Be(889);
+        result.Artists.Should().BeEquivalentTo(new[] { "John Coltrane" });
+        result.Title.Should().Be("A Love Supreme");
+    }
+
+    [Fact]
+    public async Task ResyncAsync_ExistingRelease_SetsDetailSyncedAtToNow()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 890);
+        release.DetailSyncedAt = DateTimeOffset.UtcNow.AddDays(-100);
+
+        var beforeResync = DateTimeOffset.UtcNow.AddSeconds(-1);
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+        _repositoryMock
+            .Setup(r => r.UpdateResyncedReleaseAsync(It.IsAny<Release>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _sut.ResyncAsync(id, CancellationToken.None);
+
+        var afterResync = DateTimeOffset.UtcNow.AddSeconds(1);
+
+        // Assert
+        _repositoryMock.Verify(
+            r => r.UpdateResyncedReleaseAsync(
+                It.Is<Release>(rel =>
+                    rel.DetailSyncedAt.HasValue &&
+                    rel.DetailSyncedAt.Value >= beforeResync &&
+                    rel.DetailSyncedAt.Value <= afterResync),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

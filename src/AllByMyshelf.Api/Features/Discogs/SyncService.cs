@@ -113,6 +113,27 @@ public partial class SyncService(
         _total = 0;
     }
 
+    /// <summary>
+    /// Determines whether a release's detail data should be re-fetched based on the current sync mode.
+    /// </summary>
+    private bool ShouldRefresh(DateTimeOffset? detailSyncedAt)
+    {
+        var mode = _syncOptions.Mode;
+
+        if (string.Equals(mode, SyncConstants.Modes.Full, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (string.Equals(mode, SyncConstants.Modes.Stale, StringComparison.OrdinalIgnoreCase))
+        {
+            if (detailSyncedAt is null) return true;
+            var staleCutoff = DateTimeOffset.UtcNow.AddDays(-_syncOptions.StaleDays);
+            return detailSyncedAt < staleCutoff;
+        }
+
+        // Incremental: only fetch if not previously synced.
+        return detailSyncedAt is null;
+    }
+
     /// <inheritdoc/>
     protected override async Task RunSyncAsync(CancellationToken cancellationToken)
     {
@@ -171,14 +192,14 @@ public partial class SyncService(
             };
 
             // Determine whether to fetch detail for this release.
-            var isFullMode = string.Equals(_syncOptions.Mode, SyncConstants.Modes.Full, StringComparison.OrdinalIgnoreCase);
             var isCached = existingReleases.TryGetValue(r.Id, out var cached);
-            var shouldFetchDetail = !isCached || isFullMode;
+            var shouldFetchDetail = !isCached || ShouldRefresh(cached?.DetailSyncedAt);
 
             if (isCached && !shouldFetchDetail)
             {
                 // Reuse cached detail/pricing fields and skip API calls.
-                release.Genre = cached!.Genre;
+                release.DetailSyncedAt = cached!.DetailSyncedAt;
+                release.Genre = cached.Genre;
                 release.HighestPrice = cached.HighestPrice;
                 release.LowestPrice = cached.LowestPrice;
                 release.MedianPrice = cached.MedianPrice;
@@ -191,7 +212,8 @@ public partial class SyncService(
                 // Carry forward cached values first, then overwrite selectively.
                 if (isCached)
                 {
-                    release.Genre = cached!.Genre;
+                    release.DetailSyncedAt = cached!.DetailSyncedAt;
+                    release.Genre = cached.Genre;
                     release.HighestPrice = cached.HighestPrice;
                     release.LowestPrice = cached.LowestPrice;
                     release.MedianPrice = cached.MedianPrice;
@@ -247,6 +269,8 @@ public partial class SyncService(
                         logger.LogDebug("Fetched marketplace stats for Discogs ID {DiscogsId}.", r.Id);
                     }
                 }
+
+                release.DetailSyncedAt = now;
             }
             entities.Add(release);
         }

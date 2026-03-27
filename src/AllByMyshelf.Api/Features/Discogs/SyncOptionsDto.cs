@@ -9,11 +9,13 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// <param name="IncludeDetails">Whether to fetch detail data (genre, tracklist) for new releases.</param>
 /// <param name="IncludePricing">Whether to fetch marketplace pricing for new releases.</param>
 /// <param name="IncludeWantlist">Whether to sync the wantlist after the collection.</param>
-/// <param name="Mode">Sync mode: "full" syncs all releases; "incremental" only syncs new releases (default).</param>
+/// <param name="Mode">Sync mode: "incremental" (new only), "full" (all), or "stale" (older than StaleDays).</param>
+/// <param name="StaleDays">When Mode is "stale", the number of days after which a release is considered stale. Default 30.</param>
 [ExcludeFromCodeCoverage]
 public record SyncOptionsDto(
     bool IncludeDetails = true,
     bool IncludePricing = true,
     bool IncludeWantlist = true,
-    string Mode = SyncConstants.Modes.Incremental
+    string Mode = SyncConstants.Modes.Incremental,
+    int StaleDays = 30
 );

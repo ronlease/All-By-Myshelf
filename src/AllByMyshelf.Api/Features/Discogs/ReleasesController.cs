@@ -113,6 +113,28 @@ public class ReleasesController(IReleasesService releasesService) : ControllerBa
     }
 
     /// <summary>
+    /// Re-syncs a single release's detail and pricing data from Discogs.
+    /// </summary>
+    /// <param name="id">The application-generated GUID for the release.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated release detail after re-sync.</returns>
+    /// <response code="200">Returns the updated release detail.</response>
+    /// <response code="404">No release with the specified ID was found.</response>
+    [HttpPost("{id:guid}/resync")]
+    [ProducesResponseType(typeof(ReleaseDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReleaseDetailDto>> ResyncRelease(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await releasesService.ResyncAsync(id, cancellationToken);
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns a paginated list of releases from the local database.
     /// </summary>
     /// <param name="artist">Optional case-insensitive contains filter on the artist name.</param>
