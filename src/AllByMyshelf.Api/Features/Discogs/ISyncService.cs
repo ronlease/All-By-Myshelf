@@ -15,11 +15,20 @@ public interface ISyncService
     /// <summary>Current sync progress snapshot.</summary>
     SyncProgressDto Progress { get; }
 
+    /// <summary>The sync options for the current or most recent sync.</summary>
+    SyncOptionsDto SyncOptions { get; }
+
     /// <summary>
-    /// Attempts to start a background sync.
+    /// Returns an estimate of the sync scope based on the current collection state.
     /// </summary>
+    Task<SyncEstimateDto> GetEstimateAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Attempts to start a background sync with the given options.
+    /// </summary>
+    /// <param name="options">Sync configuration options.</param>
     /// <returns>
     /// A <see cref="SyncStartResult"/> indicating whether the sync was started or why it could not be.
     /// </returns>
-    SyncStartResult TryStartSync();
+    SyncStartResult TryStartSync(SyncOptionsDto? options = null);
 }

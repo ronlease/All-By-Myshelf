@@ -63,6 +63,34 @@
               }
             </mat-list>
 
+            @if (release()!.tracks.length > 0) {
+              <div class="tracklist-section">
+                <h3>Track Listing</h3>
+                <table class="tracklist-table">
+                  <thead>
+                    <tr>
+                      <th class="col-position">#</th>
+                      @if (hasTrackArtists()) {
+                        <th class="col-artist">Artist</th>
+                      }
+                      <th class="col-title">Title</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (track of release()!.tracks; track track.position + track.title) {
+                      <tr>
+                        <td class="col-position">{{ track.position }}</td>
+                        @if (hasTrackArtists()) {
+                          <td class="col-artist">{{ track.artists.join(', ') }}</td>
+                        }
+                        <td class="col-title">{{ track.title }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
             @if (release()!.lowestPrice !== null || release()!.medianPrice !== null || release()!.highestPrice !== null) {
               <div class="pricing-section">
                 <h3>Marketplace Pricing</h3>

@@ -6,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public record MaintenanceReleaseDto
 {
     /// <summary>List of artist names.</summary>
-    public required List<string> Artists { get; init; }
+    public required IReadOnlyList<string> Artists { get; init; }
 
     /// <summary>Discogs release ID.</summary>
     public required int DiscogsId { get; init; }
@@ -15,7 +15,7 @@ public record MaintenanceReleaseDto
     public required Guid Id { get; init; }
 
     /// <summary>List of field names that are missing or incomplete.</summary>
-    public required List<string> MissingFields { get; init; }
+    public required IReadOnlyList<string> MissingFields { get; init; }
 
     /// <summary>Thumbnail image URL; null when not available.</summary>
     public string? ThumbnailUrl { get; init; }

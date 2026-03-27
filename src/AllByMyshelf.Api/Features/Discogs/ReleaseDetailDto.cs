@@ -6,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public class ReleaseDetailDto
 {
     /// <summary>List of artist names.</summary>
-    public List<string> Artists { get; init; } = [];
+    public IReadOnlyList<string> Artists { get; init; } = [];
 
     /// <summary>Discogs CDN URL for the full-resolution cover image. Null when Discogs does not provide a cover image.</summary>
     public string? CoverImageUrl { get; init; }
@@ -42,7 +42,10 @@ public class ReleaseDetailDto
     public string Title { get; init; } = string.Empty;
 
     /// <summary>Unique artist names from the release tracklist; used for searching compilations.</summary>
-    public List<string> TrackArtists { get; init; } = [];
+    public IReadOnlyList<string> TrackArtists { get; init; } = [];
+
+    /// <summary>Full tracklist with position, title, and per-track artists.</summary>
+    public IReadOnlyList<TrackDto> Tracks { get; init; } = [];
 
     /// <summary>Release year; null when unknown.</summary>
     public int? Year { get; init; }

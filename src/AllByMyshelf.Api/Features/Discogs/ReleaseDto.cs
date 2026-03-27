@@ -6,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public class ReleaseDto
 {
     /// <summary>List of artist names.</summary>
-    public List<string> Artists { get; init; } = [];
+    public IReadOnlyList<string> Artists { get; init; } = [];
 
     /// <summary>Primary format description.</summary>
     public string Format { get; init; } = string.Empty;
@@ -24,7 +24,7 @@ public class ReleaseDto
     public string? ThumbnailUrl { get; init; }
 
     /// <summary>Unique artist names from the release tracklist; used for searching compilations.</summary>
-    public List<string> TrackArtists { get; init; } = [];
+    public IReadOnlyList<string> TrackArtists { get; init; } = [];
 
     /// <summary>Release year; null when unknown.</summary>
     public int? Year { get; init; }

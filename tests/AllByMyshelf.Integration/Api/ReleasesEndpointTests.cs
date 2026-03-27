@@ -899,7 +899,10 @@ public class ReleasesEndpointTests(ReleasesEndpointTests.ReleasesFactory factory
     private sealed class NoOpSyncService : ISyncService
     {
         public bool IsSyncRunning => false;
-        public SyncProgressDto Progress => new(false, 0, null, "idle", 0);
-        public SyncStartResult TryStartSync() => SyncStartResult.Started;
+        public SyncProgressDto Progress => new(0, false, null, null, SyncConstants.Statuses.Idle, 0);
+        public SyncOptionsDto SyncOptions => new();
+        public Task<SyncEstimateDto> GetEstimateAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new SyncEstimateDto(0, 0, 0));
+        public SyncStartResult TryStartSync(SyncOptionsDto? options = null) => SyncStartResult.Started;
     }
 }

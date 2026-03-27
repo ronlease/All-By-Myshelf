@@ -1,9 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { BggService } from '../../features/bgg/bgg.service';
-import { DiscogsService, SyncProgressDto } from '../../features/discogs/discogs.service';
+import { DiscogsService, SyncOptionsDto, SyncProgressDto } from '../../features/discogs/discogs.service';
+import { SyncOptionsDialogComponent } from '../../features/discogs/sync-options-dialog/sync-options-dialog.component';
 import { HardcoverService } from '../../features/hardcover/hardcover.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Injectable({ providedIn: 'root' })
 export class SyncStateService {
@@ -11,6 +13,7 @@ export class SyncStateService {
   readonly booksSyncCompleted$ = new Subject<void>();
   booksSyncing = signal(false);
   private booksSyncTimer?: ReturnType<typeof setTimeout>;
+  private readonly dialog = inject(MatDialog);
   private readonly discogsService = inject(DiscogsService);
   readonly discogsSyncCompleted$ = new Subject<void>();
   discogsSyncProgress = signal<SyncProgressDto | null>(null);
@@ -37,10 +40,18 @@ export class SyncStateService {
         return 'Resuming…';
       case 'saving':
         return 'Saving…';
-      default:
+      case 'saving wantlist':
+        return 'Saving wantlist…';
+      case 'syncing wantlist':
+        return 'Syncing wantlist…';
+      default: {
+        const phaseLabel = p.phase === 'details' ? ' (details)' :
+                           p.phase === 'pricing' ? ' (pricing)' :
+                           p.phase === 'wantlist' ? ' (wantlist)' : '';
         return p.total > 0
-          ? `Syncing ${p.current} of ${p.total}…`
+          ? `Syncing ${p.current} of ${p.total}${phaseLabel}…`
           : 'Syncing…';
+      }
     }
   }
 
@@ -162,26 +173,35 @@ export class SyncStateService {
 
   startDiscogsSync(): void {
     if (this.discogsSyncing()) return;
-    this.discogsSyncing.set(true);
-    this.discogsService.triggerSync().subscribe({
-      next: (response) => {
-        if (response.status === 202) {
-          this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
-          this.pollDiscogsSyncStatus();
-        } else {
+
+    const dialogRef = this.dialog.open(SyncOptionsDialogComponent, {
+      width: '420px',
+    });
+
+    dialogRef.afterClosed().subscribe((options: SyncOptionsDto | null) => {
+      if (!options) return;
+
+      this.discogsSyncing.set(true);
+      this.discogsService.triggerSync(options).subscribe({
+        next: (response) => {
+          if (response.status === 202) {
+            this.snackBar.open('Sync started.', 'Dismiss', { duration: 3000 });
+            this.pollDiscogsSyncStatus();
+          } else {
+            this.discogsSyncing.set(false);
+          }
+        },
+        error: (err) => {
           this.discogsSyncing.set(false);
-        }
-      },
-      error: (err) => {
-        this.discogsSyncing.set(false);
-        if (err.status === 409) {
-          this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
-        } else if (err.status === 503) {
-          this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
-        } else {
-          this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
-        }
-      },
+          if (err.status === 409) {
+            this.snackBar.open('A sync is already in progress.', 'Dismiss', { duration: 5000 });
+          } else if (err.status === 503) {
+            this.snackBar.open('Discogs token is not configured.', 'Dismiss', { duration: 5000 });
+          } else {
+            this.snackBar.open('An unexpected error occurred.', 'Dismiss', { duration: 5000 });
+          }
+        },
+      });
     });
   }
 }

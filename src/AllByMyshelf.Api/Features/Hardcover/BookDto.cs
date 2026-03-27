@@ -12,7 +12,7 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 /// <param name="Title">Book title.</param>
 /// <param name="Year">Publication year; null when not available.</param>
 public record BookDto(
-    List<string> Authors,
+    IReadOnlyList<string> Authors,
     string? CoverImageUrl,
     string? Genre,
     int HardcoverId,
