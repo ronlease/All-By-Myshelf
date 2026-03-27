@@ -80,9 +80,9 @@
           <input
             matInput
             type="password"
-            [formControl]="bggApiTokenControl" />
-          <mat-hint>Bearer token from your registered BGG application</mat-hint>
-          @if (bggApiTokenControl.hasError('maxlength')) {
+            [formControl]="boardGameGeekApiTokenControl" />
+          <mat-hint>Bearer token from your registered BoardGameGeek application</mat-hint>
+          @if (boardGameGeekApiTokenControl.hasError('maxlength')) {
             <mat-error>Maximum length exceeded (2000 characters)</mat-error>
           }
         </mat-form-field>
@@ -92,9 +92,9 @@
           <input
             matInput
             type="text"
-            [formControl]="bggUsernameControl" />
-          <mat-hint>Your BGG username for syncing board game collection</mat-hint>
-          @if (bggUsernameControl.hasError('maxlength')) {
+            [formControl]="boardGameGeekUsernameControl" />
+          <mat-hint>Your BoardGameGeek username for syncing board game collection</mat-hint>
+          @if (boardGameGeekUsernameControl.hasError('maxlength')) {
             <mat-error>Maximum length exceeded (100 characters)</mat-error>
           }
         </mat-form-field>

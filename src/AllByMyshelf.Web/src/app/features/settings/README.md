@@ -22,8 +22,8 @@ Unified settings page for managing API credentials and application preferences.
 
 ## UI Features
 
-- API token management: BGG, Discogs, and Hardcover tokens
-- Username configuration: BGG and Discogs usernames
+- API token management: BoardGameGeek, Discogs, and Hardcover tokens
+- Username configuration: BoardGameGeek and Discogs usernames
 - Theme selector: light, dark, OS-default
 - Token inputs masked for security
 - Form controls reset after successful save

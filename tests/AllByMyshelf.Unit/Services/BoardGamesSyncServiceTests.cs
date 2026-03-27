@@ -1,27 +1,27 @@
 // Feature: BGG credential validation (ABM-064, ABM-065)
 //
 // Scenario: TryStartSync returns TokenNotConfigured when ApiToken is missing
-//   Given BggOptions has ApiToken empty
+//   Given BoardGameGeekOptions has ApiToken empty
 //   When TryStartSync is called
 //   Then SyncStartResult.TokenNotConfigured is returned
 //
 // Scenario: TryStartSync returns TokenNotConfigured when Username is missing
-//   Given BggOptions has Username empty but ApiToken configured
+//   Given BoardGameGeekOptions has Username empty but ApiToken configured
 //   When TryStartSync is called
 //   Then SyncStartResult.TokenNotConfigured is returned
 //
 // Scenario: TryStartSync returns TokenNotConfigured when both are missing
-//   Given BggOptions has empty ApiToken and Username
+//   Given BoardGameGeekOptions has empty ApiToken and Username
 //   When TryStartSync is called
 //   Then SyncStartResult.TokenNotConfigured is returned
 //
 // Scenario: TryStartSync returns Started when both ApiToken and Username are configured
-//   Given BggOptions has both ApiToken and Username configured
+//   Given BoardGameGeekOptions has both ApiToken and Username configured
 //   When TryStartSync is called
 //   Then SyncStartResult.Started is returned
 
 using AllByMyshelf.Api.Common;
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -148,8 +148,8 @@ public class BoardGamesSyncServiceTests
 
     private static BoardGamesSyncService CreateService(string? apiToken, string? username)
     {
-        var options = new Mock<IOptions<BggOptions>>();
-        options.Setup(o => o.Value).Returns(new BggOptions
+        var options = new Mock<IOptions<BoardGameGeekOptions>>();
+        options.Setup(o => o.Value).Returns(new BoardGameGeekOptions
         {
             ApiToken = apiToken ?? string.Empty,
             Username = username ?? string.Empty

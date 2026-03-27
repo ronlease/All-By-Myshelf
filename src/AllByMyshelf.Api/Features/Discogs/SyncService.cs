@@ -182,6 +182,7 @@ public partial class SyncService(
             {
                 Artists = artists,
                 CoverImageUrl = coverImageUrl,
+                CreatedAt = now,
                 DiscogsId = r.Id,
                 Format = format,
                 Id = Guid.NewGuid(),
@@ -311,6 +312,7 @@ public partial class SyncService(
                 {
                     Artists = artists,
                     CoverImageUrl = coverImageUrl,
+                    CreatedAt = now,
                     DiscogsId = r.Id,
                     Format = format,
                     Id = Guid.NewGuid(),

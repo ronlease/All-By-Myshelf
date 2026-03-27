@@ -26,8 +26,8 @@ Manages application settings and API credentials, with database storage and conf
 
 | Key | Description |
 |-----|-------------|
-| `Bgg:ApiToken` | BoardGameGeek API token |
-| `Bgg:Username` | BoardGameGeek username |
+| `BoardGameGeek:ApiToken` | BoardGameGeek API token |
+| `BoardGameGeek:Username` | BoardGameGeek username |
 | `Discogs:PersonalAccessToken` | Discogs personal access token |
 | `Discogs:Username` | Discogs username |
 | `Hardcover:ApiToken` | Hardcover API token |

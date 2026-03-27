@@ -8,7 +8,7 @@
           <span>Music</span>
         </a>
       }
-      @if (features()?.bggEnabled) {
+      @if (features()?.boardGameGeekEnabled) {
         <a mat-list-item routerLink="/board-games" routerLinkActive="active-link">
           <mat-icon matListItemIcon>extension</mat-icon>
           <span>Board Games</span>
@@ -57,10 +57,10 @@
       <mat-divider></mat-divider>
 
       <!-- Sync section -->
-      @if (features()?.bggEnabled || features()?.discogsEnabled || features()?.hardcoverEnabled) {
+      @if (features()?.boardGameGeekEnabled || features()?.discogsEnabled || features()?.hardcoverEnabled) {
         <div class="drawer-section-header">Sync</div>
       }
-      @if (features()?.bggEnabled) {
+      @if (features()?.boardGameGeekEnabled) {
         <a mat-list-item (click)="syncState.startBoardGamesSync(); $event.stopPropagation()" (keyup.enter)="syncState.startBoardGamesSync()" [disabled]="syncState.gamesSyncing()">
           <mat-icon matListItemIcon>extension</mat-icon>
           @if (syncState.gamesSyncing()) {
@@ -93,7 +93,7 @@
           }
         </a>
       }
-      @if ((features()?.bggEnabled && features()?.discogsEnabled) || (features()?.bggEnabled && features()?.hardcoverEnabled) || (features()?.discogsEnabled && features()?.hardcoverEnabled)) {
+      @if ((features()?.boardGameGeekEnabled && features()?.discogsEnabled) || (features()?.boardGameGeekEnabled && features()?.hardcoverEnabled) || (features()?.discogsEnabled && features()?.hardcoverEnabled)) {
         <a mat-list-item (click)="syncAll(); $event.stopPropagation()" (keyup.enter)="syncAll()" [disabled]="syncState.gamesSyncing() || syncState.discogsSyncing() || syncState.booksSyncing()">
           <mat-icon matListItemIcon>sync</mat-icon>
           <span>Sync All</span>

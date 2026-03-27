@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { BggService, BoardGameDetailDto } from '../bgg.service';
+import { BoardGameGeekService, BoardGameDetailDto } from '../board-game-geek.service';
 
 @Component({
   selector: 'app-board-game-detail',
@@ -26,7 +26,7 @@ import { BggService, BoardGameDetailDto } from '../bgg.service';
   styleUrl: './board-game-detail.component.scss',
 })
 export class BoardGameDetailComponent implements OnInit {
-  private readonly bggService = inject(BggService);
+  private readonly boardGameGeekService = inject(BoardGameGeekService);
   error = signal(false);
   game = signal<BoardGameDetailDto | null>(null);
   loading = signal(true);
@@ -61,7 +61,7 @@ export class BoardGameDetailComponent implements OnInit {
       return;
     }
 
-    this.bggService.getBoardGame(id).subscribe({
+    this.boardGameGeekService.getBoardGame(id).subscribe({
       next: (detail) => {
         this.game.set(detail);
         this.loading.set(false);

@@ -84,6 +84,7 @@ public class BooksSyncService(
             {
                 Authors = authors,
                 CoverImageUrl = coverImageUrl,
+                CreatedAt = now,
                 Genre = genre,
                 HardcoverId = b.Id,
                 Id = Guid.NewGuid(),

@@ -2,7 +2,7 @@ using AllByMyshelf.Api.Common;
 using AllByMyshelf.Api.Models.Entities;
 using Microsoft.Extensions.Options;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Singleton service that coordinates triggering and executing a BoardGameGeek collection sync.
@@ -10,12 +10,12 @@ namespace AllByMyshelf.Api.Features.Bgg;
 /// <see cref="IHostedService"/> so it can run as a background worker.
 /// </summary>
 public class BoardGamesSyncService(
-    IOptions<BggOptions> options,
+    IOptions<BoardGameGeekOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<BoardGamesSyncService> logger)
     : SyncServiceBase, IBoardGamesSyncService
 {
-    private readonly BggOptions _options = options.Value;
+    private readonly BoardGameGeekOptions _options = options.Value;
 
     /// <inheritdoc/>
     protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken) && !string.IsNullOrWhiteSpace(_options.Username);
@@ -24,31 +24,31 @@ public class BoardGamesSyncService(
     protected override ILogger Logger => logger;
 
     /// <inheritdoc/>
-    protected override string LogName => "BGG";
+    protected override string LogName => "BoardGameGeek";
 
     /// <inheritdoc/>
     protected override async Task RunSyncAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("BGG sync started.");
+        logger.LogInformation("BoardGameGeek sync started.");
 
-        // Resolve scoped services (DbContext, BggClient) from a fresh scope.
+        // Resolve scoped services (DbContext, BoardGameGeekClient) from a fresh scope.
         await using var scope = scopeFactory.CreateAsyncScope();
-        var bggClient = scope.ServiceProvider.GetRequiredService<BggClient>();
+        var boardGameGeekClient = scope.ServiceProvider.GetRequiredService<BoardGameGeekClient>();
         var boardGamesRepository = scope.ServiceProvider.GetRequiredService<IBoardGamesRepository>();
 
-        var collectionItems = await bggClient.GetCollectionAsync(_options.Username, cancellationToken);
-        logger.LogInformation("Fetched {Count} board games from BGG.", collectionItems.Count);
+        var collectionItems = await boardGameGeekClient.GetCollectionAsync(_options.Username, cancellationToken);
+        logger.LogInformation("Fetched {Count} board games from BoardGameGeek.", collectionItems.Count);
 
         // Batch IDs into groups of 20 for enrichment
-        var allDetails = new Dictionary<int, BggThingDetail>();
-        var ids = collectionItems.Select(c => c.BggId).ToList();
+        var allDetails = new Dictionary<int, BoardGameGeekThingDetail>();
+        var ids = collectionItems.Select(c => c.BoardGameGeekId).ToList();
 
         for (var i = 0; i < ids.Count; i += 20)
         {
             var batch = ids.Skip(i).Take(20).ToList();
             logger.LogInformation("Fetching thing details for batch {Start}-{End} ({Count} items)", i, i + batch.Count - 1, batch.Count);
 
-            var details = await bggClient.GetThingDetailsAsync(batch, cancellationToken);
+            var details = await boardGameGeekClient.GetThingDetailsAsync(batch, cancellationToken);
             foreach (var detail in details)
             {
                 allDetails[detail.Id] = detail;
@@ -66,15 +66,16 @@ public class BoardGamesSyncService(
 
         foreach (var c in collectionItems)
         {
-            allDetails.TryGetValue(c.BggId, out var detail);
+            allDetails.TryGetValue(c.BoardGameGeekId, out var detail);
 
             var boardGame = new BoardGame
             {
-                BggId = c.BggId,
+                BoardGameGeekId = c.BoardGameGeekId,
                 CoverImageUrl = c.CoverImageUrl,
                 Description = detail?.Description,
                 Designers = detail?.Designers ?? [],
                 Genre = detail?.Category,
+                CreatedAt = now,
                 Id = Guid.NewGuid(),
                 LastSyncedAt = now,
                 MaxPlayers = c.MaxPlayers,
@@ -90,6 +91,6 @@ public class BoardGamesSyncService(
         }
 
         await boardGamesRepository.UpsertCollectionAsync(entities, cancellationToken);
-        logger.LogInformation("BGG sync completed successfully.");
+        logger.LogInformation("BoardGameGeek sync completed successfully.");
     }
 }

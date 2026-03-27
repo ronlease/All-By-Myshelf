@@ -1,7 +1,7 @@
 ---
 name: frontend-engineer
 description: Invoke when implementing Angular components, pages, routes, services, or any frontend UI work. Triggers on keywords like component, angular, frontend, UI, page, route, view, dashboard.
-model: claude-sonnet-4-5
+model: sonnet
 ---
 
 # Frontend Engineer Agent
@@ -22,13 +22,19 @@ src/AllByMyshelf.Web/
   src/
     app/
       core/               # Singleton services, guards, interceptors
-        auth/             # Auth0 integration
+        config/           # Feature config service
+        discogs/          # Discogs core service
         http/             # HTTP interceptors
+        sync/             # Sync status service
       shared/             # Shared standalone components, pipes, directives
       features/           # Feature modules as standalone component trees
-        dashboard/
-        discogs/
-        hardcover/
+        board-game-geek/  # BoardGameGeek (board-games, board-game-detail)
+        discogs/          # Vinyl records (collection, wantlist, duplicates, maintenance, random-picker, release-detail)
+        hardcover/        # Books (books, book-detail)
+        settings/         # App settings
+        statistics/       # Cross-collection statistics
+        store-finder/     # Retail location finder
+      layout/             # App shell / navigation chrome
       app.component.ts
       app.config.ts       # Application config (replaces AppModule)
       app.routes.ts       # Root routes
@@ -46,6 +52,7 @@ src/AllByMyshelf.Web/
 - Use typed forms (`FormControl<T>`) for any form inputs
 - Use `HttpClient` with typed responses: `http.get<MyType>(url)`
 - All fields, properties, and methods within a class must be declared in alphabetical order
+- Avoid abbreviations in naming — use full names (e.g., `board-game-geek` not `bgg`)
 
 ## Auth0 Integration
 - Use `@auth0/auth0-angular` SDK

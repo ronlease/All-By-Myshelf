@@ -2,13 +2,13 @@ import { inject, Injectable, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
-import { BggService } from '../../features/bgg/bgg.service';
+import { BoardGameGeekService } from '../../features/board-game-geek/board-game-geek.service';
 import { DiscogsService, SyncOptionsDto, SyncProgressDto } from '../../features/discogs/discogs.service';
 import { HardcoverService } from '../../features/hardcover/hardcover.service';
 
 @Injectable({ providedIn: 'root' })
 export class SyncStateService {
-  private readonly bggService = inject(BggService);
+  private readonly boardGameGeekService = inject(BoardGameGeekService);
   readonly booksSyncCompleted$ = new Subject<void>();
   booksSyncing = signal(false);
   private booksSyncTimer?: ReturnType<typeof setTimeout>;
@@ -56,7 +56,7 @@ export class SyncStateService {
 
   private pollBoardGamesSyncStatus(): void {
     const poll = () => {
-      this.bggService.getSyncStatus().subscribe({
+      this.boardGameGeekService.getSyncStatus().subscribe({
         next: (status) => {
           if (status.isRunning) {
             this.gamesSyncTimer = setTimeout(poll, 2000);
@@ -123,7 +123,7 @@ export class SyncStateService {
   startBoardGamesSync(): void {
     if (this.gamesSyncing()) return;
     this.gamesSyncing.set(true);
-    this.bggService.triggerSync().subscribe({
+    this.boardGameGeekService.triggerSync().subscribe({
       next: (response) => {
         if (response.status === 202) {
           this.snackBar.open('Board game sync started.', 'Dismiss', { duration: 3000 });

@@ -2,7 +2,7 @@ using AllByMyshelf.Api.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Exposes the locally stored board game collection and sync operations.
@@ -100,7 +100,7 @@ public class BoardGamesController(
     }
 
     /// <summary>
-    /// Returns whether a BGG sync is currently running.
+    /// Returns whether a BoardGameGeek sync is currently running.
     /// </summary>
     /// <returns>An object containing the sync running status.</returns>
     /// <response code="200">Returns the current sync status.</response>
@@ -115,11 +115,11 @@ public class BoardGamesController(
     /// <returns>
     /// 202 Accepted when the sync starts successfully,
     /// 409 Conflict when a sync is already running,
-    /// 503 Service Unavailable when the BGG credentials are not configured.
+    /// 503 Service Unavailable when the BoardGameGeek credentials are not configured.
     /// </returns>
     /// <response code="202">Sync started. The operation runs asynchronously in the background.</response>
     /// <response code="409">A sync is already in progress.</response>
-    /// <response code="503">The BGG credentials are not configured.</response>
+    /// <response code="503">The BoardGameGeek credentials are not configured.</response>
     [HttpPost("sync")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -130,22 +130,22 @@ public class BoardGamesController(
 
         return result switch
         {
-            SyncStartResult.Started => Accepted(new { message = "BGG sync started." }),
+            SyncStartResult.Started => Accepted(new { message = "BoardGameGeek sync started." }),
 
             SyncStartResult.AlreadyRunning => Conflict(new ProblemDetails
             {
                 Status = StatusCodes.Status409Conflict,
                 Title = "Sync Already Running",
-                Detail = "A BGG collection sync is already in progress. Please wait for it to complete."
+                Detail = "A BoardGameGeek collection sync is already in progress. Please wait for it to complete."
             }),
 
             SyncStartResult.TokenNotConfigured => StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new ProblemDetails
                 {
                     Status = StatusCodes.Status503ServiceUnavailable,
-                    Title = "BGG Credentials Not Configured",
+                    Title = "BoardGameGeek Credentials Not Configured",
                     Detail = "The BGG username and/or API token is not configured. " +
-                             "Set them via dotnet user-secrets with keys 'Bgg:Username' and 'Bgg:ApiToken'."
+                             "Set them via dotnet user-secrets with keys 'BoardGameGeek:Username' and 'BoardGameGeek:ApiToken'."
                 }),
 
             _ => StatusCode(StatusCodes.Status500InternalServerError)

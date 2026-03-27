@@ -1,12 +1,12 @@
-namespace AllByMyshelf.Api.Features.Bgg;
+namespace AllByMyshelf.Api.Features.BoardGameGeek;
 
 /// <summary>
 /// Full detail representation of a single board game, returned by the GET /api/v1/boardgames/{id} endpoint.
 /// </summary>
 public class BoardGameDetailDto
 {
-    /// <summary>BGG game ID.</summary>
-    public int BggId { get; init; }
+    /// <summary>BoardGameGeek game ID.</summary>
+    public int BoardGameGeekId { get; init; }
 
     /// <summary>Full cover image URL; null when not available.</summary>
     public string? CoverImageUrl { get; init; }

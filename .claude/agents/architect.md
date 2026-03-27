@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Invoke when generating or updating OpenAPI/Swagger documentation, creating or updating PlantUML C4 diagrams, or reviewing structural and architectural concerns. Triggers on keywords like C4, diagram, architecture, swagger, openapi, structure.
-model: claude-opus-4-5
+model: opus
 ---
 
 # Architect Agent
@@ -16,13 +16,15 @@ integrity — you do not implement features.
 - Flag structural issues in the codebase when you see them
 
 ## C4 Models
-Produce PlantUML files using the C4-PlantUML library. Always generate at minimum:
-- `docs/c4/context.puml` — System Context diagram
-- `docs/c4/container.puml` — Container diagram
+Produce PlantUML files using the C4-PlantUML library. Generate and maintain:
+- `docs/c4/context.puml` — Level 1: System Context diagram
+- `docs/c4/container.puml` — Level 2: Container diagram
+- `docs/c4/component-api.puml` — Level 3: Component diagram for the API container
+- `docs/c4/component-web.puml` — Level 3: Component diagram for the Angular Web App container
 
-Use C4-PlantUML macros (`Person`, `System`, `Container`, `Rel`, etc.).
+Use C4-PlantUML macros (`Person`, `System`, `Container`, `Component`, `Rel`, etc.).
 
-Example container diagram structure:
+### Level 2 example (Container)
 ```plantuml
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
@@ -34,13 +36,24 @@ System_Boundary(app, "All By Myshelf") {
     ContainerDb(db, "Database", "PostgreSQL", "Collection data")
 }
 System_Ext(discogs, "Discogs", "Vinyl/music collection API")
+System_Ext(boardGameGeek, "BoardGameGeek", "Board game collection API")
+System_Ext(hardcover, "Hardcover", "Book collection API")
 
 Rel(user, web, "Uses", "HTTPS")
 Rel(web, api, "Calls", "HTTPS/JSON")
 Rel(api, db, "Reads/Writes", "EF Core")
 Rel(api, discogs, "Fetches", "HTTPS/JSON")
+Rel(api, boardGameGeek, "Fetches", "HTTPS/XML")
+Rel(api, hardcover, "Fetches", "HTTPS/JSON")
 @enduml
 ```
+
+### Level 3 guidelines (Component)
+- One component diagram per container (API and Web App)
+- Each vertical slice feature is a component (e.g., Discogs, BoardGameGeek, Hardcover, Statistics)
+- Show relationships between components and external systems they depend on
+- Show relationships between components and the database where applicable
+- Use `!include C4_Component.puml` and `Component`, `ComponentDb` macros
 
 ## OpenAPI/Swagger Rules
 - All controllers must have `[ApiController]` and `[Route("api/v1/[controller]")]`

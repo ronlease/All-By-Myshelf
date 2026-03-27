@@ -6,12 +6,12 @@ Exposes feature flags indicating which external integrations are enabled based o
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/api/v1/config/features` | Returns enabled status for BGG, Discogs, and Hardcover |
+| GET | `/api/v1/config/features` | Returns enabled status for BoardGameGeek, Discogs, and Hardcover |
 
 ## Key Components
 
-- **ConfigController** — Reads `BggOptions`, `DiscogsOptions`, and `HardcoverOptions` to determine which integrations have valid tokens configured
+- **ConfigController** — Reads `BoardGameGeekOptions`, `DiscogsOptions`, and `HardcoverOptions` to determine which integrations have valid tokens configured
 
 ## Models
 
-- `FeaturesDto` — Contains `BggEnabled`, `DiscogsEnabled`, `HardcoverEnabled` boolean flags
+- `FeaturesDto` — Contains `BoardGameGeekEnabled`, `DiscogsEnabled`, `HardcoverEnabled` boolean flags

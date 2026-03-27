@@ -4,8 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface SettingsDto {
-  bggApiToken: string;
-  bggUsername: string;
+  boardGameGeekApiToken: string;
+  boardGameGeekUsername: string;
   discogsPersonalAccessToken: string;
   discogsUsername: string;
   hardcoverApiToken: string;
@@ -13,8 +13,8 @@ export interface SettingsDto {
 }
 
 export interface UpdateSettingsDto {
-  bggApiToken?: string;
-  bggUsername?: string;
+  boardGameGeekApiToken?: string;
+  boardGameGeekUsername?: string;
   discogsPersonalAccessToken?: string;
   discogsUsername?: string;
   hardcoverApiToken?: string;

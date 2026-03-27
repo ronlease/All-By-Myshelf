@@ -41,7 +41,6 @@ AllByMyshelf/
 
 ## Workflow
 - Workflow is fluid. Any agent may be invoked at any time.
-- **The user must approve all file changes before they are written.**
 - The Backend Engineer and QA Engineer work alongside each other:
   the Engineer implements a feature, QA immediately writes tests for it before moving on.
 - The Architect generates and updates OpenAPI specs and C4 models after API changes.
@@ -61,10 +60,12 @@ AllByMyshelf/
 - C# follows Microsoft conventions. Use `var` where type is obvious.
 - All API endpoints are versioned under `/api/v1/`.
 - All secrets go through `dotnet user-secrets` locally. Never hardcode credentials.
-- EF Core migrations are explicit — never auto-migrate on startup.
+- EF Core migrations are explicit, but auto-migration on startup is allowed.
 - Angular uses standalone components. No NgModules.
 - All new features require a backlog entry before implementation.
 - **All fields, properties, methods, and variables within a class must be declared in alphabetical order.** This applies to both C# and TypeScript. Enforced to ease diffs and code review.
+- **Avoid abbreviations in naming.** Use full names (e.g., `BoardGameGeek` not `Bgg`, `board-game-geek` not `bgg`).
+- **All collection entities inherit from `CollectionEntityBase`**, which provides `Id` (Guid), `CreatedAt` (DateTimeOffset), `LastSyncedAt` (DateTimeOffset), and `Title` (string).
 
 ## Pre-PR Checklist
 Before any PR is opened, verify the following:

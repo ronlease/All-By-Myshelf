@@ -19,8 +19,8 @@ public class SettingsController(
     IConfigurationRoot configurationRoot) : ControllerBase
 {
     // Well-known setting keys
-    private const string BggApiTokenKey = "Bgg:ApiToken";
-    private const string BggUsernameKey = "Bgg:Username";
+    private const string BoardGameGeekApiTokenKey = "BoardGameGeek:ApiToken";
+    private const string BoardGameGeekUsernameKey = "BoardGameGeek:Username";
     private const string DiscogsPersonalAccessTokenKey = "Discogs:PersonalAccessToken";
     private const string DiscogsUsernameKey = "Discogs:Username";
     private const string HardcoverApiTokenKey = "Hardcover:ApiToken";
@@ -36,16 +36,16 @@ public class SettingsController(
     [ProducesResponseType(typeof(SettingsDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<SettingsDto>> GetSettingsAsync(CancellationToken cancellationToken)
     {
-        var bggApiToken = await GetSettingValueAsync(BggApiTokenKey, cancellationToken);
-        var bggUsername = await GetSettingValueAsync(BggUsernameKey, cancellationToken);
+        var boardGameGeekApiToken = await GetSettingValueAsync(BoardGameGeekApiTokenKey, cancellationToken);
+        var boardGameGeekUsername = await GetSettingValueAsync(BoardGameGeekUsernameKey, cancellationToken);
         var discogsToken = await GetSettingValueAsync(DiscogsPersonalAccessTokenKey, cancellationToken);
         var discogsUsername = await GetSettingValueAsync(DiscogsUsernameKey, cancellationToken);
         var hardcoverToken = await GetSettingValueAsync(HardcoverApiTokenKey, cancellationToken);
         var theme = await GetSettingValueAsync(ThemeKey, cancellationToken) ?? "os-default";
 
         return Ok(new SettingsDto(
-            BggApiToken: MaskToken(bggApiToken ?? string.Empty),
-            BggUsername: bggUsername ?? string.Empty,
+            BoardGameGeekApiToken: MaskToken(boardGameGeekApiToken ?? string.Empty),
+            BoardGameGeekUsername: boardGameGeekUsername ?? string.Empty,
             DiscogsPersonalAccessToken: MaskToken(discogsToken ?? string.Empty),
             DiscogsUsername: discogsUsername ?? string.Empty,
             HardcoverApiToken: MaskToken(hardcoverToken ?? string.Empty),
@@ -83,10 +83,10 @@ public class SettingsController(
         }
 
         // Sanitize and save token fields (maxLength 2000)
-        if (dto.BggApiToken is not null)
+        if (dto.BoardGameGeekApiToken is not null)
         {
-            var sanitized = InputSanitizer.Sanitize(dto.BggApiToken, maxLength: 2000);
-            await UpsertSettingAsync(BggApiTokenKey, sanitized, cancellationToken);
+            var sanitized = InputSanitizer.Sanitize(dto.BoardGameGeekApiToken, maxLength: 2000);
+            await UpsertSettingAsync(BoardGameGeekApiTokenKey, sanitized, cancellationToken);
         }
 
         if (dto.DiscogsPersonalAccessToken is not null)
@@ -102,10 +102,10 @@ public class SettingsController(
         }
 
         // Sanitize and save username fields (maxLength 100)
-        if (dto.BggUsername is not null)
+        if (dto.BoardGameGeekUsername is not null)
         {
-            var sanitized = InputSanitizer.Sanitize(dto.BggUsername, maxLength: 100);
-            await UpsertSettingAsync(BggUsernameKey, sanitized, cancellationToken);
+            var sanitized = InputSanitizer.Sanitize(dto.BoardGameGeekUsername, maxLength: 100);
+            await UpsertSettingAsync(BoardGameGeekUsernameKey, sanitized, cancellationToken);
         }
 
         if (dto.DiscogsUsername is not null)

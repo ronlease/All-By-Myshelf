@@ -56,8 +56,8 @@ cd src/AllByMyshelf.Api
 dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=allbymyshelf;Username=allbymyshelf;Password=localdev"
 dotnet user-secrets set "Auth0:Domain" "<your-auth0-domain>"
 dotnet user-secrets set "Auth0:Audience" "<your-auth0-audience>"
-dotnet user-secrets set "Bgg:ApiToken" "<your-bgg-api-token>"
-dotnet user-secrets set "Bgg:Username" "<your-bgg-username>"
+dotnet user-secrets set "BoardGameGeek:ApiToken" "<your-boardgamegeek-api-token>"
+dotnet user-secrets set "BoardGameGeek:Username" "<your-boardgamegeek-username>"
 dotnet user-secrets set "Discogs:PersonalAccessToken" "<your-discogs-personal-access-token>"
 dotnet user-secrets set "Discogs:Username" "<your-discogs-username>"
 dotnet user-secrets set "Hardcover:ApiToken" "<your-hardcover-api-token>"
@@ -118,7 +118,7 @@ All-By-Myshelf/
     AllByMyshelf.Api/
       Common/                 # Shared types (PagedResult, SyncStartResult)
       Features/
-        Bgg/                  # Board games, sync, BGG XML API client
+        BoardGameGeek/        # Board games, sync, BoardGameGeek XML API client
         Config/               # GET /api/v1/config/features
         Discogs/              # Releases, sync, duplicates, Discogs API client
         Hardcover/            # Books, sync, Hardcover API client
@@ -174,8 +174,8 @@ Never commit secrets. All secrets are managed via `dotnet user-secrets` locally.
 | `ConnectionStrings:Default` | PostgreSQL connection string |
 | `Auth0:Domain` | Auth0 tenant domain (e.g. `dev-xxxx.us.auth0.com`) |
 | `Auth0:Audience` | Auth0 API identifier (e.g. `https://localhost/api`) |
-| `Bgg:ApiToken` | BoardGameGeek API token |
-| `Bgg:Username` | BoardGameGeek username |
+| `BoardGameGeek:ApiToken` | BoardGameGeek API token |
+| `BoardGameGeek:Username` | BoardGameGeek username |
 | `Discogs:PersonalAccessToken` | Discogs personal access token |
 | `Discogs:Username` | Discogs username |
 | `Hardcover:ApiToken` | Hardcover API token (from hardcover.app/account/api) |

@@ -1,7 +1,7 @@
 ---
 name: product-owner
 description: Invoke when defining business problems, creating or updating backlog items, writing acceptance criteria, or prioritizing features. Triggers on keywords like backlog, story, feature request, business problem, acceptance criteria, priority.
-model: claude-opus-4-5
+model: opus
 ---
 
 # Product Owner Agent

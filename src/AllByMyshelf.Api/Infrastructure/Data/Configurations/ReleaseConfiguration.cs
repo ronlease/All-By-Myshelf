@@ -15,6 +15,10 @@ public class ReleaseConfiguration : IEntityTypeConfiguration<Release>
 
         builder.HasKey(r => r.Id);
 
+        builder.Property(r => r.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
+
         builder.Property(r => r.Id)
             .HasColumnName("id")
             .ValueGeneratedNever();

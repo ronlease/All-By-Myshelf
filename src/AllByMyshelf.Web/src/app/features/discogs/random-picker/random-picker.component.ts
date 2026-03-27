@@ -12,7 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 import { DiscogsService, ReleaseDetailDto, ReleaseDto } from '../discogs.service';
-import { BoardGameDto, BggService } from '../../bgg/bgg.service';
+import { BoardGameDto, BoardGameGeekService } from '../../board-game-geek/board-game-geek.service';
 import { BookDto, HardcoverService } from '../../hardcover/hardcover.service';
 import { FeaturesService } from '../../../core/config/features.service';
 import { FormatIconPipe } from '../format-icon.pipe';
@@ -43,8 +43,8 @@ export class RandomPickerComponent implements OnInit {
   allBoardGames = signal<BoardGameDto[]>([]);
   allBooks = signal<BookDto[]>([]);
   allReleases = signal<ReleaseDto[]>([]);
-  bggEnabled = signal(false);
-  private readonly bggService = inject(BggService);
+  boardGameGeekEnabled = signal(false);
+  private readonly boardGameGeekService = inject(BoardGameGeekService);
   bookAuthorFilter = signal('');
   bookGenreFilter = signal('');
   context = signal<PickContext>('records');
@@ -104,7 +104,7 @@ export class RandomPickerComponent implements OnInit {
   }
 
   isBoardGame(result: PickResult): result is BoardGameDto {
-    return result !== null && 'bggId' in result;
+    return result !== null && 'boardGameGeekId' in result;
   }
 
   isBook(result: PickResult): result is BookDto {
@@ -117,12 +117,12 @@ export class RandomPickerComponent implements OnInit {
 
   ngOnInit(): void {
     this.featuresService.getFeatures().subscribe(features => {
-      this.bggEnabled.set(features.bggEnabled);
+      this.boardGameGeekEnabled.set(features.boardGameGeekEnabled);
       this.discogsEnabled.set(features.discogsEnabled);
       this.hardcoverEnabled.set(features.hardcoverEnabled);
 
       const lastCollection = localStorage.getItem('last-collection');
-      if (lastCollection === 'board-games' && features.bggEnabled) {
+      if (lastCollection === 'board-games' && features.boardGameGeekEnabled) {
         this.context.set('board-games');
       } else if (lastCollection === 'books' && features.hardcoverEnabled) {
         this.context.set('books');
@@ -130,7 +130,7 @@ export class RandomPickerComponent implements OnInit {
         this.context.set('records');
       } else if (features.hardcoverEnabled) {
         this.context.set('books');
-      } else if (features.bggEnabled) {
+      } else if (features.boardGameGeekEnabled) {
         this.context.set('board-games');
       }
     });
@@ -158,7 +158,7 @@ export class RandomPickerComponent implements OnInit {
       error: () => this.loading.set(false),
     });
 
-    this.bggService.getBoardGames(1, 10000).subscribe({
+    this.boardGameGeekService.getBoardGames(1, 10000).subscribe({
       next: (res) => {
         this.allBoardGames.set(res.items);
       },

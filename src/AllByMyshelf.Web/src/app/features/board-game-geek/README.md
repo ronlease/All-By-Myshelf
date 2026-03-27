@@ -1,4 +1,4 @@
-# BGG (BoardGameGeek) Feature — Frontend
+# BoardGameGeek Feature — Frontend
 
 Displays the board game collection sourced from BoardGameGeek.
 
@@ -11,7 +11,7 @@ Displays the board game collection sourced from BoardGameGeek.
 
 ## Services
 
-- **BggService** — API calls to `/api/v1/boardgames/*` (list, detail, random, sync status, trigger sync)
+- **BoardGameGeekService** — API calls to `/api/v1/boardgames/*` (list, detail, random, sync status, trigger sync)
 
 ## Routes
 

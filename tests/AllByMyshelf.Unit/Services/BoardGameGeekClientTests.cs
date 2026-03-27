@@ -1,33 +1,33 @@
 // Feature: BGG API Token Authentication (ABM-063)
 //
-// Scenario: BggClient sends Authorization header when API token is configured
-//   Given the BggOptions has a non-empty ApiToken
+// Scenario: BoardGameGeekClient sends Authorization header when API token is configured
+//   Given the BoardGameGeekOptions has a non-empty ApiToken
 //   When GetCollectionAsync is called
 //   Then the HTTP request includes "Authorization: Bearer {token}"
 //
-// Scenario: BggClient sends Authorization header when calling GetThingDetailsAsync
-//   Given the BggOptions has a non-empty ApiToken
+// Scenario: BoardGameGeekClient sends Authorization header when calling GetThingDetailsAsync
+//   Given the BoardGameGeekOptions has a non-empty ApiToken
 //   When GetThingDetailsAsync is called
 //   Then the HTTP request includes "Authorization: Bearer {token}"
 //
-// Scenario: BggClient does not send Authorization header when token is null
-//   Given the BggOptions has a null ApiToken
+// Scenario: BoardGameGeekClient does not send Authorization header when token is null
+//   Given the BoardGameGeekOptions has a null ApiToken
 //   When GetCollectionAsync is called
 //   Then the HTTP request does not include an Authorization header
 //
-// Scenario: BggClient does not send Authorization header when token is empty
-//   Given the BggOptions has an empty ApiToken
+// Scenario: BoardGameGeekClient does not send Authorization header when token is empty
+//   Given the BoardGameGeekOptions has an empty ApiToken
 //   When GetCollectionAsync is called
 //   Then the HTTP request does not include an Authorization header
 //
-// Scenario: BggClient does not send Authorization header when token is whitespace
-//   Given the BggOptions has a whitespace-only ApiToken
+// Scenario: BoardGameGeekClient does not send Authorization header when token is whitespace
+//   Given the BoardGameGeekOptions has a whitespace-only ApiToken
 //   When GetCollectionAsync is called
 //   Then the HTTP request does not include an Authorization header
 
 using System.Net;
 using System.Text.Json;
-using AllByMyshelf.Api.Features.Bgg;
+using AllByMyshelf.Api.Features.BoardGameGeek;
 using AllByMyshelf.Unit.TestDoubles;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,7 +36,7 @@ using Moq;
 
 namespace AllByMyshelf.Unit.Services;
 
-public class BggClientTests
+public class BoardGameGeekClientTests
 {
     // ── Authorization header — token configured ───────────────────────────────
 
@@ -167,7 +167,7 @@ public class BggClientTests
 
         // Assert
         result.Should().HaveCount(2);
-        result[0].BggId.Should().Be(174430);
+        result[0].BoardGameGeekId.Should().Be(174430);
         result[0].Name.Should().Be("Gloomhaven");
         result[0].YearPublished.Should().Be(2017);
         result[0].CoverImageUrl.Should().Be("https://cf.geekdo-images.com/gloom.jpg");
@@ -177,12 +177,12 @@ public class BggClientTests
         result[0].MinPlaytime.Should().Be(60);
         result[0].MaxPlaytime.Should().Be(120);
 
-        result[1].BggId.Should().Be(167791);
+        result[1].BoardGameGeekId.Should().Be(167791);
         result[1].Name.Should().Be("Terraforming Mars");
     }
 
     [Fact]
-    public async Task GetCollectionAsync_SkipsItemsWithZeroBggId()
+    public async Task GetCollectionAsync_SkipsItemsWithZeroBoardGameGeekId()
     {
         // Arrange
         var xml = new StringContent(
@@ -207,7 +207,7 @@ public class BggClientTests
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].BggId.Should().Be(12345);
+        result[0].BoardGameGeekId.Should().Be(12345);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class BggClientTests
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].BggId.Should().Be(99999);
+        result[0].BoardGameGeekId.Should().Be(99999);
         result[0].YearPublished.Should().BeNull();
         result[0].CoverImageUrl.Should().BeNull();
         result[0].ThumbnailUrl.Should().BeNull();
@@ -402,21 +402,21 @@ public class BggClientTests
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static BggClient CreateClient(HttpMessageHandler handler, string? apiToken, string username = "testuser")
+    private static BoardGameGeekClient CreateClient(HttpMessageHandler handler, string? apiToken, string username = "testuser")
     {
         var httpClient = new HttpClient(handler)
         {
             BaseAddress = new Uri("https://boardgamegeek.com")
         };
 
-        var options = new Mock<IOptions<BggOptions>>();
-        options.Setup(o => o.Value).Returns(new BggOptions
+        var options = new Mock<IOptions<BoardGameGeekOptions>>();
+        options.Setup(o => o.Value).Returns(new BoardGameGeekOptions
         {
             ApiToken = apiToken ?? string.Empty,
             Username = username
         });
 
-        return new BggClient(httpClient, options.Object, NullLogger<BggClient>.Instance);
+        return new BoardGameGeekClient(httpClient, options.Object, NullLogger<BoardGameGeekClient>.Instance);
     }
 
     private static StringContent MakeBggCollectionXml() =>

@@ -6,8 +6,8 @@
 //   And no tokens are in configuration
 //   When I call GET /api/v1/settings with a valid auth token
 //   Then the response status is 200
-//   And bggApiToken is ""
-//   And bggUsername is ""
+//   And boardGameGeekApiToken is ""
+//   And boardGameGeekUsername is ""
 //   And discogsPersonalAccessToken is ""
 //   And discogsUsername is ""
 //   And hardcoverApiToken is ""
@@ -54,21 +54,21 @@
 //   When I GET /api/v1/settings
 //   Then the masked token is "••••••"
 //
-// Scenario: BGG API token is masked in GET response (ABM-063)
-//   Given "Bgg:ApiToken" is "bgg-secret-token-12345" in configuration
+// Scenario: BoardGameGeek API token is masked in GET response (ABM-063)
+//   Given "BoardGameGeek:ApiToken" is "bgg-secret-token-12345" in configuration
 //   When I call GET /api/v1/settings
-//   Then bggApiToken is masked (e.g., "bgg-••••45")
+//   Then boardGameGeekApiToken is masked (e.g., "bgg-••••45")
 //
-// Scenario: BGG API token can be saved via PUT (ABM-063)
-//   Given I PUT to /api/v1/settings with { "bggApiToken": "new-bgg-token" }
+// Scenario: BoardGameGeek API token can be saved via PUT (ABM-063)
+//   Given I PUT to /api/v1/settings with { "boardGameGeekApiToken": "new-bgg-token" }
 //   When the response is returned
 //   Then the response status is 204
-//   And the token is stored in the database under key "Bgg:ApiToken"
+//   And the token is stored in the database under key "BoardGameGeek:ApiToken"
 //
-// Scenario: GET returns empty bggApiToken when none configured (ABM-063)
-//   Given no BGG token is in database or configuration
+// Scenario: GET returns empty boardGameGeekApiToken when none configured (ABM-063)
+//   Given no BoardGameGeek token is in database or configuration
 //   When I call GET /api/v1/settings
-//   Then bggApiToken is ""
+//   Then boardGameGeekApiToken is ""
 //
 // Scenario: Feature flags reflect database-stored tokens
 //   Given I save a Hardcover API token via PUT /api/v1/settings
@@ -116,7 +116,7 @@ public class SettingsEndpointTests
     public async Task GetSettings_NoDbNoConfig_ReturnsEmptyStringsAndDefaultTheme()
     {
         // Arrange
-        await using var factory = CreateFactory(bggToken: null, discogsToken: null, hardcoverToken: null);
+        await using var factory = CreateFactory(boardGameGeekToken: null, discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
 
         // Act
@@ -125,8 +125,8 @@ public class SettingsEndpointTests
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<SettingsDto>();
-        body!.BggApiToken.Should().Be(string.Empty);
-        body.BggUsername.Should().Be(string.Empty);
+        body!.BoardGameGeekApiToken.Should().Be(string.Empty);
+        body.BoardGameGeekUsername.Should().Be(string.Empty);
         body.DiscogsPersonalAccessToken.Should().Be(string.Empty);
         body.DiscogsUsername.Should().Be(string.Empty);
         body.HardcoverApiToken.Should().Be(string.Empty);
@@ -230,8 +230,8 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
-            BggApiToken: null,
-            BggUsername: null,
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: "new-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -251,8 +251,8 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
-            BggApiToken: null,
-            BggUsername: null,
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: "new-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -278,8 +278,8 @@ public class SettingsEndpointTests
         await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
-            BggApiToken: null,
-            BggUsername: null,
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: null,
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -305,8 +305,8 @@ public class SettingsEndpointTests
 
         // Save first token (8+ chars for masking: first 4 + "••••" + last 2)
         var dto1 = new UpdateSettingsDto(
-            BggApiToken: null,
-            BggUsername: null,
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: "discogs-token-123",
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -315,8 +315,8 @@ public class SettingsEndpointTests
 
         // Save second token without including first
         var dto2 = new UpdateSettingsDto(
-            BggApiToken: null,
-            BggUsername: null,
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: null,
             DiscogsUsername: null,
             HardcoverApiToken: "hardcover-token-456",
@@ -332,17 +332,17 @@ public class SettingsEndpointTests
         body.HardcoverApiToken.Should().Be("hard••••56"); // masked version of "hardcover-token-456"
     }
 
-    // ── GET /api/v1/settings — BGG API token masking (ABM-063) ───────────────
+    // ── GET /api/v1/settings — BoardGameGeek API token masking (ABM-063) ───────────────
 
     [Fact]
     public async Task GetSettings_BggTokenInConfig_ReturnsMaskedToken()
     {
         // Arrange
         await using var factory = CreateFactory(
-            bggToken: "bgg-secret-token-12345",
+            boardGameGeekToken: "bgg-secret-token-12345",
             discogsToken: null,
             hardcoverToken: null,
-            bggUsername: "bgg-test-user");
+            boardGameGeekUsername: "bgg-test-user");
         var client = factory.CreateClient();
 
         // Act
@@ -350,14 +350,14 @@ public class SettingsEndpointTests
         var body = await response.Content.ReadFromJsonAsync<SettingsDto>();
 
         // Assert
-        body!.BggApiToken.Should().Be("bgg-••••45"); // first 4 + "••••" + last 2
+        body!.BoardGameGeekApiToken.Should().Be("bgg-••••45"); // first 4 + "••••" + last 2
     }
 
     [Fact]
-    public async Task GetSettings_NoBggToken_ReturnsEmptyString()
+    public async Task GetSettings_NoBoardGameGeekToken_ReturnsEmptyString()
     {
         // Arrange
-        await using var factory = CreateFactory(bggToken: null, discogsToken: null, hardcoverToken: null);
+        await using var factory = CreateFactory(boardGameGeekToken: null, discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
 
         // Act
@@ -365,20 +365,20 @@ public class SettingsEndpointTests
         var body = await response.Content.ReadFromJsonAsync<SettingsDto>();
 
         // Assert
-        body!.BggApiToken.Should().Be(string.Empty);
+        body!.BoardGameGeekApiToken.Should().Be(string.Empty);
     }
 
-    // ── PUT /api/v1/settings — save BGG API token (ABM-063) ──────────────────
+    // ── PUT /api/v1/settings — save BoardGameGeek API token (ABM-063) ──────────────────
 
     [Fact]
-    public async Task PutSettings_SaveBggToken_Returns204AndTokenStoredInDatabase()
+    public async Task PutSettings_SaveBoardGameGeekToken_Returns204AndTokenStoredInDatabase()
     {
         // Arrange
-        await using var factory = CreateFactory(bggToken: null, discogsToken: null, hardcoverToken: null);
+        await using var factory = CreateFactory(boardGameGeekToken: null, discogsToken: null, hardcoverToken: null);
         var client = factory.CreateClient();
         var dto = new UpdateSettingsDto(
-            BggApiToken: "new-bgg-token-xyz",
-            BggUsername: null,
+            BoardGameGeekApiToken: "new-bgg-token-xyz",
+            BoardGameGeekUsername: null,
             DiscogsPersonalAccessToken: null,
             DiscogsUsername: null,
             HardcoverApiToken: null,
@@ -392,7 +392,7 @@ public class SettingsEndpointTests
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AllByMyshelfDbContext>();
-        var stored = await db.AppSettings.FindAsync("Bgg:ApiToken");
+        var stored = await db.AppSettings.FindAsync("BoardGameGeek:ApiToken");
         stored.Should().NotBeNull();
         stored!.Value.Should().Be("new-bgg-token-xyz");
     }
@@ -400,11 +400,11 @@ public class SettingsEndpointTests
     // ── Factory helper ────────────────────────────────────────────────────────
 
     private static SettingsFactory CreateFactory(
-        string? bggToken = null,
+        string? boardGameGeekToken = null,
         string? discogsToken = null,
         string? hardcoverToken = null,
-        string? bggUsername = null,
-        string? discogsUsername = null) => new(bggToken, discogsToken, hardcoverToken, bggUsername, discogsUsername);
+        string? boardGameGeekUsername = null,
+        string? discogsUsername = null) => new(boardGameGeekToken, discogsToken, hardcoverToken, boardGameGeekUsername, discogsUsername);
 
     private static SettingsFactoryWithoutAuth CreateFactoryWithoutAuth() => new();
 
@@ -412,10 +412,10 @@ public class SettingsEndpointTests
     /// Minimal factory that configures specific token values (or none) for settings tests.
     /// </summary>
     private sealed class SettingsFactory(
-        string? bggToken,
+        string? boardGameGeekToken,
         string? discogsToken,
         string? hardcoverToken,
-        string? bggUsername,
+        string? boardGameGeekUsername,
         string? discogsUsername)
         : WebApplicationFactory<Program>
     {
@@ -429,8 +429,8 @@ public class SettingsEndpointTests
                 {
                     ["Auth0:Domain"] = "test.auth0.com",
                     ["Auth0:Audience"] = "https://test-api",
-                    ["Bgg:ApiToken"] = bggToken,
-                    ["Bgg:Username"] = bggUsername ?? (bggToken is not null ? "integration-test-bgg-user" : null),
+                    ["BoardGameGeek:ApiToken"] = boardGameGeekToken,
+                    ["BoardGameGeek:Username"] = boardGameGeekUsername ?? (boardGameGeekToken is not null ? "integration-test-bgg-user" : null),
                     ["Discogs:PersonalAccessToken"] = discogsToken,
                     ["Discogs:Username"] = discogsUsername ?? (discogsToken is not null ? "integration-test-user" : null),
                     ["Hardcover:ApiToken"] = hardcoverToken,

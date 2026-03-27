@@ -3,7 +3,7 @@ namespace AllByMyshelf.Api.Models.Entities;
 /// <summary>
 /// Represents a vinyl release persisted from a Discogs collection sync.
 /// </summary>
-public class Release
+public class Release : CollectionEntityBase
 {
     /// <summary>UTC timestamp of when this release was first added to the local database.</summary>
     public DateTimeOffset? AddedAt { get; set; }
@@ -29,12 +29,6 @@ public class Release
     /// <summary>Highest marketplace price from Discogs; null when unavailable.</summary>
     public decimal? HighestPrice { get; set; }
 
-    /// <summary>Primary key (application-generated GUID).</summary>
-    public Guid Id { get; set; }
-
-    /// <summary>UTC timestamp of the last sync that touched this record.</summary>
-    public DateTimeOffset LastSyncedAt { get; set; }
-
     /// <summary>Lowest marketplace price from Discogs; null when unavailable.</summary>
     public decimal? LowestPrice { get; set; }
 
@@ -47,17 +41,14 @@ public class Release
     /// <summary>User-provided rating on a scale of 1-5; null when unrated.</summary>
     public int? Rating { get; set; }
 
-    /// <summary>Release title as returned by Discogs.</summary>
-    public string Title { get; set; } = string.Empty;
+    /// <summary>Thumbnail image URL as returned by Discogs; null when not provided.</summary>
+    public string? ThumbnailUrl { get; set; }
 
     /// <summary>Unique artist names extracted from the release tracklist; used for searching compilations.</summary>
     public List<string> TrackArtists { get; set; } = [];
 
     /// <summary>Full tracklist with position, title, and per-track artists.</summary>
     public ICollection<Track> Tracks { get; set; } = [];
-
-    /// <summary>Thumbnail image URL as returned by Discogs; null when not provided.</summary>
-    public string? ThumbnailUrl { get; set; }
 
     /// <summary>Release year; null when Discogs does not provide one.</summary>
     public int? Year { get; set; }
