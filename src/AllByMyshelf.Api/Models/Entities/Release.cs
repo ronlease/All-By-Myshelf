@@ -14,6 +14,9 @@ public class Release
     /// <summary>Full-size cover image URL as returned by Discogs; null when not provided.</summary>
     public string? CoverImageUrl { get; set; }
 
+    /// <summary>UTC timestamp of when detail/pricing data was last fetched from Discogs; null when not yet fetched.</summary>
+    public DateTimeOffset? DetailSyncedAt { get; set; }
+
     /// <summary>Discogs release ID used for upsert matching.</summary>
     public int DiscogsId { get; set; }
 

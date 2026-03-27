@@ -7,11 +7,12 @@ Displays the vinyl record collection, wantlist, and collection management tools 
 | Component | Description |
 |-----------|-------------|
 | `CollectionComponent` | Full collection list with advanced filtering, sorting, and grouping |
-| `ReleaseDetailComponent` | Single record detail with editable notes and star rating (1–5) |
+| `ReleaseDetailComponent` | Single record detail with editable notes, star rating (1–5), and re-sync button |
 | `RandomPickerComponent` | Cross-feature random item picker (records/books/board games) with filters and history |
 | `DuplicatesComponent` | Lists duplicate releases in collection |
 | `MaintenanceComponent` | Shows releases with incomplete metadata |
 | `WantlistComponent` | Paginated wantlist view |
+| `SyncOptionsDialogComponent` | Dialog for selecting sync mode (incremental/full/stale) and options |
 | `FormatIconPipe` | Custom pipe for displaying format icons |
 
 ## Services
@@ -43,3 +44,13 @@ Displays the vinyl record collection, wantlist, and collection management tools 
 - Recently added sidebar on collection
 - Format icons for visual distinction
 - Auto-reloads on sync completion
+- Sync options dialog with mode selection and stale days configuration
+- Single release re-sync button on detail view
+
+## Interfaces
+
+- `ReleaseDto`, `ReleaseDetailDto` — Release data from API
+- `TrackDto` — Track position, title, and per-track artists
+- `SyncOptionsDto` — Sync mode (incremental/full/stale), data categories, stale days
+- `SyncEstimateDto` — New/cached/total release counts for sync preview
+- `SyncProgressDto` — Current sync status and progress

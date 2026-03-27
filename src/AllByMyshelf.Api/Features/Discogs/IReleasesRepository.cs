@@ -66,6 +66,13 @@ public interface IReleasesRepository
     Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Updates a single release with re-synced detail/pricing data, replacing its tracks.
+    /// </summary>
+    /// <param name="release">The release with updated fields and tracks.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task UpdateResyncedReleaseAsync(Models.Entities.Release release, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Replaces the entire collection with <paramref name="releases"/>.
     /// Existing records matching by <see cref="Release.DiscogsId"/> are updated;
     /// new records are inserted; records no longer present are deleted.

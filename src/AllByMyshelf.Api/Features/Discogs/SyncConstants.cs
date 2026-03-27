@@ -11,6 +11,7 @@ public static class SyncConstants
     {
         public const string Full = "full";
         public const string Incremental = "incremental";
+        public const string Stale = "stale";
     }
 
     /// <summary>Sync phase values for <see cref="SyncProgressDto.Phase"/>.</summary>

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AllByMyshelf.Api.Common;
 
 namespace AllByMyshelf.Api.Features.Discogs;
@@ -5,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// <summary>
 /// Implementation of <see cref="IReleasesService"/> that reads from the local database.
 /// </summary>
-public class ReleasesService(IReleasesRepository repository) : IReleasesService
+public partial class ReleasesService(IReleasesRepository repository, DiscogsClient discogsClient) : IReleasesService
 {
     private const int MaxPageSize = 10000;
 
@@ -134,6 +135,63 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             .ToList(),
         Year = release.Year,
     };
+
+    /// <inheritdoc/>
+    public async Task<ReleaseDetailDto?> ResyncAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var release = await repository.GetByIdAsync(id, cancellationToken);
+        if (release is null)
+            return null;
+
+        var detail = await discogsClient.GetReleaseDetailAsync(release.DiscogsId, cancellationToken);
+        if (detail is not null)
+        {
+            release.Genre = detail.Genres.FirstOrDefault();
+
+            release.TrackArtists = detail.Tracklist
+                .SelectMany(t => t.Artists)
+                .Select(a => StripDisambiguation(a.Name))
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(n => !release.Artists.Contains(n, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            release.Tracks = detail.Tracklist
+                .Where(t => !string.IsNullOrWhiteSpace(t.Title))
+                .Select(t => new Models.Entities.Track
+                {
+                    Artists = t.Artists
+                        .Select(a => StripDisambiguation(a.Name))
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .ToList(),
+                    Id = Guid.NewGuid(),
+                    Position = t.Position,
+                    ReleaseId = release.Id,
+                    Title = t.Title,
+                })
+                .ToList();
+        }
+
+        var stats = await discogsClient.GetMarketplaceStatsAsync(release.DiscogsId, cancellationToken);
+        if (stats is not null)
+        {
+            release.HighestPrice = stats.HighestPrice?.Value;
+            release.LowestPrice = stats.LowestPrice?.Value;
+            release.MedianPrice = stats.MedianPrice?.Value;
+        }
+
+        release.DetailSyncedAt = DateTimeOffset.UtcNow;
+
+        await repository.UpdateResyncedReleaseAsync(release, cancellationToken);
+
+        return MapToDetailDto(release);
+    }
+
+    [GeneratedRegex(@"\s*\(\d+\)$")]
+    private static partial Regex DisambiguationPattern();
+
+    private static string StripDisambiguation(string name) =>
+        DisambiguationPattern().Replace(name, "").Trim();
 
     /// <inheritdoc/>
     public async Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken)

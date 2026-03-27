@@ -192,6 +192,10 @@ namespace AllByMyshelf.Api.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("cover_image_url");
 
+                    b.Property<DateTimeOffset?>("DetailSyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detail_synced_at");
+
                     b.Property<int>("DiscogsId")
                         .HasColumnType("integer")
                         .HasColumnName("discogs_id");

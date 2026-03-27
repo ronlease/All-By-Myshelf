@@ -198,6 +198,33 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     }
 
     /// <inheritdoc/>
+    public async Task UpdateResyncedReleaseAsync(Release release, CancellationToken cancellationToken)
+    {
+        var existing = await db.Releases
+            .Include(r => r.Tracks)
+            .FirstOrDefaultAsync(r => r.Id == release.Id, cancellationToken);
+
+        if (existing is null) return;
+
+        existing.DetailSyncedAt = release.DetailSyncedAt;
+        existing.Genre = release.Genre;
+        existing.HighestPrice = release.HighestPrice;
+        existing.LowestPrice = release.LowestPrice;
+        existing.MedianPrice = release.MedianPrice;
+        existing.TrackArtists = release.TrackArtists;
+
+        // Replace tracks.
+        db.Tracks.RemoveRange(existing.Tracks);
+        foreach (var track in release.Tracks)
+        {
+            track.ReleaseId = existing.Id;
+            await db.Tracks.AddAsync(track, cancellationToken);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async Task UpsertCollectionAsync(IEnumerable<Release> releases, CancellationToken cancellationToken)
     {
         // Deduplicate by DiscogsId — keep the last occurrence if the API returns duplicates.
@@ -226,6 +253,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 // Update in-place so EF tracks the change.
                 existingRelease.Artists = release.Artists;
                 existingRelease.CoverImageUrl = release.CoverImageUrl;
+                existingRelease.DetailSyncedAt = release.DetailSyncedAt;
                 existingRelease.Format = release.Format;
                 existingRelease.Genre = release.Genre;
                 existingRelease.HighestPrice = release.HighestPrice;

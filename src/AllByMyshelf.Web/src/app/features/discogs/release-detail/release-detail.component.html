@@ -142,6 +142,17 @@
               <mat-icon>open_in_new</mat-icon>
               View on Discogs
             </a>
+            <button mat-raised-button (click)="resyncRelease()" [disabled]="resyncing()">
+              @if (resyncing()) {
+                <mat-spinner diameter="18" style="display: inline-block; margin-right: 4px;"></mat-spinner>
+                Re-syncing…
+              } @else {
+                <ng-container>
+                  <mat-icon>refresh</mat-icon>
+                  Re-sync
+                </ng-container>
+              }
+            </button>
             <button mat-button (click)="onBackClick()">
               <mat-icon>arrow_back</mat-icon>
               Back to Collection

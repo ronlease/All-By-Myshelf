@@ -19,14 +19,16 @@ Manages the vinyl record collection and wantlist sourced from the Discogs REST A
 | GET | `/api/v1/releases/duplicates` | Releases with same artist+title but different Discogs IDs |
 | GET | `/api/v1/releases/maintenance` | Releases with incomplete data (missing cover, genre, year) |
 | PUT | `/api/v1/releases/{id}/notes-rating` | Update user notes and rating (1–5 stars) |
-| POST | `/api/v1/sync` | Trigger Discogs sync |
+| POST | `/api/v1/releases/{id}/resync` | Re-sync a single release from Discogs |
+| POST | `/api/v1/sync` | Trigger Discogs sync (accepts SyncOptionsDto) |
 | GET | `/api/v1/sync/status` | Current sync progress |
+| GET | `/api/v1/sync/estimate` | Returns estimated sync scope (new/cached/total releases) |
 
 ## Key Components
 
 - **DiscogsClient** — HTTP client with rate-limit handling and pause/resume events; URL-encodes usernames in API paths
 - **ReleasesService** — Business logic layer
-- **SyncService** — `BackgroundService` that syncs both collection and wantlist with progress tracking
+- **SyncService** — `BackgroundService` that syncs both collection and wantlist with progress tracking; `ShouldRefresh()` determines whether to re-fetch based on mode
 - **ReleasesRepository** — EF Core data access for releases
 - **ReleasesController** — Release endpoints
 - **SyncController** — Sync trigger and status endpoints
@@ -35,16 +37,25 @@ Manages the vinyl record collection and wantlist sourced from the Discogs REST A
 
 - Background worker with detailed progress tracking (current/total/status/retryAfterSeconds)
 - Fetches full collection (100 per page), then for each release fetches detail and marketplace stats
-- **Incremental sync** — skips detail/pricing API calls for previously synced releases; only fetches for new additions
+- **Three sync modes:**
+  - **Incremental** — skips detail/pricing API calls for previously synced releases; only fetches for new additions
+  - **Full** — re-fetches detail/pricing for all releases regardless of prior sync state
+  - **Stale** — re-fetches releases where `DetailSyncedAt` is older than `StaleDays` (default 30)
+- `Release.DetailSyncedAt` field tracks when detail/pricing was last fetched for age-based re-sync
 - Extracts unique track-level artists from release tracklists (for searching compilations/soundtracks)
 - Strips Discogs disambiguation suffixes (e.g., "(2)") from artist names
 - Handles 429 rate-limit with exponential backoff
 - Syncs wantlist after collection; removes items no longer on user's wantlist
+- **Single release re-sync** via `POST /api/v1/releases/{id}/resync` for on-demand refresh
 
 ## Models
 
-- `Release`, `WantlistRelease` — EF Core entities
+- `Release`, `WantlistRelease` — EF Core entities (`Release.DetailSyncedAt` tracks age for stale sync)
 - `ReleaseDto`, `ReleaseDetailDto`, `DuplicateGroupDto`, `MaintenanceReleaseDto` — Response DTOs
+- `TrackDto` — Track position, title, and per-track artists (record)
 - `ReleaseFilter`, `RandomReleaseFilter` — Query filter models
 - `SyncProgressDto` — Sync status (Current, Total, Status, RetryAfterSeconds)
+- `SyncOptionsDto` — Sync mode (incremental/full/stale), data categories, stale days (record)
+- `SyncEstimateDto` — New/cached/total release counts for sync preview (record)
+- `SyncConstants` — Named constants for modes, phases, statuses
 - `DiscogsOptions` — Configuration options (Username, PersonalAccessToken)

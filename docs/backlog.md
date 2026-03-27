@@ -4286,7 +4286,7 @@ Feature: Centralized sanitization of user-entered data
 
 ## [ABM-069] Display Music Artists as Individual Names
 
-**Status:** Ready
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -4341,7 +4341,7 @@ Feature: Music artists displayed as individual names
 
 ## [ABM-070] Squash EF Core Migrations to Single Baseline
 
-**Status:** Ready
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -4380,7 +4380,7 @@ Feature: Squash EF Core migrations to single baseline
 
 ## [ABM-071] Store Sync Date Per Release and Selective Re-Sync Options
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -4449,7 +4449,7 @@ Feature: Selective re-sync options for Discogs releases
 
 ## [ABM-072] Single Release Re-Sync from Detail View
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Medium
 
 ### Business Problem
@@ -4584,4 +4584,39 @@ Feature: Sync UI redesign with granular sync options
     Given I started a sync with specific options
     When the sync is in progress
     Then the progress indicator shows the current phase and items remaining
+```
+
+---
+
+## [ABM-075] Hot-Reload API Configuration After Settings Change
+
+**Status:** Backlog
+**Priority:** Low
+
+### Business Problem
+The DbConfigurationProvider loads API tokens and other settings from the app_settings table at application startup. When a user saves new credentials via the Settings page, the running API process still uses the old (empty or stale) config until it is manually restarted. This is a poor experience after a fresh database setup or credential rotation — the user saves their tokens, tries to sync, and nothing works until they realize they need to restart the server.
+
+### Acceptance Criteria
+```gherkin
+Feature: Hot-reload API configuration after settings change
+
+  Scenario: Settings changes take effect without restart
+    Given the API is running
+    And I update an API token via the Settings page
+    When the settings are saved successfully
+    Then the updated token is available to sync services immediately
+    And I do not need to restart the API server
+
+  Scenario: Feature flags reflect updated credentials immediately
+    Given the API is running
+    And no Discogs token is configured
+    When I save a Discogs token via the Settings page
+    Then GET /api/v1/config/features returns discogsEnabled: true
+    And the Sync Music option appears in the sidebar without a page refresh
+
+  Scenario: Sync works immediately after saving new credentials
+    Given the API is running with a freshly wiped database
+    When I save API tokens via the Settings page
+    And I trigger a sync
+    Then the sync starts successfully using the newly saved tokens
 ```

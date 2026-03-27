@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRadioModule } from '@angular/material/radio';
 import { DiscogsService, SyncEstimateDto, SyncOptionsDto } from '../discogs.service';
@@ -16,7 +18,9 @@ import { DiscogsService, SyncEstimateDto, SyncOptionsDto } from '../discogs.serv
     MatButtonModule,
     MatCheckboxModule,
     MatDialogModule,
+    MatFormFieldModule,
     MatIconModule,
+    MatInputModule,
     MatProgressSpinnerModule,
     MatRadioModule,
   ],
@@ -31,7 +35,8 @@ export class SyncOptionsDialogComponent implements OnInit {
   includePricing = true;
   includeWantlist = true;
   loading = signal(true);
-  mode: 'incremental' | 'full' = 'incremental';
+  mode: 'incremental' | 'full' | 'stale' = 'incremental';
+  staleDays = 30;
 
   ngOnInit(): void {
     this.discogsService.getSyncEstimate().subscribe({
@@ -55,6 +60,7 @@ export class SyncOptionsDialogComponent implements OnInit {
       includePricing: this.includePricing,
       includeWantlist: this.includeWantlist,
       mode: this.mode,
+      staleDays: this.staleDays,
     };
     this.dialogRef.close(options);
   }
