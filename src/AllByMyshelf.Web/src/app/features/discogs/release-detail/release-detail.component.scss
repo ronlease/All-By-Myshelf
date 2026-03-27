@@ -1,3 +1,15 @@
+.col-artist {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-position {
+  text-align: center;
+  width: 50px;
+}
+
 .notes-field {
   width: 100%;
 }
@@ -26,6 +38,40 @@
     font-size: 16px;
     font-weight: 500;
     margin-bottom: 8px;
+  }
+}
+
+.tracklist-section {
+  margin-top: 24px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+}
+
+.tracklist-table {
+  border-collapse: collapse;
+  width: 100%;
+
+  th {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  tbody tr:hover {
+    background: rgba(0, 0, 0, 0.04);
   }
 }
 

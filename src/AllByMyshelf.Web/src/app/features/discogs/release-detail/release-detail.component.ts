@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,6 +38,10 @@ import { FormatIconPipe } from '../format-icon.pipe';
 export class ReleaseDetailComponent implements OnInit {
   private readonly discogsService = inject(DiscogsService);
   error = signal(false);
+  hasTrackArtists = computed(() => {
+    const r = this.release();
+    return r !== null && r.tracks.some(t => t.artists.length > 0);
+  });
   loading = signal(true);
   readonly Math = Math;
   notesControl = new FormControl<string>('');

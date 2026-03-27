@@ -16,23 +16,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         if (release is null)
             return null;
 
-        return new ReleaseDetailDto
-        {
-            Artists = release.Artists,
-            CoverImageUrl = release.CoverImageUrl,
-            DiscogsId = release.DiscogsId,
-            Format = release.Format,
-            Genre = release.Genre,
-            HighestPrice = release.HighestPrice,
-            Id = release.Id,
-            LowestPrice = release.LowestPrice,
-            MedianPrice = release.MedianPrice,
-            Notes = release.Notes,
-            Rating = release.Rating,
-            Title = release.Title,
-            TrackArtists = release.TrackArtists,
-            Year = release.Year,
-        };
+        return MapToDetailDto(release);
     }
 
     /// <inheritdoc/>
@@ -81,23 +65,7 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
         var release = await repository.GetRandomAsync(filter, cancellationToken);
         if (release is null) return null;
 
-        return new ReleaseDetailDto
-        {
-            Artists = release.Artists,
-            CoverImageUrl = release.CoverImageUrl,
-            DiscogsId = release.DiscogsId,
-            Format = release.Format,
-            Genre = release.Genre,
-            HighestPrice = release.HighestPrice,
-            Id = release.Id,
-            LowestPrice = release.LowestPrice,
-            MedianPrice = release.MedianPrice,
-            Notes = release.Notes,
-            Rating = release.Rating,
-            Title = release.Title,
-            TrackArtists = release.TrackArtists,
-            Year = release.Year,
-        };
+        return MapToDetailDto(release);
     }
 
     /// <inheritdoc/>
@@ -145,6 +113,27 @@ public class ReleasesService(IReleasesRepository repository) : IReleasesService
             TotalCount = totalCount
         };
     }
+
+    private static ReleaseDetailDto MapToDetailDto(Models.Entities.Release release) => new()
+    {
+        Artists = release.Artists,
+        CoverImageUrl = release.CoverImageUrl,
+        DiscogsId = release.DiscogsId,
+        Format = release.Format,
+        Genre = release.Genre,
+        HighestPrice = release.HighestPrice,
+        Id = release.Id,
+        LowestPrice = release.LowestPrice,
+        MedianPrice = release.MedianPrice,
+        Notes = release.Notes,
+        Rating = release.Rating,
+        Title = release.Title,
+        TrackArtists = release.TrackArtists,
+        Tracks = release.Tracks
+            .Select(t => new TrackDto(t.Artists, t.Position, t.Title))
+            .ToList(),
+        Year = release.Year,
+    };
 
     /// <inheritdoc/>
     public async Task<bool> UpdateNotesAndRatingAsync(Guid id, string? notes, int? rating, CancellationToken cancellationToken)

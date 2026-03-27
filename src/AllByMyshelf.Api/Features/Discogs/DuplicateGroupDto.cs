@@ -6,10 +6,10 @@ namespace AllByMyshelf.Api.Features.Discogs;
 public record DuplicateGroupDto
 {
     /// <summary>List of artist names shared by all releases in this group.</summary>
-    public required List<string> Artists { get; init; }
+    public required IReadOnlyList<string> Artists { get; init; }
 
     /// <summary>List of duplicate releases in this group.</summary>
-    public required List<DuplicateReleaseDto> Releases { get; init; }
+    public required IReadOnlyList<DuplicateReleaseDto> Releases { get; init; }
 
     /// <summary>Title shared by all releases in this group.</summary>
     public required string Title { get; init; }

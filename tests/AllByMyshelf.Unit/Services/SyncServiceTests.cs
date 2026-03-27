@@ -372,7 +372,7 @@ public class SyncServiceTests
 
         // Assert
         sut.IsSyncRunning.Should().BeFalse();
-        sut.Progress.Status.Should().Be("idle");
+        sut.Progress.Status.Should().Be(SyncConstants.Statuses.Idle);
     }
 
     [Fact]

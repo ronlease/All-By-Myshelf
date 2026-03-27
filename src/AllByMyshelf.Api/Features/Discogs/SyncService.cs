@@ -19,8 +19,10 @@ public partial class SyncService(
     private readonly DiscogsOptions _options = options.Value;
 
     private volatile int _current;
+    private volatile string? _phase;
     private volatile int _retryAfterSeconds;
-    private volatile string _status = "idle";
+    private volatile string _status = SyncConstants.Statuses.Idle;
+    private SyncOptionsDto _syncOptions = new();
     private volatile int _total;
 
     /// <inheritdoc/>
@@ -36,15 +38,41 @@ public partial class SyncService(
     public SyncProgressDto Progress => new(
         IsRunning: IsSyncRunning,
         Current: _current,
+        Phase: _phase,
         RetryAfterSeconds: _retryAfterSeconds > 0 ? _retryAfterSeconds : null,
         Status: _status,
         Total: _total
     );
 
-    /// <summary>
-    /// Maps common fields from Discogs BasicInformation to a tuple of properties
-    /// shared between Release and WantlistRelease entities.
-    /// </summary>
+    /// <inheritdoc/>
+    public SyncOptionsDto SyncOptions => _syncOptions;
+
+    /// <inheritdoc/>
+    public async Task<SyncEstimateDto> GetEstimateAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var discogsClient = scope.ServiceProvider.GetRequiredService<DiscogsClient>();
+        var releasesRepository = scope.ServiceProvider.GetRequiredService<IReleasesRepository>();
+
+        var apiReleases = await discogsClient.GetCollectionAsync(cancellationToken);
+        var existingReleases = await releasesRepository.GetAllByDiscogsIdAsync(cancellationToken);
+
+        var newCount = apiReleases.Count(r => !existingReleases.ContainsKey(r.Id));
+
+        return new SyncEstimateDto(
+            CachedReleases: apiReleases.Count - newCount,
+            NewReleases: newCount,
+            TotalReleases: apiReleases.Count
+        );
+    }
+
+    /// <inheritdoc/>
+    public SyncStartResult TryStartSync(SyncOptionsDto? options = null)
+    {
+        _syncOptions = options ?? new SyncOptionsDto();
+        return base.TryStartSync();
+    }
+
     /// <summary>
     /// Strips Discogs disambiguation suffixes like " (2)" from artist names.
     /// </summary>
@@ -79,8 +107,9 @@ public partial class SyncService(
     protected override void OnSyncCompleted()
     {
         _current = 0;
+        _phase = null;
         _retryAfterSeconds = 0;
-        _status = "idle";
+        _status = SyncConstants.Statuses.Idle;
         _total = 0;
     }
 
@@ -98,14 +127,15 @@ public partial class SyncService(
         discogsClient.OnRateLimitPause += seconds =>
         {
             _retryAfterSeconds = seconds;
-            _status = "pausing";
+            _status = SyncConstants.Statuses.Pausing;
         };
         discogsClient.OnRateLimitResume += () =>
         {
             _retryAfterSeconds = 0;
-            _status = "resuming";
+            _status = SyncConstants.Statuses.Resuming;
         };
 
+        _phase = SyncConstants.Phases.Collection;
         var apiReleases = await discogsClient.GetCollectionAsync(cancellationToken);
         logger.LogInformation("Fetched {Count} releases from Discogs.", apiReleases.Count);
 
@@ -114,7 +144,7 @@ public partial class SyncService(
 
         _total = apiReleases.Count;
         _current = 0;
-        _status = "syncing";
+        _status = SyncConstants.Statuses.Syncing;
 
         var now = DateTimeOffset.UtcNow;
         var entities = new List<Release>(apiReleases.Count);
@@ -123,7 +153,7 @@ public partial class SyncService(
         foreach (var r in apiReleases)
         {
             _current++;
-            _status = "syncing";
+            _status = SyncConstants.Statuses.Syncing;
 
             var (artists, coverImageUrl, format, thumbnailUrl, title, year) = MapBasicReleaseFields(r);
 
@@ -140,43 +170,82 @@ public partial class SyncService(
                 Year = year,
             };
 
-            // If this release was previously synced, reuse its detail/pricing
-            // fields and skip the expensive per-release API calls.
-            if (existingReleases.TryGetValue(r.Id, out var cached))
+            // Determine whether to fetch detail for this release.
+            var isFullMode = string.Equals(_syncOptions.Mode, SyncConstants.Modes.Full, StringComparison.OrdinalIgnoreCase);
+            var isCached = existingReleases.TryGetValue(r.Id, out var cached);
+            var shouldFetchDetail = !isCached || isFullMode;
+
+            if (isCached && !shouldFetchDetail)
             {
-                release.Genre = cached.Genre;
+                // Reuse cached detail/pricing fields and skip API calls.
+                release.Genre = cached!.Genre;
                 release.HighestPrice = cached.HighestPrice;
                 release.LowestPrice = cached.LowestPrice;
                 release.MedianPrice = cached.MedianPrice;
                 release.TrackArtists = cached.TrackArtists;
+                release.Tracks = cached.Tracks;
                 skipped++;
             }
             else
             {
-                var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
-                if (detail is not null)
+                // Carry forward cached values first, then overwrite selectively.
+                if (isCached)
                 {
-                    release.Genre = detail.Genres.FirstOrDefault();
-
-                    var trackArtists = detail.Tracklist
-                        .SelectMany(t => t.Artists)
-                        .Select(a => StripDisambiguation(a.Name))
-                        .Where(n => !string.IsNullOrWhiteSpace(n))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .Where(n => !artists.Contains(n, StringComparer.OrdinalIgnoreCase))
-                        .ToList();
-                    release.TrackArtists = trackArtists;
-
-                    logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
+                    release.Genre = cached!.Genre;
+                    release.HighestPrice = cached.HighestPrice;
+                    release.LowestPrice = cached.LowestPrice;
+                    release.MedianPrice = cached.MedianPrice;
+                    release.TrackArtists = cached.TrackArtists;
+                    release.Tracks = cached.Tracks;
                 }
 
-                var stats = await discogsClient.GetMarketplaceStatsAsync(r.Id, cancellationToken);
-                if (stats is not null)
+                if (_syncOptions.IncludeDetails)
                 {
-                    release.HighestPrice = stats.HighestPrice?.Value;
-                    release.LowestPrice = stats.LowestPrice?.Value;
-                    release.MedianPrice = stats.MedianPrice?.Value;
-                    logger.LogDebug("Fetched marketplace stats for Discogs ID {DiscogsId}.", r.Id);
+                    _phase = SyncConstants.Phases.Details;
+                    var detail = await discogsClient.GetReleaseDetailAsync(r.Id, cancellationToken);
+                    if (detail is not null)
+                    {
+                        release.Genre = detail.Genres.FirstOrDefault();
+
+                        var trackArtists = detail.Tracklist
+                            .SelectMany(t => t.Artists)
+                            .Select(a => StripDisambiguation(a.Name))
+                            .Where(n => !string.IsNullOrWhiteSpace(n))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .Where(n => !artists.Contains(n, StringComparer.OrdinalIgnoreCase))
+                            .ToList();
+                        release.TrackArtists = trackArtists;
+
+                        release.Tracks = detail.Tracklist
+                            .Where(t => !string.IsNullOrWhiteSpace(t.Title))
+                            .Select(t => new Models.Entities.Track
+                            {
+                                Artists = t.Artists
+                                    .Select(a => StripDisambiguation(a.Name))
+                                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                                    .ToList(),
+                                Id = Guid.NewGuid(),
+                                Position = t.Position,
+                                ReleaseId = release.Id,
+                                Title = t.Title,
+                            })
+                            .ToList();
+
+                        logger.LogDebug("Fetched detail for Discogs ID {DiscogsId}.", r.Id);
+                    }
+                }
+
+                if (_syncOptions.IncludePricing)
+                {
+                    _phase = SyncConstants.Phases.Pricing;
+                    var stats = await discogsClient.GetMarketplaceStatsAsync(r.Id, cancellationToken);
+                    if (stats is not null)
+                    {
+                        release.HighestPrice = stats.HighestPrice?.Value;
+                        release.LowestPrice = stats.LowestPrice?.Value;
+                        release.MedianPrice = stats.MedianPrice?.Value;
+                        logger.LogDebug("Fetched marketplace stats for Discogs ID {DiscogsId}.", r.Id);
+                    }
                 }
             }
             entities.Add(release);
@@ -184,14 +253,25 @@ public partial class SyncService(
 
         logger.LogInformation("Skipped detail/pricing fetches for {Skipped} releases with complete data.", skipped);
 
-        _status = "saving";
+        _phase = SyncConstants.Phases.Saving;
+        _status = SyncConstants.Statuses.Saving;
         await releasesRepository.UpsertCollectionAsync(entities, cancellationToken);
-        logger.LogInformation("Discogs collection sync completed. Starting wantlist sync...");
+        logger.LogInformation("Discogs collection sync completed.");
+
+        if (!_syncOptions.IncludeWantlist)
+        {
+            logger.LogInformation("Wantlist sync skipped per sync options.");
+            logger.LogInformation("Discogs sync completed successfully.");
+            return;
+        }
+
+        logger.LogInformation("Starting wantlist sync...");
 
         // Sync wantlist
         var wantlistEntities = new List<Models.Entities.WantlistRelease>();
         var wantlistPage = 1;
-        _status = "syncing wantlist";
+        _phase = SyncConstants.Phases.Wantlist;
+        _status = SyncConstants.Statuses.SyncingWantlist;
 
         while (true)
         {
@@ -232,7 +312,7 @@ public partial class SyncService(
             wantlistPage++;
         }
 
-        _status = "saving wantlist";
+        _status = SyncConstants.Statuses.SavingWantlist;
         await wantlistRepository.UpsertAsync(wantlistEntities, cancellationToken);
 
         var activeWantlistIds = wantlistEntities.Select(w => w.DiscogsId).ToHashSet();

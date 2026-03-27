@@ -14,7 +14,7 @@ namespace AllByMyshelf.Api.Features.Bgg;
 /// <param name="YearPublished">Year published; null when not available.</param>
 public record BoardGameDto(
     int BggId,
-    List<string> Designers,
+    IReadOnlyList<string> Designers,
     string? Genre,
     Guid Id,
     int? MaxPlayers,

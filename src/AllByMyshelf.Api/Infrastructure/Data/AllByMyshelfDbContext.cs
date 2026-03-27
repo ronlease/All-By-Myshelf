@@ -14,6 +14,8 @@ public class AllByMyshelfDbContext(DbContextOptions<AllByMyshelfDbContext> optio
 
     public DbSet<Release> Releases => Set<Release>();
 
+    public DbSet<Track> Tracks => Set<Track>();
+
     public DbSet<WantlistRelease> WantlistReleases => Set<WantlistRelease>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

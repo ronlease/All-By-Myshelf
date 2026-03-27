@@ -6,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 public class BookDetailDto
 {
     /// <summary>List of author names.</summary>
-    public List<string> Authors { get; init; } = [];
+    public IReadOnlyList<string> Authors { get; init; } = [];
 
     /// <summary>Cover image URL; null when not available.</summary>
     public string? CoverImageUrl { get; init; }

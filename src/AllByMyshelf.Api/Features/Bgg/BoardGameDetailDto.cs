@@ -15,7 +15,7 @@ public class BoardGameDetailDto
     public string? Description { get; init; }
 
     /// <summary>List of designer names.</summary>
-    public List<string> Designers { get; init; } = [];
+    public IReadOnlyList<string> Designers { get; init; } = [];
 
     /// <summary>Primary category/genre; null when not available.</summary>
     public string? Genre { get; init; }

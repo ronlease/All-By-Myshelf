@@ -14,6 +14,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     public async Task<Dictionary<int, Release>> GetAllByDiscogsIdAsync(CancellationToken cancellationToken)
     {
         return await db.Releases
+            .Include(r => r.Tracks)
             .AsNoTracking()
             .ToDictionaryAsync(r => r.DiscogsId, cancellationToken);
     }
@@ -22,6 +23,7 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
     public async Task<Release?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.Releases
+            .Include(r => r.Tracks)
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
@@ -205,8 +207,10 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
             .ToList();
         var incomingIds = incoming.Select(r => r.DiscogsId).ToHashSet();
 
-        // Load all existing records in one query.
-        var existing = await db.Releases.ToDictionaryAsync(r => r.DiscogsId, cancellationToken);
+        // Load all existing records (with tracks) in one query.
+        var existing = await db.Releases
+            .Include(r => r.Tracks)
+            .ToDictionaryAsync(r => r.DiscogsId, cancellationToken);
 
         // Remove records that no longer exist in the Discogs collection.
         var toRemove = existing.Values
@@ -232,6 +236,17 @@ public class ReleasesRepository(AllByMyshelfDbContext db) : IReleasesRepository
                 existingRelease.Title = release.Title;
                 existingRelease.TrackArtists = release.TrackArtists;
                 existingRelease.Year = release.Year;
+
+                // Replace tracks: remove old, add new.
+                if (release.Tracks.Count > 0)
+                {
+                    db.Tracks.RemoveRange(existingRelease.Tracks);
+                    foreach (var track in release.Tracks)
+                    {
+                        track.ReleaseId = existingRelease.Id;
+                        await db.Tracks.AddAsync(track, cancellationToken);
+                    }
+                }
             }
             else
             {

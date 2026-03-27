@@ -4502,3 +4502,86 @@ Feature: Single release re-sync from detail view
     And the original data remains unchanged
     And the re-sync button is re-enabled for retry
 ```
+
+---
+
+## [ABM-073] Release Detail Track Listing
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+The release detail page shows album metadata but no track listing. When I search for a compilation/soundtrack artist (e.g., "The Fixx" on Streets of Fire), I find the album but cannot see which tracks that artist performed. The Discogs release detail API returns a full tracklist with per-track artists, but this data is not currently stored or displayed. For single-artist albums, the track listing should show position and title only. For multi-artist albums (compilations, soundtracks, split releases), each track should also display its artist.
+
+### Acceptance Criteria
+```gherkin
+Feature: Release detail track listing
+
+  # --- Data sync ---
+
+  Scenario: Tracklist data is stored during sync
+    Given a release is synced from Discogs
+    When the release detail is fetched from the Discogs API
+    Then the tracklist (position, title, per-track artists) is persisted to the database
+
+  # --- Single-artist albums ---
+
+  Scenario: Single-artist album shows track listing without per-track artists
+    Given a release has one artist
+    And the tracklist has been synced from Discogs
+    When I view the release detail page
+    Then I see a track listing with position and title for each track
+    And no per-track artist is shown
+
+  # --- Multi-artist albums ---
+
+  Scenario: Multi-artist album shows track listing with per-track artists
+    Given a release has multiple artists (compilation, soundtrack, or split)
+    And the tracklist has been synced from Discogs
+    When I view the release detail page
+    Then I see a track listing with position, artist, and title for each track
+
+  # --- Empty state ---
+
+  Scenario: Release with no tracklist data
+    Given a release has not yet had its tracklist synced
+    When I view the release detail page
+    Then no track listing section is shown
+```
+
+---
+
+## [ABM-074] Sync UI Redesign - Granular Sync Options
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+The current sync is a single "sync everything" button. As the sync becomes more granular (incremental sync, selective re-sync, single-release re-sync, tracklist sync), I need a more sophisticated sync UI that lets me choose what to sync and see what each option costs in terms of API calls and time. This is an iterative design task that encompasses ABM-071 (selective re-sync by age), ABM-072 (single release re-sync from detail view), tracklist sync options (ABM-073), a sync options dialog or panel that shows available sync modes, estimated API call counts and time for each option, the ability to choose which data to fetch (basic collection, detail/genre, marketplace pricing, tracklists), and progress indicators tailored to each sync mode.
+
+### Acceptance Criteria
+```gherkin
+Feature: Sync UI redesign with granular sync options
+
+  # --- Sync options dialog ---
+
+  Scenario: User sees sync options before starting a sync
+    Given I click the sync button
+    When the sync options dialog appears
+    Then I see available sync modes with descriptions
+    And each mode shows estimated scope (e.g., "12 new releases" or "45 releases older than 30 days")
+
+  # --- Data category selection ---
+
+  Scenario: User can select which data categories to sync
+    Given the sync options dialog is open
+    When I configure the sync
+    Then I can toggle which data to fetch: basic info, detail/genre, pricing, tracklists
+
+  # --- Progress indicators ---
+
+  Scenario: Sync progress reflects chosen options
+    Given I started a sync with specific options
+    When the sync is in progress
+    Then the progress indicator shows the current phase and items remaining
+```

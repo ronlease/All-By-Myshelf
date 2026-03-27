@@ -1,0 +1,63 @@
+<h2 mat-dialog-title>Sync Music Options</h2>
+
+<mat-dialog-content>
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Loading collection info...</span>
+    </div>
+  } @else {
+    @if (estimate()) {
+      <div class="estimate-summary">
+        <div class="estimate-item">
+          <span class="estimate-label">Total releases</span>
+          <span class="estimate-value">{{ estimate()!.totalReleases }}</span>
+        </div>
+        <div class="estimate-item">
+          <span class="estimate-label">New releases</span>
+          <span class="estimate-value highlight">{{ estimate()!.newReleases }}</span>
+        </div>
+        <div class="estimate-item">
+          <span class="estimate-label">Cached releases</span>
+          <span class="estimate-value">{{ estimate()!.cachedReleases }}</span>
+        </div>
+      </div>
+    }
+
+    <h3>Sync Mode</h3>
+    <mat-radio-group [(ngModel)]="mode" class="mode-group">
+      <mat-radio-button value="incremental">
+        <div class="option-label">Incremental</div>
+        <div class="option-desc">Only fetch details for new releases</div>
+      </mat-radio-button>
+      <mat-radio-button value="full">
+        <div class="option-label">Full</div>
+        <div class="option-desc">Re-fetch details for all releases</div>
+      </mat-radio-button>
+    </mat-radio-group>
+
+    <h3>Data Categories</h3>
+    <div class="category-options">
+      <mat-checkbox [(ngModel)]="includeDetails">
+        <div class="option-label">Details &amp; Tracklists</div>
+        <div class="option-desc">Genre, tracklist, and per-track artists</div>
+      </mat-checkbox>
+      <mat-checkbox [(ngModel)]="includePricing">
+        <div class="option-label">Marketplace Pricing</div>
+        <div class="option-desc">Low, median, and high prices</div>
+      </mat-checkbox>
+      <mat-checkbox [(ngModel)]="includeWantlist">
+        <div class="option-label">Wantlist</div>
+        <div class="option-desc">Sync wantlist items after collection</div>
+      </mat-checkbox>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onStart()" [disabled]="loading()">
+    <mat-icon>sync</mat-icon>
+    Start Sync
+  </button>
+</mat-dialog-actions>

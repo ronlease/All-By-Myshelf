@@ -102,4 +102,5 @@ public abstract class SyncServiceBase : BackgroundService
         _syncChannel.Writer.TryWrite(true);
         return SyncStartResult.Started;
     }
+
 }

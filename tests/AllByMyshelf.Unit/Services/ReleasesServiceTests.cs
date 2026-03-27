@@ -93,6 +93,21 @@
 //   Given GetReleasesAsync is called with filter = null
 //   When the service calls the repository
 //   Then repository.GetPagedAsync is called with filter = null
+//
+// Scenario: GetByIdAsync maps single-artist track to TrackDto (ABM-073)
+//   Given the repository returns a release with a single-artist track
+//   When GetByIdAsync is called
+//   Then the returned ReleaseDetailDto has a TrackDto with an empty Artists list
+//
+// Scenario: GetByIdAsync maps multi-artist track to TrackDto (ABM-073)
+//   Given the repository returns a release with a multi-artist track
+//   When GetByIdAsync is called
+//   Then the returned ReleaseDetailDto has a TrackDto with all artist names
+//
+// Scenario: GetByIdAsync maps empty tracklist to empty Tracks list (ABM-073)
+//   Given the repository returns a release with no tracks
+//   When GetByIdAsync is called
+//   Then the returned ReleaseDetailDto has an empty Tracks list
 
 using AllByMyshelf.Api.Common;
 using AllByMyshelf.Api.Features.Discogs;
@@ -658,5 +673,93 @@ public class ReleasesServiceTests
         _repositoryMock.Verify(
             r => r.GetPagedAsync(1, 25, It.IsAny<CancellationToken>(), null),
             Times.Once);
+    }
+
+    // ── GetByIdAsync — track mapping (ABM-073) ───────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_ReleaseWithEmptyTracklist_MapsEmptyTracksListToDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 800);
+        release.Tracks = new List<Track>();
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tracks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReleaseWithMultiArtistTrack_MapsAllArtistsToTrackDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 801);
+        release.Tracks = new List<Track>
+        {
+            new()
+            {
+                Artists = new List<string> { "Miles Davis", "John Coltrane" },
+                Id = Guid.NewGuid(),
+                Position = "1",
+                ReleaseId = id,
+                Title = "So What"
+            }
+        };
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tracks.Should().HaveCount(1);
+        result.Tracks[0].Artists.Should().BeEquivalentTo(new[] { "Miles Davis", "John Coltrane" });
+        result.Tracks[0].Position.Should().Be("1");
+        result.Tracks[0].Title.Should().Be("So What");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReleaseWithSingleArtistTrack_MapsEmptyArtistsListToTrackDto()
+    {
+        // Arrange — single-artist albums have empty per-track Artists
+        var id = Guid.NewGuid();
+        var release = MakeDetailedRelease(id, discogsId: 802);
+        release.Tracks = new List<Track>
+        {
+            new()
+            {
+                Artists = new List<string>(),
+                Id = Guid.NewGuid(),
+                Position = "A1",
+                ReleaseId = id,
+                Title = "Acknowledgement"
+            }
+        };
+
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(release);
+
+        // Act
+        var result = await _sut.GetByIdAsync(id, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tracks.Should().HaveCount(1);
+        result.Tracks[0].Artists.Should().BeEmpty();
+        result.Tracks[0].Position.Should().Be("A1");
+        result.Tracks[0].Title.Should().Be("Acknowledgement");
     }
 }

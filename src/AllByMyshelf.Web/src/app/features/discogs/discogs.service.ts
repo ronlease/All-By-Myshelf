@@ -17,7 +17,14 @@ export interface ReleaseDetailDto {
   rating: number | null;
   title: string;
   trackArtists: string[];
+  tracks: TrackDto[];
   year: number | null;
+}
+
+export interface TrackDto {
+  artists: string[];
+  position: string;
+  title: string;
 }
 
 export interface ReleaseDto {
@@ -37,11 +44,25 @@ export interface RandomReleaseFilter {
   genre?: string;
 }
 
+export interface SyncEstimateDto {
+  cachedReleases: number;
+  newReleases: number;
+  totalReleases: number;
+}
+
+export interface SyncOptionsDto {
+  includeDetails: boolean;
+  includePricing: boolean;
+  includeWantlist: boolean;
+  mode: 'incremental' | 'full';
+}
+
 export interface SyncProgressDto {
   current: number;
   isRunning: boolean;
+  phase: string | null;
   retryAfterSeconds: number | null;
-  status: 'idle' | 'syncing' | 'pausing' | 'resuming' | 'saving';
+  status: 'idle' | 'syncing' | 'pausing' | 'resuming' | 'saving' | 'syncing wantlist' | 'saving wantlist';
   total: number;
 }
 
@@ -134,12 +155,16 @@ export class DiscogsService {
     return this.http.get<ReleaseDetailDto>(`${this.baseUrl}/api/v1/releases/${id}`);
   }
 
+  getSyncEstimate(): Observable<SyncEstimateDto> {
+    return this.http.get<SyncEstimateDto>(`${this.baseUrl}/api/v1/sync/estimate`);
+  }
+
   getSyncStatus(): Observable<SyncProgressDto> {
     return this.http.get<SyncProgressDto>(`${this.baseUrl}/api/v1/sync/status`);
   }
 
-  triggerSync(): Observable<HttpResponse<unknown>> {
-    return this.http.post<unknown>(`${this.baseUrl}/api/v1/sync`, null, { observe: 'response' });
+  triggerSync(options?: SyncOptionsDto): Observable<HttpResponse<unknown>> {
+    return this.http.post<unknown>(`${this.baseUrl}/api/v1/sync`, options ?? null, { observe: 'response' });
   }
 
   updateNotesAndRating(id: string, data: UpdateNotesRatingDto): Observable<void> {

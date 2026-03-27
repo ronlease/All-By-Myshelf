@@ -6,7 +6,7 @@ namespace AllByMyshelf.Api.Features.Wantlist;
 public record WantlistReleaseDto
 {
     /// <summary>List of artist names.</summary>
-    public required List<string> Artists { get; init; }
+    public required IReadOnlyList<string> Artists { get; init; }
 
     /// <summary>Cover image URL; null when not available.</summary>
     public string? CoverImageUrl { get; init; }

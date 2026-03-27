@@ -1,5 +1,6 @@
 // Feature: Manual sync trigger endpoint            (ABM-005)
 // Feature: Background sync of Discogs collection   (ABM-002)
+// Feature: Sync UI Redesign - Granular Sync Options (ABM-074)
 //
 // Scenario: Successfully trigger a sync
 //   Given the Discogs personal access token is configured
@@ -20,6 +21,19 @@
 //   When I send POST /api/v1/sync
 //   Then the response is HTTP 503 Service Unavailable
 //   And the response body explains that the Discogs token is not configured
+//
+// Scenario: Trigger sync with custom options (ABM-074)
+//   Given the Discogs personal access token is configured
+//   And no sync is currently running
+//   When I send POST /api/v1/sync with SyncOptionsDto in the body
+//   Then the response is HTTP 202 Accepted
+//   And the ISyncService receives the custom options
+//
+// Scenario: Get sync estimate (ABM-074)
+//   Given the Discogs personal access token is configured
+//   When I send GET /api/v1/sync/estimate
+//   Then the response is HTTP 200 OK
+//   And the response body includes TotalReleases, NewReleases, and CachedReleases
 
 using System.Net;
 using AllByMyshelf.Api.Common;
@@ -158,6 +172,93 @@ public class SyncEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
     }
 
+    // ── POST /api/v1/sync — with custom options (ABM-074) ────────────────────
+
+    [Fact]
+    public async Task TriggerSync_WithCustomOptions_PassesOptionsToService()
+    {
+        // Arrange
+        var syncService = new StubSyncService(SyncStartResult.Started);
+        var client = CreateClient(syncService);
+        var options = new SyncOptionsDto(
+            IncludeDetails: false,
+            IncludePricing: false,
+            IncludeWantlist: true,
+            Mode: "full"
+        );
+        var json = System.Text.Json.JsonSerializer.Serialize(options);
+        var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await client.PostAsync("/api/v1/sync", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        syncService.ReceivedOptions.Should().NotBeNull();
+        syncService.ReceivedOptions!.IncludeDetails.Should().BeFalse();
+        syncService.ReceivedOptions.IncludePricing.Should().BeFalse();
+        syncService.ReceivedOptions.IncludeWantlist.Should().BeTrue();
+        syncService.ReceivedOptions.Mode.Should().Be("full");
+    }
+
+    [Fact]
+    public async Task TriggerSync_WithNoBody_UsesDefaultOptions()
+    {
+        // Arrange
+        var syncService = new StubSyncService(SyncStartResult.Started);
+        var client = CreateClient(syncService);
+
+        // Act
+        var response = await client.PostAsync("/api/v1/sync", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        // The stub records null when no options are passed
+        syncService.ReceivedOptions.Should().BeNull();
+    }
+
+    // ── GET /api/v1/sync/estimate (ABM-074) ──────────────────────────────────
+
+    [Fact]
+    public async Task GetEstimate_ReturnsEstimateData()
+    {
+        // Arrange
+        var estimate = new SyncEstimateDto(
+            CachedReleases: 50,
+            NewReleases: 10,
+            TotalReleases: 60
+        );
+        var syncService = new StubSyncService(SyncStartResult.Started, estimate: estimate);
+        var client = CreateClient(syncService);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/sync/estimate");
+        var body = await response.Content.ReadAsStringAsync();
+        var result = System.Text.Json.JsonSerializer.Deserialize<SyncEstimateDto>(body,
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Should().NotBeNull();
+        result!.TotalReleases.Should().Be(60);
+        result.NewReleases.Should().Be(10);
+        result.CachedReleases.Should().Be(50);
+    }
+
+    [Fact]
+    public async Task GetEstimate_Returns200OK()
+    {
+        // Arrange
+        var syncService = new StubSyncService(SyncStartResult.Started);
+        var client = CreateClient(syncService);
+
+        // Act
+        var response = await client.GetAsync("/api/v1/sync/estimate");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     // ── WebApplicationFactory ─────────────────────────────────────────────────
 
     private sealed class SyncFactory(ISyncService syncService) : WebApplicationFactory<Program>
@@ -210,11 +311,26 @@ public class SyncEndpointTests
 
     // ── Stub ──────────────────────────────────────────────────────────────────
 
-    private sealed class StubSyncService(SyncStartResult result, bool isSyncRunning = false)
+    private sealed class StubSyncService(
+        SyncStartResult result,
+        bool isSyncRunning = false,
+        SyncEstimateDto? estimate = null)
         : ISyncService
     {
+        private readonly SyncEstimateDto _estimate = estimate ?? new SyncEstimateDto(0, 0, 0);
+
         public bool IsSyncRunning { get; } = isSyncRunning;
-        public SyncProgressDto Progress => new(IsSyncRunning, 0, null, IsSyncRunning ? "syncing" : "idle", 0);
-        public SyncStartResult TryStartSync() => result;
+        public SyncProgressDto Progress => new(0, IsSyncRunning, null, null, IsSyncRunning ? SyncConstants.Statuses.Syncing : SyncConstants.Statuses.Idle, 0);
+        public SyncOptionsDto? ReceivedOptions { get; private set; }
+        public SyncOptionsDto SyncOptions => new();
+
+        public Task<SyncEstimateDto> GetEstimateAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(_estimate);
+
+        public SyncStartResult TryStartSync(SyncOptionsDto? options = null)
+        {
+            ReceivedOptions = options;
+            return result;
+        }
     }
 }

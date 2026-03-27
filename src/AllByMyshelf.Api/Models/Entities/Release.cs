@@ -50,6 +50,9 @@ public class Release
     /// <summary>Unique artist names extracted from the release tracklist; used for searching compilations.</summary>
     public List<string> TrackArtists { get; set; } = [];
 
+    /// <summary>Full tracklist with position, title, and per-track artists.</summary>
+    public ICollection<Track> Tracks { get; set; } = [];
+
     /// <summary>Thumbnail image URL as returned by Discogs; null when not provided.</summary>
     public string? ThumbnailUrl { get; set; }
 
