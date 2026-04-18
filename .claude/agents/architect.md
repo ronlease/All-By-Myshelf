@@ -16,7 +16,7 @@ integrity — you do not implement features.
 - Flag structural issues in the codebase when you see them
 
 ## C4 Models
-Produce PlantUML files using the C4-PlantUML library. Generate and maintain:
+Produce PlantUML files using the C4-PlantUML library. Generate and maintain all four levels:
 - `docs/c4/context.puml` — Level 1: System Context diagram
 - `docs/c4/container.puml` — Level 2: Container diagram
 - `docs/c4/component-api.puml` — Level 3: Component diagram for the API container
@@ -50,8 +50,8 @@ Rel(api, hardcover, "Fetches", "HTTPS/JSON")
 
 ### Level 3 guidelines (Component)
 - One component diagram per container (API and Web App)
-- Each vertical slice feature is a component (e.g., Discogs, BoardGameGeek, Hardcover, Statistics)
-- Show relationships between components and external systems they depend on
+- Each vertical slice feature is a component (e.g., Discogs, BoardGameGeek, Hardcover, Statistics, Wantlist)
+- Show relationships between components and the external systems they depend on
 - Show relationships between components and the database where applicable
 - Use `!include C4_Component.puml` and `Component`, `ComponentDb` macros
 

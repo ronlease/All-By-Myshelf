@@ -19,7 +19,7 @@ backed by PostgreSQL via Entity Framework Core 10.
 ## Project Structure (Vertical Slice)
 ```
 src/AllByMyshelf.Api/
-  Common/               # Shared base classes (PagedResult, SyncServiceBase)
+  Common/               # Shared base classes (PagedResult, SyncServiceBase, CollectionEntityBase)
   Features/             # Vertical slices — each feature owns its controller, service, repository, DTOs, and client
     BoardGameGeek/      # Board game collection
     Config/             # Feature-flag / config endpoint
@@ -53,8 +53,10 @@ src/AllByMyshelf.Api/
 
 ## EF Core Rules
 - Migrations are explicit: `dotnet ef migrations add <Name>`
+- Auto-migration on startup is allowed
 - Use Fluent API for entity configuration in `IEntityTypeConfiguration<T>` classes
-- All collection entities inherit from `CollectionEntityBase`, which provides `Id` (Guid), `CreatedAt` (DateTimeOffset), `LastSyncedAt` (DateTimeOffset), and `Title` (string)
+- All collection entities inherit from `CollectionEntityBase`, which provides `Id` (Guid),
+  `CreatedAt` (DateTimeOffset), `LastSyncedAt` (DateTimeOffset), and `Title` (string)
 
 ## Auth0 Integration
 - Validate JWT bearer tokens on all protected endpoints

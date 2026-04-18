@@ -2,13 +2,14 @@
 
 ## Project Overview
 All By Myshelf is a personal collection dashboard that aggregates data from external APIs
-(Discogs, Hardcover, and others) into a single read-only view. It is a single-user application.
+(Discogs, Hardcover, BoardGameGeek, and others) into a single read-only view. It is a
+single-user application.
 
 ## Tech Stack
 - **API:** ASP.NET Core 10 Web API, Entity Framework Core 10, PostgreSQL
 - **Frontend:** Angular 21, standalone components, Angular Material
 - **Auth:** Auth0 (single user)
-- **Testing:** xUnit, Gherkin (SpecFlow or plain xUnit with Gherkin-style naming)
+- **Testing:** xUnit, Gherkin-style naming, FluentAssertions, Moq
 - **Documentation:** Swashbuckle (OpenAPI/Swagger), PlantUML (C4 models)
 - **Infrastructure:** Docker, Docker Compose, AWS (future)
 - **Secrets:** dotnet user-secrets (local), AWS Secrets Manager (cloud, future)
@@ -41,12 +42,15 @@ AllByMyshelf/
 
 ## Workflow
 - Workflow is fluid. Any agent may be invoked at any time.
+- Agents may edit files directly without asking for approval.
 - The Backend Engineer and QA Engineer work alongside each other:
   the Engineer implements a feature, QA immediately writes tests for it before moving on.
 - The Architect generates and updates OpenAPI specs and C4 models after API changes.
 - The Product Owner owns `docs/backlog.md` exclusively.
 - Commit locally freely as work progresses. Only push to origin or open/update PRs when explicitly asked.
-- "Backlog" always means `docs/backlog.md` (ABM-xxx items). The public hosting backlog (`docs/backlog-public-hosting.md`, PUB-xxx items) is only referenced when explicitly stated.
+- **Never commit directly to main.** Always create a feature branch and commit there.
+- "Backlog" always means `docs/backlog.md` (ABM-xxx items). The public hosting backlog
+  (`docs/backlog-public-hosting.md`, PUB-xxx items) is only referenced when explicitly stated.
 
 ## Routing Rules
 - "backlog", "story", "feature request", "business problem" → Product Owner
@@ -56,15 +60,15 @@ AllByMyshelf/
 - "test", "gherkin", "scenario", "given/when/then", "coverage" → QA Engineer
 
 ## Conventions
-- Prefer vertical slice / clean architecture over layer-based folder organization. Organize by domain/feature, not by layer (controllers, services, repositories, etc.).
+- Prefer vertical slice / clean architecture over layer-based folder organization. Organize by domain/feature, not by layer.
 - C# follows Microsoft conventions. Use `var` where type is obvious.
 - All API endpoints are versioned under `/api/v1/`.
 - All secrets go through `dotnet user-secrets` locally. Never hardcode credentials.
-- EF Core migrations are explicit, but auto-migration on startup is allowed.
+- EF Core migrations are explicit. Auto-migration on startup is allowed.
 - Angular uses standalone components. No NgModules.
 - All new features require a backlog entry before implementation.
-- **All fields, properties, methods, and variables within a class must be declared in alphabetical order.** This applies to both C# and TypeScript. Enforced to ease diffs and code review.
-- **Avoid abbreviations in naming.** Use full names (e.g., `BoardGameGeek` not `Bgg`, `board-game-geek` not `bgg`).
+- **All fields, properties, methods, and variables within a class must be declared in alphabetical order.** Applies to both C# and TypeScript. Enforced to ease diffs and code review.
+- **Avoid abbreviations in naming.** Use full names in both C# and TypeScript (e.g., `BoardGameGeek` not `Bgg`, `board-game-geek` not `bgg`).
 - **All collection entities inherit from `CollectionEntityBase`**, which provides `Id` (Guid), `CreatedAt` (DateTimeOffset), `LastSyncedAt` (DateTimeOffset), and `Title` (string).
 
 ## Pre-PR Checklist
@@ -76,4 +80,6 @@ Before any PR is opened, verify the following:
 5. All projects build successfully (`dotnet build`, `ng build`)
 6. All tests pass (`dotnet test`)
 7. Code coverage is at least 90% (excluding EF migrations, generated code, property-only DTOs, and Program.cs)
-8. Delete any leftover `coverage-*/` and `**/TestResults/` directories before committing
+8. Run `dotnet format` and fix all violations
+9. Delete any leftover `coverage-*/` and `**/TestResults/` directories before committing
+10. Update `docs/backlog.md` — mark completed items as `Done`, verify no stale statuses
