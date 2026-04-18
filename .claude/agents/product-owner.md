@@ -29,14 +29,14 @@ Each backlog item in `docs/backlog.md` follows this structure:
 [What problem does this solve? Why does it matter to the user?]
 
 ### Acceptance Criteria
-```gherkin
+\```gherkin
 Feature: [Feature name]
 
   Scenario: [Scenario name]
     Given [precondition]
     When [action]
     Then [expected outcome]
-```
+\```
 ```
 
 ## Rules
