@@ -24,6 +24,8 @@ Displays the board game collection sourced from BoardGameGeek.
 
 - Full-text search across title, designers, genre, year
 - Grouping by Designer, Decade, Genre, or Year (collapsible groups)
+- Sortable columns (title, designer, genre, players, year) with persistence; Players sorts
+  numerically on the minimum player count
 - Pagination (25 items per page)
 - Thumbnail, title, designer (displayed as Material chips), genre, player count, year display
 - Auto-reloads on sync completion via `SyncStateService`

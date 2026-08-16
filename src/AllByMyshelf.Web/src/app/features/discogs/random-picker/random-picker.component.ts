@@ -116,7 +116,7 @@ export class RandomPickerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.featuresService.getFeatures().subscribe(features => {
+    this.featuresService.getFeatures().subscribe((features) => {
       this.boardGameGeekEnabled.set(features.boardGameGeekEnabled);
       this.discogsEnabled.set(features.discogsEnabled);
       this.hardcoverEnabled.set(features.hardcoverEnabled);
@@ -182,29 +182,31 @@ export class RandomPickerComponent implements OnInit {
     this.picking.set(true);
 
     if (this.context() === 'records') {
-      this.discogsService.getRandomRelease({
-        decade: this.decadeFilter() || undefined,
-        format: this.formatFilter() || undefined,
-        genre: this.genreFilter() || undefined,
-      }).subscribe({
-        next: (release) => {
-          const current = this.results();
-          const updated = [release, ...current].slice(0, this.maxResults());
-          this.results.set(updated);
-          this.picking.set(false);
-        },
-        error: () => this.picking.set(false),
-      });
+      this.discogsService
+        .getRandomRelease({
+          decade: this.decadeFilter() || undefined,
+          format: this.formatFilter() || undefined,
+          genre: this.genreFilter() || undefined,
+        })
+        .subscribe({
+          next: (release) => {
+            const current = this.results();
+            const updated = [release, ...current].slice(0, this.maxResults());
+            this.results.set(updated);
+            this.picking.set(false);
+          },
+          error: () => this.picking.set(false),
+        });
     } else if (this.context() === 'books') {
       let filtered = this.allBooks();
       const authorFilter = this.bookAuthorFilter();
       const genreFilter = this.bookGenreFilter();
 
       if (authorFilter) {
-        filtered = filtered.filter(b => b.authors.includes(authorFilter));
+        filtered = filtered.filter((b) => b.authors.includes(authorFilter));
       }
       if (genreFilter) {
-        filtered = filtered.filter(b => b.genre === genreFilter);
+        filtered = filtered.filter((b) => b.genre === genreFilter);
       }
 
       if (filtered.length > 0) {

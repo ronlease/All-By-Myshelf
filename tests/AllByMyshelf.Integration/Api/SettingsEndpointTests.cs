@@ -96,6 +96,7 @@ using AllByMyshelf.Api.Models.Entities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -267,6 +268,142 @@ public class SettingsEndpointTests
         var stored = await db.AppSettings.FindAsync("Discogs:PersonalAccessToken");
         stored.Should().NotBeNull();
         stored!.Value.Should().Be("new-token-123");
+    }
+
+    // ── PUT /api/v1/settings — theme validation ──────────────────────────────
+
+    [Fact]
+    public async Task PutSettings_InvalidTheme_Returns400()
+    {
+        // Arrange
+        await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
+        var client = factory.CreateClient();
+        var dto = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: null,
+            HardcoverApiToken: null,
+            Theme: "neon");
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/v1/settings", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutSettings_InvalidTheme_ReturnsProblemDetailsExplainingValidValues()
+    {
+        // Arrange
+        await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
+        var client = factory.CreateClient();
+        var dto = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: null,
+            HardcoverApiToken: null,
+            Theme: "neon");
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/v1/settings", dto);
+
+        // Assert
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem!.Title.Should().Be("Invalid Theme");
+        problem.Detail.Should().Contain("light, dark, os-default");
+    }
+
+    [Fact]
+    public async Task PutSettings_InvalidTheme_DoesNotPersistTheme()
+    {
+        // Arrange
+        await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
+        var client = factory.CreateClient();
+        var dto = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: null,
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: null,
+            HardcoverApiToken: null,
+            Theme: "neon");
+
+        // Act
+        await client.PutAsJsonAsync("/api/v1/settings", dto);
+
+        // Assert
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AllByMyshelfDbContext>();
+        (await db.AppSettings.FindAsync("Theme")).Should().BeNull();
+    }
+
+    // ── PUT /api/v1/settings — username fields ───────────────────────────────
+
+    [Fact]
+    public async Task PutSettings_SaveUsernames_BothStoredInDatabase()
+    {
+        // Arrange
+        await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
+        var client = factory.CreateClient();
+        var dto = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: "bgg-user",
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: "discogs-user",
+            HardcoverApiToken: null,
+            Theme: null);
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/v1/settings", dto);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AllByMyshelfDbContext>();
+        (await db.AppSettings.FindAsync("BoardGameGeek:Username"))!.Value.Should().Be("bgg-user");
+        (await db.AppSettings.FindAsync("Discogs:Username"))!.Value.Should().Be("discogs-user");
+    }
+
+    // ── PUT /api/v1/settings — updating an existing setting ──────────────────
+
+    [Fact]
+    public async Task PutSettings_SettingAlreadyExists_UpdatesValueInPlace()
+    {
+        // Arrange — save once, then overwrite the same key
+        await using var factory = CreateFactory(discogsToken: null, hardcoverToken: null);
+        var client = factory.CreateClient();
+
+        var first = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: "original-user",
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: null,
+            HardcoverApiToken: null,
+            Theme: null);
+        await client.PutAsJsonAsync("/api/v1/settings", first);
+
+        var second = new UpdateSettingsDto(
+            BoardGameGeekApiToken: null,
+            BoardGameGeekUsername: "updated-user",
+            DiscogsPersonalAccessToken: null,
+            DiscogsUsername: null,
+            HardcoverApiToken: null,
+            Theme: null);
+
+        // Act
+        await client.PutAsJsonAsync("/api/v1/settings", second);
+
+        // Assert — one row, updated in place
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AllByMyshelfDbContext>();
+        var rows = await db.AppSettings
+            .Where(s => s.Key == "BoardGameGeek:Username")
+            .ToListAsync();
+        rows.Should().ContainSingle();
+        rows[0].Value.Should().Be("updated-user");
     }
 
     // ── PUT /api/v1/settings — save theme ────────────────────────────────────

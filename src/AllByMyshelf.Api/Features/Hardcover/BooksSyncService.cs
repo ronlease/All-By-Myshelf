@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using AllByMyshelf.Api.Common;
 using AllByMyshelf.Api.Models.Entities;
@@ -27,6 +28,16 @@ public class BooksSyncService(
     /// <inheritdoc/>
     protected override string LogName => "Hardcover";
 
+    /// <summary>
+    /// Extracts the most representative genre from Hardcover's <c>cached_tags</c> blob.
+    /// </summary>
+    /// <remarks>
+    /// Hardcover returns each category as an array of tag objects, not strings:
+    /// <c>"Genre": [{ "tag": "Horror", "count": 3, "tagSlug": "horror", ... }]</c>.
+    /// The tag with the highest <c>count</c> wins, since that is the classification most
+    /// readers agreed on; ties keep the first occurrence. A plain string array is still
+    /// accepted so the parser survives a future shape change.
+    /// </remarks>
     private static string? ParseGenre(JsonElement? cachedTags)
     {
         if (cachedTags is null || cachedTags.Value.ValueKind != JsonValueKind.Object)
@@ -38,13 +49,66 @@ public class BooksSyncService(
         if (genreArray.ValueKind != JsonValueKind.Array)
             return null;
 
+        string? best = null;
+        var bestCount = int.MinValue;
+
         foreach (var element in genreArray.EnumerateArray())
         {
-            if (element.ValueKind == JsonValueKind.String)
-                return element.GetString();
+            var (name, count) = ReadTag(element);
+
+            if (string.IsNullOrWhiteSpace(name) || count <= bestCount)
+                continue;
+
+            best = name;
+            bestCount = count;
         }
 
-        return null;
+        return best is null ? null : NormalizeGenre(best);
+    }
+
+    /// <summary>
+    /// Reads a tag name and its vote count from either a tag object or a bare string.
+    /// </summary>
+    private static (string? Name, int Count) ReadTag(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.String)
+            return (element.GetString(), 0);
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return (null, 0);
+
+        var name = element.TryGetProperty("tag", out var tag) && tag.ValueKind == JsonValueKind.String
+            ? tag.GetString()
+            : null;
+
+        var count = element.TryGetProperty("count", out var countElement)
+                    && countElement.ValueKind == JsonValueKind.Number
+                    && countElement.TryGetInt32(out var parsed)
+            ? parsed
+            : 0;
+
+        return (name, count);
+    }
+
+    /// <summary>
+    /// Strips the decorative leading symbols Hardcover allows on tag names,
+    /// so "💀 Horror" is stored as "Horror".
+    /// </summary>
+    private static string NormalizeGenre(string genre)
+    {
+        var index = 0;
+
+        while (index < genre.Length
+               && Rune.TryGetRuneAt(genre, index, out var rune)
+               && !Rune.IsLetterOrDigit(rune))
+        {
+            index += rune.Utf16SequenceLength;
+        }
+
+        var trimmed = genre[index..].Trim();
+
+        // A tag made up entirely of symbols keeps its original text.
+        return trimmed.Length > 0 ? trimmed : genre.Trim();
     }
 
     /// <inheritdoc/>

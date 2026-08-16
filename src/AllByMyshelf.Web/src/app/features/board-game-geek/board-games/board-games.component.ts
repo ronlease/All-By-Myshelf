@@ -13,9 +13,11 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Observable } from 'rxjs';
 import { BoardGameGeekService, BoardGameDto } from '../board-game-geek.service';
+import { SortColumn } from '../../../shared/table-sort';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
 @Component({
@@ -35,6 +37,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSnackBarModule,
+    MatSortModule,
     MatTableModule,
     RouterModule,
   ],
@@ -44,7 +47,14 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
   protected allItems = signal<BoardGameDto[]>([]);
   private readonly boardGameGeekService = inject(BoardGameGeekService);
   protected readonly collectionKey = 'board-games';
-  protected readonly displayedColumns = ['thumbnail', 'title', 'designer', 'genre', 'players', 'yearPublished'];
+  protected readonly displayedColumns = [
+    'thumbnail',
+    'title',
+    'designer',
+    'genre',
+    'players',
+    'yearPublished',
+  ];
   protected readonly groupByOptions = [
     { label: 'No grouping', value: '' },
     { label: 'Designer', value: 'designer' },
@@ -59,33 +69,48 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
     return this.allItems;
   }
 
+  protected override get defaultSortColumns(): SortColumn[] {
+    return [{ active: 'title', direction: 'asc' }];
+  }
+
   protected applySearch(games: BoardGameDto[]): BoardGameDto[] {
     const term = this.searchTerm().toLowerCase().trim();
     if (!term) return games;
 
-    return games.filter(g =>
-      g.title.toLowerCase().includes(term) ||
-      g.designers.some(d => d.toLowerCase().includes(term)) ||
-      (g.genre ?? '').toLowerCase().includes(term) ||
-      (g.yearPublished?.toString() ?? '').includes(term)
+    return games.filter(
+      (g) =>
+        g.title.toLowerCase().includes(term) ||
+        g.designers.some((d) => d.toLowerCase().includes(term)) ||
+        (g.genre ?? '').toLowerCase().includes(term) ||
+        (g.yearPublished?.toString() ?? '').includes(term),
     );
   }
 
   protected columnValue(g: BoardGameDto, col: string): string {
     switch (col) {
-      case 'designer': return g.designers.length > 0 ? g.designers.join(', ') : '—';
-      case 'genre': return g.genre ?? '—';
-      case 'title': return g.title;
-      case 'year': return g.yearPublished?.toString() ?? '—';
-      default: return '';
+      case 'designer':
+        return g.designers.length > 0 ? g.designers.join(', ') : '—';
+      case 'genre':
+        return g.genre ?? '—';
+      // Sorts on the minimum player count so "2–4" orders below "10+".
+      case 'players':
+        return g.minPlayers?.toString() ?? '—';
+      case 'title':
+        return g.title;
+      // 'year' is the group-by key; 'yearPublished' is the table column id.
+      case 'year':
+      case 'yearPublished':
+        return g.yearPublished?.toString() ?? '—';
+      default:
+        return '';
     }
   }
 
   protected expandDesigners(designers: string[]): string[] {
     return designers
-      .flatMap(d => d.split(','))
-      .map(d => d.trim())
-      .filter(d => d.length > 0);
+      .flatMap((d) => d.split(','))
+      .map((d) => d.trim())
+      .filter((d) => d.length > 0);
   }
 
   protected detailRoute(game: BoardGameDto): string {

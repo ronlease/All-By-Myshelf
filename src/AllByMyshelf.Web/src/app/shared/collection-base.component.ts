@@ -2,8 +2,16 @@ import { Directive, OnDestroy, OnInit, signal, WritableSignal, inject } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageEvent } from '@angular/material/paginator';
+import { Sort } from '@angular/material/sort';
 import { Subscription } from 'rxjs';
 import { SyncStateService } from '../core/sync/sync-state.service';
+import {
+  applySortChange,
+  readSortColumns,
+  SortColumn,
+  sortItems,
+  writeSortColumns,
+} from './table-sort';
 
 export interface GroupByOption {
   label: string;
@@ -29,6 +37,14 @@ export abstract class CollectionBaseComponent<T> implements OnInit, OnDestroy {
   searchTerm = signal('');
   protected searchTimer?: ReturnType<typeof setTimeout>;
   protected readonly snackBar = inject(MatSnackBar);
+  sortActive = signal('');
+  /**
+   * Active sort order, most significant column first. Populated in ngOnInit
+   * rather than inline, because the storage key depends on subclass fields that
+   * are not yet initialised when base-class field initialisers run.
+   */
+  sortColumns = signal<SortColumn[]>([]);
+  sortDirection = signal<'asc' | 'desc'>('asc');
   protected subscription?: Subscription;
   protected readonly syncState = inject(SyncStateService);
 
@@ -49,10 +65,28 @@ export abstract class CollectionBaseComponent<T> implements OnInit, OnDestroy {
   protected abstract allItems: WritableSignal<T[]>;
 
   /**
-   * Filtered items after applying search term.
+   * Default sort order used until the user picks one.
+   * Subclasses override this to sort on something more useful than the first column.
+   */
+  protected get defaultSortColumns(): SortColumn[] {
+    return [];
+  }
+
+  /**
+   * Filtered items after applying the search term, then the active sort order.
    */
   get filteredItems(): T[] {
-    return this.applySearch(this.allItems());
+    return sortItems(this.applySearch(this.allItems()), this.sortColumns(), (item, col) =>
+      this.columnValue(item, col),
+    );
+  }
+
+  /**
+   * localStorage key holding this collection's sort order.
+   * Subclasses override this to keep an existing key stable.
+   */
+  protected get sortStorageKey(): string {
+    return `${this.collectionKey}-sort-columns`;
   }
 
   /**
@@ -123,6 +157,8 @@ export abstract class CollectionBaseComponent<T> implements OnInit, OnDestroy {
       this.expandedGroups.set(new Set([params['expand']]));
     }
 
+    this.restoreSortColumns();
+
     this.loadAll();
     this.subscription = this.syncCompletedObservable().subscribe(() => {
       this.loadAll();
@@ -159,6 +195,34 @@ export abstract class CollectionBaseComponent<T> implements OnInit, OnDestroy {
   onSearchChange(): void {
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.currentPage.set(1), 300);
+  }
+
+  /**
+   * Handle a mat-sort header click: the clicked column becomes the primary sort
+   * and the previous order is kept behind it as tie-breakers.
+   */
+  onSortChange(sort: Sort): void {
+    const columns = applySortChange(this.sortColumns(), sort);
+
+    this.sortActive.set(sort.active);
+    this.sortColumns.set(columns);
+    this.sortDirection.set(columns[0].direction);
+    this.currentPage.set(1);
+
+    writeSortColumns(this.sortStorageKey, columns);
+  }
+
+  /**
+   * Restore the persisted sort order and reflect it on the mat-sort header.
+   */
+  protected restoreSortColumns(): void {
+    const columns = readSortColumns(this.sortStorageKey, this.defaultSortColumns);
+    this.sortColumns.set(columns);
+
+    if (columns.length > 0) {
+      this.sortActive.set(columns[0].active);
+      this.sortDirection.set(columns[0].direction);
+    }
   }
 
   /**

@@ -10,8 +10,8 @@ Displays the vinyl record collection, wantlist, and collection management tools 
 | `ReleaseDetailComponent` | Single record detail with editable notes, star rating (1–5), and re-sync button |
 | `RandomPickerComponent` | Cross-feature random item picker (records/books/board games) with filters and history |
 | `DuplicatesComponent` | Lists duplicate releases in collection |
-| `MaintenanceComponent` | Shows releases with incomplete metadata |
-| `WantlistComponent` | Paginated wantlist view |
+| `MaintenanceComponent` | Shows releases with incomplete metadata, with sortable columns |
+| `WantlistComponent` | Wantlist view with sortable columns and client-side paging |
 | `SyncOptionsDialogComponent` | Dialog for selecting sync mode (incremental/full/stale) and options |
 | `FormatIconPipe` | Custom pipe for displaying format icons |
 
@@ -34,7 +34,9 @@ Displays the vinyl record collection, wantlist, and collection management tools 
 ## UI Features
 
 - Advanced filtering: Artist, Format, Genre, Year multi-select
-- Multi-column sorting with persistence (default: artist → title); sort state saved to localStorage
+- Multi-column sorting with persistence (default: artist → title); sort state saved to localStorage.
+  Shared with the other collection grids via `shared/table-sort.ts`; the Wantlist and Maintenance
+  grids are sortable on the same basis
 - Grouping by Artist, Decade, Format, Genre, or Year (collapsible)
 - Search with debouncing — searches artists, track artists (compilations), title, format, genre, year
 - Configurable page size (10/20/50/100) with persistence

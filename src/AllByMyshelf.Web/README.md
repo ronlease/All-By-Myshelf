@@ -1,6 +1,6 @@
 # AllByMyshelf.Web
 
-Angular 21 frontend for All By Myshelf. See the [root README](../../README.md) for full setup instructions.
+Angular 22 frontend for All By Myshelf. See the [root README](../../README.md) for full setup instructions.
 
 ## Development server
 
