@@ -4620,3 +4620,111 @@ Feature: Hot-reload API configuration after settings change
     And I trigger a sync
     Then the sync starts successfully using the newly saved tokens
 ```
+
+---
+
+## [ABM-076] Bug: Books Still Show "—" for Genre After ABM-035
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+Every book on the Books dashboard still displays "—" in the Genre column, even though ABM-035 was closed as fixed. Without genre I cannot browse or group my library by what the books actually are, which was the whole point of that earlier item. All 49 synced books had a null Genre column.
+
+### Root Cause
+ABM-035 assumed Hardcover returned `cached_tags` as `{"Genre": ["Fiction"]}` — an array of plain strings — and `ParseGenre` only accepted elements whose `ValueKind` was `String`. Querying the live API shows each category is actually an array of tag **objects**:
+
+```json
+"Genre": [
+  { "tag": "Horror", "count": 3, "tagSlug": "horror", "category": "Genre" },
+  { "tag": "Science Fiction", "count": 2, "tagSlug": "science-fiction", "category": "Genre" }
+]
+```
+
+Because no element was ever a bare string, the loop always fell through and returned null. The fix was written against an assumed payload shape and closed without verifying it against the real API.
+
+### Additional Findings
+- Tag names may carry decorative leading emoji, for example `"💀 Horror"` and `"🏜 Western"`, which would otherwise leak into the UI.
+- The array is not ordered by relevance, so taking the first entry picks an arbitrary genre. "The Wind through the Keyhole" lists `💀 Horror (1)` before `Science Fiction (2)`.
+
+### Acceptance Criteria
+```gherkin
+Feature: Books display genre from Hardcover
+
+  Scenario: Genre is taken from the tag object with the highest count
+    Given a book's cached_tags Genre array contains tag objects with counts
+    When the book is synced
+    Then the Genre column holds the tag with the highest count
+
+  Scenario: Tied counts keep the first tag
+    Given two genre tags share the highest count
+    When the book is synced
+    Then the first of those tags is stored
+
+  Scenario: Decorative emoji are stripped from the stored genre
+    Given the winning genre tag is "💀 Horror"
+    When the book is synced
+    Then the Genre column holds "Horror"
+
+  Scenario: A malformed tag entry is ignored
+    Given a genre entry has a high count but no "tag" property
+    When the book is synced
+    Then that entry is skipped and a valid tag is chosen instead
+
+  Scenario: Book with no genre tags shows the placeholder
+    Given a book's cached_tags contains no Genre array
+    When the book is synced
+    Then the Genre column remains null
+    And the Books dashboard displays "—"
+```
+
+### Verification
+Re-checked against the live Hardcover API rather than an assumed shape: all 49 books in the library now resolve to a genre (Fantasy 13, Mystery 10, Science Fiction 7, Horror 6, Thriller 4, and others), with no emoji leaking into the values. A re-sync is required to populate the column for already-synced books.
+
+---
+
+## [ABM-077] Sortable Columns on All Collection Grids
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+Only the music collection grid lets me sort by clicking a column header. The Books, Board Games, Wantlist and Maintenance grids do not, so on those screens I am stuck with whatever order the API returned. I want to reorder any collection by the column I care about — newest books by year, board games by player count, wantlist by artist — and I want that choice remembered the next time I open the page.
+
+### Acceptance Criteria
+```gherkin
+Feature: Sortable collection grids
+
+  Scenario: Sorting a grid by a column
+    Given I am viewing a collection grid
+    When I click a sortable column header
+    Then the rows reorder by that column ascending
+    And clicking the same header again reorders them descending
+
+  Scenario: Previous sort becomes the tie-breaker
+    Given I have sorted by Title
+    When I then sort by Genre
+    Then rows are ordered by Genre
+    And rows sharing a Genre remain ordered by Title
+
+  Scenario: Numeric columns sort numerically
+    Given a grid has a numeric column such as Year or Players
+    When I sort by that column
+    Then 10 sorts after 2 rather than before it
+
+  Scenario: Sort choice survives a reload
+    Given I have sorted a grid by a column
+    When I reload the page
+    Then the grid is still sorted by that column in the same direction
+
+  Scenario: Sorting applies to the whole collection, not just the visible page
+    Given a collection spans multiple pages
+    When I sort by a column
+    Then the ordering is applied across every item before paging
+    And I am returned to the first page
+```
+
+### Notes
+- Sorting logic lives in `src/app/shared/table-sort.ts` and is wired into `CollectionBaseComponent`, so Music, Books and Board Games inherit it. Wantlist and Maintenance do not extend that base and use the same helper directly.
+- The Wantlist grid previously fetched one server page at a time, which would have sorted only the visible page. It now fetches the full list and pages client-side, consistent with the other collection grids.
+- The music grid's existing `music-sort-columns` storage key is preserved so previously saved sort orders continue to work.

@@ -12,10 +12,12 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Observable } from 'rxjs';
 import { BookDto, HardcoverService } from '../hardcover.service';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
+import { SortColumn } from '../../../shared/table-sort';
 
 @Component({
   selector: 'app-books',
@@ -33,6 +35,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSnackBarModule,
+    MatSortModule,
     MatTableModule,
     RouterModule,
   ],
@@ -55,6 +58,13 @@ export class BooksComponent extends CollectionBaseComponent<BookDto> {
   // Alias for template compatibility
   get allBooks() {
     return this.allItems;
+  }
+
+  protected override get defaultSortColumns(): SortColumn[] {
+    return [
+      { active: 'author', direction: 'asc' },
+      { active: 'title', direction: 'asc' },
+    ];
   }
 
   protected applySearch(books: BookDto[]): BookDto[] {

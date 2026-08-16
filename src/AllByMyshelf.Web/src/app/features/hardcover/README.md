@@ -24,6 +24,8 @@ Displays the read books collection sourced from Hardcover.
 
 - Full-text search across title, authors, genre, year
 - Grouping by Author, Decade, Genre, or Year (collapsible groups)
+- Sortable columns (author, title, genre, year) with persistence; the previous sort becomes
+  the tie-breaker, and the order is saved to localStorage (default: author → title)
 - Pagination (25 items per page)
 - Thumbnail, author(s), title, genre, year display
 - Multiple authors support

@@ -13,9 +13,11 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Observable } from 'rxjs';
 import { BoardGameGeekService, BoardGameDto } from '../board-game-geek.service';
+import { SortColumn } from '../../../shared/table-sort';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
 
 @Component({
@@ -35,6 +37,7 @@ import { CollectionBaseComponent } from '../../../shared/collection-base.compone
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSnackBarModule,
+    MatSortModule,
     MatTableModule,
     RouterModule,
   ],
@@ -66,6 +69,10 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
     return this.allItems;
   }
 
+  protected override get defaultSortColumns(): SortColumn[] {
+    return [{ active: 'title', direction: 'asc' }];
+  }
+
   protected applySearch(games: BoardGameDto[]): BoardGameDto[] {
     const term = this.searchTerm().toLowerCase().trim();
     if (!term) return games;
@@ -85,9 +92,14 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
         return g.designers.length > 0 ? g.designers.join(', ') : '—';
       case 'genre':
         return g.genre ?? '—';
+      // Sorts on the minimum player count so "2–4" orders below "10+".
+      case 'players':
+        return g.minPlayers?.toString() ?? '—';
       case 'title':
         return g.title;
+      // 'year' is the group-by key; 'yearPublished' is the table column id.
       case 'year':
+      case 'yearPublished':
         return g.yearPublished?.toString() ?? '—';
       default:
         return '';

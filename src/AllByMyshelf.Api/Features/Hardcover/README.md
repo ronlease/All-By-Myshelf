@@ -30,7 +30,10 @@ Manages the read books collection sourced from the Hardcover GraphQL API.
 
 - Authenticates via API token, resolves current user ID via GraphQL
 - Paginates through read books (status_id=3) at 500 items per page
-- Extracts genre from `cached_tags` JSON field (first Genre tag)
+- Extracts genre from the `cached_tags` JSON field. Hardcover returns each category as an
+  array of tag objects (`{ "tag": "Horror", "count": 3, ... }`), so the tag with the highest
+  `count` wins, ties keep the first, and decorative leading emoji are stripped
+  (`"💀 Horror"` is stored as `"Horror"`)
 - Parses `release_date` to extract year
 - Upserts entire collection atomically
 

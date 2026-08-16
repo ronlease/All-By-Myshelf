@@ -633,7 +633,7 @@ public class BooksSyncServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_CachedTagsGenreArrayHasNoStrings_GenreIsNull()
+    public async Task ExecuteAsync_CachedTagsGenreArrayHasNoUsableEntries_GenreIsNull()
     {
         // Arrange
         var captured = await SyncAndCaptureBookAsync(
@@ -641,6 +641,124 @@ public class BooksSyncServiceTests
 
         // Assert
         captured.Genre.Should().BeNull();
+    }
+
+    // ── Genre parsing — Hardcover's real tag-object shape (ABM-076) ──────────
+
+    [Fact]
+    public async Task ExecuteAsync_GenreTagObjects_PicksTheHighestCount()
+    {
+        // Arrange — the shape the Hardcover API actually returns
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[]
+            {
+                new { tag = "Horror", count = 3, tagSlug = "horror", category = "Genre" },
+                new { tag = "Dark Fantasy", count = 1, tagSlug = "dark-fantasy", category = "Genre" },
+                new { tag = "Science Fiction", count = 2, tagSlug = "science-fiction", category = "Genre" }
+            }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Horror");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_GenreTagObjects_HighestCountWinsOverEarlierEntries()
+    {
+        // Arrange — mirrors "The Wind through the Keyhole", where emoji tags come first
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[]
+            {
+                new { tag = "💀 Horror", count = 1 },
+                new { tag = "🏜 Western", count = 1 },
+                new { tag = "Science Fiction", count = 2 },
+                new { tag = "🦇 Dark Fantasy", count = 1 }
+            }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Science Fiction");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WinningGenreHasLeadingEmoji_EmojiIsStripped()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[]
+            {
+                new { tag = "💀 Horror", count = 9 },
+                new { tag = "Science Fiction", count = 2 }
+            }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Horror");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_GenreTagObjectsTieOnCount_KeepsTheFirst()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[]
+            {
+                new { tag = "Dystopian", count = 4 },
+                new { tag = "Young Adult", count = 4 }
+            }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Dystopian");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_GenreTagObjectMissingTagProperty_IsIgnored()
+    {
+        // Arrange — a malformed entry must not win despite its high count
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[]
+            {
+                new { count = 99 },
+                new { tag = "Mystery", count = 1 }
+            }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Mystery");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_GenreTagObjectHasNoCount_IsStillUsable()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Genre = new object[] { new { tag = "Fantasy" } }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Fantasy");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OtherTagCategoriesPresent_OnlyGenreIsRead()
+    {
+        // Arrange — Mood and Tag categories must not leak into Genre
+        var captured = await SyncAndCaptureBookAsync(cachedTags: new
+        {
+            Tag = new object[] { new { tag = "Loveable Characters", count = 50 } },
+            Mood = new object[] { new { tag = "Adventurous", count = 40 } },
+            Genre = new object[] { new { tag = "Dystopian", count = 18 } }
+        });
+
+        // Assert
+        captured.Genre.Should().Be("Dystopian");
     }
 
     // ── Failure handling ─────────────────────────────────────────────────────

@@ -12,18 +12,14 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { DiscogsService, ReleaseDto } from '../discogs.service';
 import { FormatIconPipe } from '../format-icon.pipe';
 import { CollectionBaseComponent } from '../../../shared/collection-base.component';
-
-interface SortColumn {
-  active: string;
-  direction: 'asc' | 'desc';
-}
+import { SortColumn } from '../../../shared/table-sort';
 
 @Component({
   selector: 'app-collection',
@@ -69,10 +65,19 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
   currentPageSize = signal(parseInt(localStorage.getItem('music-page-size') ?? '20', 10));
   pageSizeOptions = [10, 20, 50, 100];
   recentReleases = signal<ReleaseDto[]>([]);
-  sortActive = signal('artist');
-  sortColumns = signal<SortColumn[]>(this.loadSortColumns());
-  sortDirection = signal<'asc' | 'desc'>('asc');
   yearFilter = signal<string[]>([]);
+
+  protected override get defaultSortColumns(): SortColumn[] {
+    return [
+      { active: 'artist', direction: 'asc' },
+      { active: 'title', direction: 'asc' },
+    ];
+  }
+
+  /** Predates the shared sort helper, so the original key is kept to preserve saved orders. */
+  protected override get sortStorageKey(): string {
+    return 'music-sort-columns';
+  }
 
   // Alias for template compatibility
   get allReleases() {
@@ -106,20 +111,7 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     const yf = this.yearFilter();
     if (yf.length) releases = releases.filter((r) => yf.includes(this.columnValue(r, 'year')));
 
-    // Apply multi-column sorting
-    const cols = this.sortColumns();
-    releases = [...releases].sort((a, b) => {
-      for (const col of cols) {
-        const aVal = this.columnValue(a, col.active);
-        const bVal = this.columnValue(b, col.active);
-        const comparison = aVal.localeCompare(bVal);
-        if (comparison !== 0) {
-          return col.direction === 'asc' ? comparison : -comparison;
-        }
-      }
-      return 0;
-    });
-
+    // Sorting is applied by the base class once searching and filtering are done.
     return releases;
   }
 
@@ -208,45 +200,15 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
     });
   }
 
-  private loadSortColumns(): SortColumn[] {
-    const saved = localStorage.getItem('music-sort-columns');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // Fall through to default
-      }
-    }
-    return [
-      { active: 'artist', direction: 'asc' },
-      { active: 'title', direction: 'asc' },
-    ];
-  }
-
   override ngOnInit(): void {
-    localStorage.setItem('last-collection', this.collectionKey);
+    super.ngOnInit();
 
-    const params = this.activatedRoute.snapshot.queryParams;
-    if (params['groupBy']) {
-      this.groupByField.set(params['groupBy']);
-    }
-    if (params['expand']) {
-      this.expandedGroups.set(new Set([params['expand']]));
-    }
-
-    // Restore persisted sort state to mat-sort header
-    const cols = this.sortColumns();
-    if (cols.length > 0) {
-      this.sortActive.set(cols[0].active);
-      this.sortDirection.set(cols[0].direction);
-    }
-
-    this.loadAll();
     this.loadRecentlyAdded(); // Discogs-specific
-    this.subscription = this.syncCompletedObservable().subscribe(() => {
-      this.loadAll();
-      this.loadRecentlyAdded(); // Discogs-specific: reload recently added on sync
-    });
+    this.subscription?.add(
+      this.syncCompletedObservable().subscribe(() => {
+        this.loadRecentlyAdded(); // Discogs-specific: reload recently added on sync
+      }),
+    );
   }
 
   onColumnFilterChange(col: string, values: string[]): void {
@@ -274,17 +236,6 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
       localStorage.setItem('music-page-size', event.pageSize.toString());
       this.currentPage.set(1);
     }
-  }
-
-  onSortChange(sort: Sort): void {
-    this.sortActive.set(sort.active);
-    this.sortDirection.set((sort.direction as 'asc' | 'desc') || 'asc');
-
-    const dir = (sort.direction as 'asc' | 'desc') || 'asc';
-    const cols = this.sortColumns().filter((c) => c.active !== sort.active);
-    cols.unshift({ active: sort.active, direction: dir });
-    this.sortColumns.set(cols);
-    localStorage.setItem('music-sort-columns', JSON.stringify(cols));
   }
 
   // Alias for template compatibility
