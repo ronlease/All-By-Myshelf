@@ -44,7 +44,14 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
   protected allItems = signal<BoardGameDto[]>([]);
   private readonly boardGameGeekService = inject(BoardGameGeekService);
   protected readonly collectionKey = 'board-games';
-  protected readonly displayedColumns = ['thumbnail', 'title', 'designer', 'genre', 'players', 'yearPublished'];
+  protected readonly displayedColumns = [
+    'thumbnail',
+    'title',
+    'designer',
+    'genre',
+    'players',
+    'yearPublished',
+  ];
   protected readonly groupByOptions = [
     { label: 'No grouping', value: '' },
     { label: 'Designer', value: 'designer' },
@@ -63,29 +70,35 @@ export class BoardGamesComponent extends CollectionBaseComponent<BoardGameDto> {
     const term = this.searchTerm().toLowerCase().trim();
     if (!term) return games;
 
-    return games.filter(g =>
-      g.title.toLowerCase().includes(term) ||
-      g.designers.some(d => d.toLowerCase().includes(term)) ||
-      (g.genre ?? '').toLowerCase().includes(term) ||
-      (g.yearPublished?.toString() ?? '').includes(term)
+    return games.filter(
+      (g) =>
+        g.title.toLowerCase().includes(term) ||
+        g.designers.some((d) => d.toLowerCase().includes(term)) ||
+        (g.genre ?? '').toLowerCase().includes(term) ||
+        (g.yearPublished?.toString() ?? '').includes(term),
     );
   }
 
   protected columnValue(g: BoardGameDto, col: string): string {
     switch (col) {
-      case 'designer': return g.designers.length > 0 ? g.designers.join(', ') : '—';
-      case 'genre': return g.genre ?? '—';
-      case 'title': return g.title;
-      case 'year': return g.yearPublished?.toString() ?? '—';
-      default: return '';
+      case 'designer':
+        return g.designers.length > 0 ? g.designers.join(', ') : '—';
+      case 'genre':
+        return g.genre ?? '—';
+      case 'title':
+        return g.title;
+      case 'year':
+        return g.yearPublished?.toString() ?? '—';
+      default:
+        return '';
     }
   }
 
   protected expandDesigners(designers: string[]): string[] {
     return designers
-      .flatMap(d => d.split(','))
-      .map(d => d.trim())
-      .filter(d => d.length > 0);
+      .flatMap((d) => d.split(','))
+      .map((d) => d.trim())
+      .filter((d) => d.length > 0);
   }
 
   protected detailRoute(game: BoardGameDto): string {

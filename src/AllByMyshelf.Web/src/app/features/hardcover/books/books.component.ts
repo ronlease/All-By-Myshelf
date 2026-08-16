@@ -61,21 +61,27 @@ export class BooksComponent extends CollectionBaseComponent<BookDto> {
     const term = this.searchTerm().toLowerCase().trim();
     if (!term) return books;
 
-    return books.filter(b =>
-      b.title.toLowerCase().includes(term) ||
-      b.authors.some(a => a.toLowerCase().includes(term)) ||
-      (b.genre ?? '').toLowerCase().includes(term) ||
-      (b.year?.toString() ?? '').includes(term)
+    return books.filter(
+      (b) =>
+        b.title.toLowerCase().includes(term) ||
+        b.authors.some((a) => a.toLowerCase().includes(term)) ||
+        (b.genre ?? '').toLowerCase().includes(term) ||
+        (b.year?.toString() ?? '').includes(term),
     );
   }
 
   protected columnValue(b: BookDto, col: string): string {
     switch (col) {
-      case 'author': return b.authors.length > 0 ? b.authors.join(', ') : '—';
-      case 'genre': return b.genre ?? '—';
-      case 'title': return b.title;
-      case 'year': return b.year?.toString() ?? '—';
-      default: return '';
+      case 'author':
+        return b.authors.length > 0 ? b.authors.join(', ') : '—';
+      case 'genre':
+        return b.genre ?? '—';
+      case 'title':
+        return b.title;
+      case 'year':
+        return b.year?.toString() ?? '—';
+      default:
+        return '';
     }
   }
 

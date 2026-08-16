@@ -40,7 +40,7 @@ export class ReleaseDetailComponent implements OnInit {
   error = signal(false);
   hasTrackArtists = computed(() => {
     const r = this.release();
-    return r !== null && r.tracks.some(t => t.artists.length > 0);
+    return r !== null && r.tracks.some((t) => t.artists.length > 0);
   });
   loading = signal(true);
   readonly Math = Math;
@@ -55,9 +55,9 @@ export class ReleaseDetailComponent implements OnInit {
 
   protected expandArtists(artists: string[]): string[] {
     return artists
-      .flatMap(a => a.split(','))
-      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
-      .filter(a => a.length > 0);
+      .flatMap((a) => a.split(','))
+      .map((a) => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter((a) => a.length > 0);
   }
 
   ngOnInit(): void {
@@ -111,19 +111,21 @@ export class ReleaseDetailComponent implements OnInit {
     if (!releaseId) return;
 
     this.saving.set(true);
-    this.discogsService.updateNotesAndRating(releaseId, {
-      notes: this.notesControl.value || null,
-      rating: this.rating(),
-    }).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.snackBar.open('Saved!', undefined, { duration: 2000 });
-      },
-      error: () => {
-        this.saving.set(false);
-        this.snackBar.open('Failed to save.', 'Dismiss', { duration: 5000 });
-      },
-    });
+    this.discogsService
+      .updateNotesAndRating(releaseId, {
+        notes: this.notesControl.value || null,
+        rating: this.rating(),
+      })
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.snackBar.open('Saved!', undefined, { duration: 2000 });
+        },
+        error: () => {
+          this.saving.set(false);
+          this.snackBar.open('Failed to save.', 'Dismiss', { duration: 5000 });
+        },
+      });
   }
 
   setRating(value: number): void {

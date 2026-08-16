@@ -31,7 +31,7 @@ Use C4-PlantUML macros (`Person`, `System`, `Container`, `Component`, `Rel`, etc
 
 Person(user, "User", "Single authenticated user")
 System_Boundary(app, "All By Myshelf") {
-    Container(web, "Angular Web App", "Angular 21", "Collection dashboard UI")
+    Container(web, "Angular Web App", "Angular 22", "Collection dashboard UI")
     Container(api, "API", "ASP.NET Core 10", "REST API")
     ContainerDb(db, "Database", "PostgreSQL", "Collection data")
 }

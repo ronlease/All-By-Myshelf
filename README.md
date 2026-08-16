@@ -21,7 +21,7 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ## Tech Stack
 
 - **API:** ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 17
-- **Frontend:** Angular 21, standalone components, Angular Material
+- **Frontend:** Angular 22, standalone components, Angular Material
 - **Auth:** Auth0 (single user)
 - **Testing:** xUnit, FluentAssertions, Moq
 - **Docs:** Swashbuckle (OpenAPI/Swagger), PlantUML (C4 models)
@@ -30,7 +30,7 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 22](https://nodejs.org/)
+- [Node.js 22.22.3+](https://nodejs.org/) (or 24.15.0+ / 26+ — required by Angular 22)
 - [Docker](https://www.docker.com/) with Docker Compose plugin
 - [Claude Code](https://claude.ai/code) (optional, for AI-assisted development)
 
@@ -130,7 +130,7 @@ All-By-Myshelf/
       Models/
         Entities/             # EF Core entity classes
       Program.cs
-    AllByMyshelf.Web/         # Angular 21 frontend
+    AllByMyshelf.Web/         # Angular 22 frontend
   tests/
     AllByMyshelf.Unit/        # xUnit unit tests
     AllByMyshelf.Integration/ # xUnit integration tests

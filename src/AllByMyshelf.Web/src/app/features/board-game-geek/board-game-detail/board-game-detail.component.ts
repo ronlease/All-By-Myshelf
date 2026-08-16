@@ -36,9 +36,9 @@ export class BoardGameDetailComponent implements OnInit {
 
   expandDesigners(designers: string[]): string[] {
     return designers
-      .flatMap(d => d.split(','))
-      .map(d => d.trim())
-      .filter(d => d.length > 0);
+      .flatMap((d) => d.split(','))
+      .map((d) => d.trim())
+      .filter((d) => d.length > 0);
   }
 
   formatPlaytime(game: BoardGameDetailDto): string {

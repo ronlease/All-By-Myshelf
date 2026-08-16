@@ -7,7 +7,7 @@ single-user application.
 
 ## Tech Stack
 - **API:** ASP.NET Core 10 Web API, Entity Framework Core 10, PostgreSQL
-- **Frontend:** Angular 21, standalone components, Angular Material
+- **Frontend:** Angular 22, standalone components, Angular Material
 - **Auth:** Auth0 (single user)
 - **Testing:** xUnit, Gherkin-style naming, FluentAssertions, Moq
 - **Documentation:** Swashbuckle (OpenAPI/Swagger), PlantUML (C4 models)
@@ -19,7 +19,7 @@ single-user application.
 AllByMyshelf/
   src/
     AllByMyshelf.Api/         # ASP.NET Core 10 Web API
-    AllByMyshelf.Web/         # Angular 21 frontend
+    AllByMyshelf.Web/         # Angular 22 frontend
   tests/
     AllByMyshelf.Unit/        # xUnit unit tests
     AllByMyshelf.Integration/ # xUnit integration tests (EF Core in-memory)
@@ -37,7 +37,7 @@ AllByMyshelf/
 | Product Owner | `product-owner.md` | Backlog, business problems, acceptance criteria |
 | Architect | `architect.md` | Swashbuckle OpenAPI, PlantUML C4 models |
 | Backend Engineer | `backend-engineer.md` | .NET 10 API implementation |
-| Frontend Engineer | `frontend-engineer.md` | Angular 21 implementation |
+| Frontend Engineer | `frontend-engineer.md` | Angular 22 implementation |
 | QA Engineer | `qa-engineer.md` | Gherkin scenarios, xUnit tests |
 
 ## Workflow

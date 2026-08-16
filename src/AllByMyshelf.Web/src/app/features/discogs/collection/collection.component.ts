@@ -82,28 +82,29 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
   protected applySearch(releases: ReleaseDto[]): ReleaseDto[] {
     const term = this.searchTerm().toLowerCase().trim();
     if (term) {
-      releases = releases.filter(r =>
-        r.artists.some(a => a.toLowerCase().includes(term)) ||
-        (r.trackArtists ?? []).some(a => a.toLowerCase().includes(term)) ||
-        r.title.toLowerCase().includes(term) ||
-        r.format.toLowerCase().includes(term) ||
-        (r.genre ?? '').toLowerCase().includes(term) ||
-        (r.year?.toString() ?? '').includes(term)
+      releases = releases.filter(
+        (r) =>
+          r.artists.some((a) => a.toLowerCase().includes(term)) ||
+          (r.trackArtists ?? []).some((a) => a.toLowerCase().includes(term)) ||
+          r.title.toLowerCase().includes(term) ||
+          r.format.toLowerCase().includes(term) ||
+          (r.genre ?? '').toLowerCase().includes(term) ||
+          (r.year?.toString() ?? '').includes(term),
       );
     }
 
     // Apply column filters (Discogs-specific)
     const af = this.artistFilter();
-    if (af.length) releases = releases.filter(r => af.includes(this.columnValue(r, 'artist')));
+    if (af.length) releases = releases.filter((r) => af.includes(this.columnValue(r, 'artist')));
 
     const ff = this.formatFilter();
-    if (ff.length) releases = releases.filter(r => ff.includes(this.columnValue(r, 'format')));
+    if (ff.length) releases = releases.filter((r) => ff.includes(this.columnValue(r, 'format')));
 
     const gf = this.genreFilter();
-    if (gf.length) releases = releases.filter(r => gf.includes(this.columnValue(r, 'genre')));
+    if (gf.length) releases = releases.filter((r) => gf.includes(this.columnValue(r, 'genre')));
 
     const yf = this.yearFilter();
-    if (yf.length) releases = releases.filter(r => yf.includes(this.columnValue(r, 'year')));
+    if (yf.length) releases = releases.filter((r) => yf.includes(this.columnValue(r, 'year')));
 
     // Apply multi-column sorting
     const cols = this.sortColumns();
@@ -124,12 +125,18 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
 
   protected columnValue(r: ReleaseDto, col: string): string {
     switch (col) {
-      case 'artist': return r.artists.join(', ');
-      case 'format': return r.format;
-      case 'genre': return r.genre ?? '—';
-      case 'title': return r.title;
-      case 'year': return r.year?.toString() ?? '—';
-      default: return '';
+      case 'artist':
+        return r.artists.join(', ');
+      case 'format':
+        return r.format;
+      case 'genre':
+        return r.genre ?? '—';
+      case 'title':
+        return r.title;
+      case 'year':
+        return r.year?.toString() ?? '—';
+      default:
+        return '';
     }
   }
 
@@ -147,9 +154,9 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
 
   protected expandArtists(artists: string[]): string[] {
     return artists
-      .flatMap(a => a.split(','))
-      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
-      .filter(a => a.length > 0);
+      .flatMap((a) => a.split(','))
+      .map((a) => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter((a) => a.length > 0);
   }
 
   // Alias for template compatibility
@@ -168,11 +175,16 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
 
   hasActiveFilter(col: string): boolean {
     switch (col) {
-      case 'artist': return this.artistFilter().length > 0;
-      case 'format': return this.formatFilter().length > 0;
-      case 'genre': return this.genreFilter().length > 0;
-      case 'year': return this.yearFilter().length > 0;
-      default: return false;
+      case 'artist':
+        return this.artistFilter().length > 0;
+      case 'format':
+        return this.formatFilter().length > 0;
+      case 'genre':
+        return this.genreFilter().length > 0;
+      case 'year':
+        return this.yearFilter().length > 0;
+      default:
+        return false;
     }
   }
 
@@ -239,10 +251,18 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
 
   onColumnFilterChange(col: string, values: string[]): void {
     switch (col) {
-      case 'artist': this.artistFilter.set(values); break;
-      case 'format': this.formatFilter.set(values); break;
-      case 'genre': this.genreFilter.set(values); break;
-      case 'year': this.yearFilter.set(values); break;
+      case 'artist':
+        this.artistFilter.set(values);
+        break;
+      case 'format':
+        this.formatFilter.set(values);
+        break;
+      case 'genre':
+        this.genreFilter.set(values);
+        break;
+      case 'year':
+        this.yearFilter.set(values);
+        break;
     }
     this.currentPage.set(1);
   }
@@ -258,10 +278,10 @@ export class CollectionComponent extends CollectionBaseComponent<ReleaseDto> {
 
   onSortChange(sort: Sort): void {
     this.sortActive.set(sort.active);
-    this.sortDirection.set(sort.direction as 'asc' | 'desc' || 'asc');
+    this.sortDirection.set((sort.direction as 'asc' | 'desc') || 'asc');
 
     const dir = (sort.direction as 'asc' | 'desc') || 'asc';
-    const cols = this.sortColumns().filter(c => c.active !== sort.active);
+    const cols = this.sortColumns().filter((c) => c.active !== sort.active);
     cols.unshift({ active: sort.active, direction: dir });
     this.sortColumns.set(cols);
     localStorage.setItem('music-sort-columns', JSON.stringify(cols));

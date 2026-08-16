@@ -597,9 +597,113 @@ public class BooksSyncServiceTests
         sut.IsSyncRunning.Should().BeFalse();
     }
 
+    // ── Genre parsing from the cached_tags JSON blob (ABM-035) ───────────────
+
+    [Fact]
+    public async Task ExecuteAsync_CachedTagsHasGenreArrayOfStrings_MapsFirstGenre()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(
+            cachedTags: new { Genre = new[] { "Fantasy", "Adventure" } });
+
+        // Assert
+        captured.Genre.Should().Be("Fantasy");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CachedTagsHasNoGenreProperty_GenreIsNull()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(
+            cachedTags: new { Mood = new[] { "Cosy" } });
+
+        // Assert
+        captured.Genre.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CachedTagsGenreIsNotAnArray_GenreIsNull()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(
+            cachedTags: new { Genre = "Fantasy" });
+
+        // Assert
+        captured.Genre.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CachedTagsGenreArrayHasNoStrings_GenreIsNull()
+    {
+        // Arrange
+        var captured = await SyncAndCaptureBookAsync(
+            cachedTags: new { Genre = new[] { 1, 2, 3 } });
+
+        // Assert
+        captured.Genre.Should().BeNull();
+    }
+
+    // ── Failure handling ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ExecuteAsync_RepositoryThrows_ExceptionIsSwallowedAndFlagCleared()
+    {
+        // Arrange
+        var mockHttpClientFactory = CreateMockHttpClientFactory();
+        var mockRepository = new Mock<IBooksRepository>();
+
+        var attempted = new TaskCompletionSource();
+        mockRepository
+            .Setup(r => r.UpsertCollectionAsync(
+                It.IsAny<IEnumerable<Book>>(), It.IsAny<CancellationToken>()))
+            .Callback(() => attempted.TrySetResult())
+            .ThrowsAsync(new InvalidOperationException("database unavailable"));
+
+        var sut = CreateServiceWithRealScope(mockHttpClientFactory.Object, mockRepository.Object);
+
+        // Act
+        sut.TryStartSync();
+        await sut.StartAsync(CancellationToken.None);
+        await attempted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // Assert — the loop logs the failure and clears the running flag
+        for (var attempt = 0; attempt < 100 && sut.IsSyncRunning; attempt++)
+        {
+            await Task.Delay(20);
+        }
+
+        sut.IsSyncRunning.Should().BeFalse();
+        await sut.StopAsync(CancellationToken.None);
+    }
+
     // ── Test helpers for ExecuteAsync tests ──────────────────────────────────
 
-    private static Mock<IHttpClientFactory> CreateMockHttpClientFactory()
+    /// <summary>Runs one sync with the given cached_tags payload and returns the mapped book.</summary>
+    private static async Task<Book> SyncAndCaptureBookAsync(object? cachedTags)
+    {
+        var mockHttpClientFactory = CreateMockHttpClientFactory(cachedTags);
+        var mockRepository = new Mock<IBooksRepository>();
+
+        var completion = new TaskCompletionSource<List<Book>>();
+        mockRepository
+            .Setup(r => r.UpsertCollectionAsync(
+                It.IsAny<IEnumerable<Book>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<Book>, CancellationToken>(
+                (books, _) => completion.TrySetResult(books.ToList()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateServiceWithRealScope(mockHttpClientFactory.Object, mockRepository.Object);
+
+        sut.TryStartSync();
+        await sut.StartAsync(CancellationToken.None);
+
+        var captured = await completion.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await sut.StopAsync(CancellationToken.None);
+
+        return captured.Single();
+    }
+
+    private static Mock<IHttpClientFactory> CreateMockHttpClientFactory(object? cachedTags)
     {
         var handler = new Mock<HttpMessageHandler>();
 
@@ -636,7 +740,7 @@ public class BooksSyncServiceTests
                     {
                         book = new
                         {
-                            cached_tags = (object?)null,
+                            cached_tags = cachedTags,
                             contributions = new[]
                             {
                                 new
@@ -677,6 +781,9 @@ public class BooksSyncServiceTests
 
         return factory;
     }
+
+    private static Mock<IHttpClientFactory> CreateMockHttpClientFactory() =>
+        CreateMockHttpClientFactory(cachedTags: null);
 
     private static BooksSyncService CreateServiceWithRealScope(
         IHttpClientFactory httpClientFactory,

@@ -9,7 +9,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FeaturesService } from '../../core/config/features.service';
-import { SettingsDto, SettingsService, UpdateSettingsDto } from '../../core/config/settings.service';
+import {
+  SettingsDto,
+  SettingsService,
+  UpdateSettingsDto,
+} from '../../core/config/settings.service';
 import { ThemeService } from '../../core/config/theme.service';
 
 @Component({
@@ -131,5 +135,4 @@ export class SettingsComponent implements OnInit {
       },
     });
   }
-
 }

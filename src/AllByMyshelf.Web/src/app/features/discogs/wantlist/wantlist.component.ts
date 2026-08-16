@@ -42,9 +42,9 @@ export class WantlistComponent implements OnInit {
 
   protected expandArtists(artists: string[]): string[] {
     return artists
-      .flatMap(a => a.split(','))
-      .map(a => a.replace(/\s*\(\d+\)$/, '').trim())
-      .filter(a => a.length > 0);
+      .flatMap((a) => a.split(','))
+      .map((a) => a.replace(/\s*\(\d+\)$/, '').trim())
+      .filter((a) => a.length > 0);
   }
 
   private loadWantlist(): void {

@@ -18,13 +18,7 @@ export interface CategorySection {
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [
-    MatButtonModule,
-    MatCardModule,
-    MatIconModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, MatListModule, MatProgressSpinnerModule],
   templateUrl: './statistics.component.html',
   styleUrl: './statistics.component.scss',
 })
@@ -38,7 +32,12 @@ export class StatisticsComponent implements OnInit {
     if (stats.boardGames.totalCount > 0) {
       const breakdowns: CategorySection['breakdowns'] = [];
       if (stats.boardGames.genreBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'genre', items: stats.boardGames.genreBreakdown, route: '/board-games', title: 'By Genre' });
+        breakdowns.push({
+          groupByField: 'genre',
+          items: stats.boardGames.genreBreakdown,
+          route: '/board-games',
+          title: 'By Genre',
+        });
       }
       sections.push({
         breakdowns,
@@ -52,13 +51,28 @@ export class StatisticsComponent implements OnInit {
     if (stats.books.totalCount > 0) {
       const breakdowns: CategorySection['breakdowns'] = [];
       if (stats.books.authorBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'author', items: stats.books.authorBreakdown, route: '/books', title: 'By Author' });
+        breakdowns.push({
+          groupByField: 'author',
+          items: stats.books.authorBreakdown,
+          route: '/books',
+          title: 'By Author',
+        });
       }
       if (stats.books.decadeBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'decade', items: stats.books.decadeBreakdown, route: '/books', title: 'By Decade' });
+        breakdowns.push({
+          groupByField: 'decade',
+          items: stats.books.decadeBreakdown,
+          route: '/books',
+          title: 'By Decade',
+        });
       }
       if (stats.books.genreBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'genre', items: stats.books.genreBreakdown, route: '/books', title: 'By Genre' });
+        breakdowns.push({
+          groupByField: 'genre',
+          items: stats.books.genreBreakdown,
+          route: '/books',
+          title: 'By Genre',
+        });
       }
       sections.push({
         breakdowns,
@@ -78,13 +92,28 @@ export class StatisticsComponent implements OnInit {
 
       const breakdowns: CategorySection['breakdowns'] = [];
       if (stats.records.decadeBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'decade', items: stats.records.decadeBreakdown, route: '/', title: 'By Decade' });
+        breakdowns.push({
+          groupByField: 'decade',
+          items: stats.records.decadeBreakdown,
+          route: '/',
+          title: 'By Decade',
+        });
       }
       if (stats.records.formatBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'format', items: stats.records.formatBreakdown, route: '/', title: 'By Format' });
+        breakdowns.push({
+          groupByField: 'format',
+          items: stats.records.formatBreakdown,
+          route: '/',
+          title: 'By Format',
+        });
       }
       if (stats.records.genreBreakdown.length > 0) {
-        breakdowns.push({ groupByField: 'genre', items: stats.records.genreBreakdown, route: '/', title: 'By Genre' });
+        breakdowns.push({
+          groupByField: 'genre',
+          items: stats.records.genreBreakdown,
+          route: '/',
+          title: 'By Genre',
+        });
       }
       sections.push({
         breakdowns,
