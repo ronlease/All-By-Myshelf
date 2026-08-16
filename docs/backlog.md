@@ -2222,8 +2222,13 @@ Feature: Unified statistics dashboard
 
 ## [ABM-035] Bug: Books Dashboard Shows "—" for Genre on All Books
 
-**Status:** Done
+**Status:** Done — but the fix did not work; corrected by ABM-076
 **Priority:** Medium
+
+> **Note:** This item was closed against an assumed `cached_tags` shape that the
+> Hardcover API does not return, so genre remained null on every book. See
+> [ABM-076](#abm-076-bug-books-still-show--for-genre-after-abm-035) for the root
+> cause and the working fix.
 
 ### Business Problem
 The Books dashboard displays "—" for the genre column on every book, even though genres exist in Hardcover. This makes it impossible to filter or browse my collection by genre. The `Book` entity already has a `Genre` column, but it is never populated during sync.
