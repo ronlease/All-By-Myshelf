@@ -30,7 +30,7 @@ A personal collection dashboard that aggregates data from external APIs (Discogs
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 22.22.3+](https://nodejs.org/) (or 24.15.0+ / 26+ — required by Angular 22)
+- [Node.js 24](https://nodejs.org/) (24.15.0 or newer — see `.nvmrc`; CI builds on the same major)
 - [Docker](https://www.docker.com/) with Docker Compose plugin
 - [Claude Code](https://claude.ai/code) (optional, for AI-assisted development)
 

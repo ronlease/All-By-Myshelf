@@ -149,10 +149,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node 22
+      - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
 
@@ -180,10 +180,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node 22
+      - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
 
@@ -206,10 +206,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node 22
+      - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
 
@@ -232,10 +232,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node 22
+      - name: Setup Node 24
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: src/AllByMyshelf.Web/package-lock.json
 
