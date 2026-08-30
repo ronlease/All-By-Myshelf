@@ -54,6 +54,20 @@
 //   When the host stops the background service
 //   Then the cancellation is handled without faulting the service
 
+//
+// Feature: Hot-reload API configuration after settings change (ABM-075)
+//
+// Scenario: Credentials saved after startup take effect without a restart
+//   Given the service started with no credentials configured
+//   And TryStartSync reports the token is not configured
+//   When credentials are saved and configuration reloads
+//   Then the same running service reports the sync can start
+//   And the API does not need to be restarted
+//
+// Scenario: Credentials cleared after startup stop taking effect
+//   Given the service started with credentials configured
+//   When the credentials are cleared and configuration reloads
+//   Then the same running service reports the token is not configured
 using System.Net;
 using System.Text;
 using AllByMyshelf.Api.Common;
@@ -64,6 +78,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using AllByMyshelf.Unit.TestDoubles;
 
 namespace AllByMyshelf.Unit.Services;
 
@@ -179,6 +194,45 @@ public class BoardGamesSyncServiceTests
 
         // Assert
         result.Should().Be(SyncStartResult.Started);
+    }
+
+    // ── Hot-reload of credentials (ABM-075) ──────────────────────────────────
+
+    [Fact]
+    public void TryStartSync_UsernameSavedAfterStartup_StartsWithoutRestart()
+    {
+        // Arrange — mirrors a fresh install: token in user-secrets, username not yet saved
+        var options = new TestOptionsMonitor<BoardGameGeekOptions>(new BoardGameGeekOptions
+        {
+            ApiToken = "my-token",
+            Username = string.Empty
+        });
+        var sut = CreateService(options);
+        sut.TryStartSync().Should().Be(SyncStartResult.TokenNotConfigured);
+
+        // Act — the Settings page saves the username and configuration reloads
+        options.Set(new BoardGameGeekOptions { ApiToken = "my-token", Username = "myuser" });
+
+        // Assert — the same instance picks it up, no restart required
+        sut.TryStartSync().Should().Be(SyncStartResult.Started);
+    }
+
+    [Fact]
+    public void TryStartSync_CredentialsClearedAfterStartup_StopsReportingConfigured()
+    {
+        // Arrange
+        var options = new TestOptionsMonitor<BoardGameGeekOptions>(new BoardGameGeekOptions
+        {
+            ApiToken = "my-token",
+            Username = "myuser"
+        });
+        var sut = CreateService(options);
+
+        // Act
+        options.Set(new BoardGameGeekOptions { ApiToken = string.Empty, Username = string.Empty });
+
+        // Assert
+        sut.TryStartSync().Should().Be(SyncStartResult.TokenNotConfigured);
     }
 
     // ── RunSyncAsync — collection fetch and mapping ───────────────────────────
@@ -462,7 +516,7 @@ public class BoardGamesSyncServiceTests
     private static (BoardGamesSyncService Service, Mock<IBoardGamesRepository> Repository)
         CreateServiceWithScope(HttpMessageHandler handler)
     {
-        var options = Options.Create(new BoardGameGeekOptions
+        var options = new TestOptionsMonitor<BoardGameGeekOptions>(new BoardGameGeekOptions
         {
             ApiToken = "test-token",
             Username = "myuser"
@@ -485,15 +539,16 @@ public class BoardGamesSyncServiceTests
         return (service, repository);
     }
 
-    private static BoardGamesSyncService CreateService(string? apiToken, string? username)
-    {
-        var options = new Mock<IOptions<BoardGameGeekOptions>>();
-        options.Setup(o => o.Value).Returns(new BoardGameGeekOptions
+    private static BoardGamesSyncService CreateService(string? apiToken, string? username) =>
+        CreateService(new TestOptionsMonitor<BoardGameGeekOptions>(new BoardGameGeekOptions
         {
             ApiToken = apiToken ?? string.Empty,
             Username = username ?? string.Empty
-        });
+        }));
 
+    private static BoardGamesSyncService CreateService(
+        TestOptionsMonitor<BoardGameGeekOptions> options)
+    {
         // Create a minimal service provider with no actual services registered.
         // TryStartSync does not execute the sync loop, so we don't need a real scope factory.
         var serviceCollection = new ServiceCollection();
@@ -501,7 +556,7 @@ public class BoardGamesSyncServiceTests
         var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
         return new BoardGamesSyncService(
-            options.Object,
+            options,
             scopeFactory,
             NullLogger<BoardGamesSyncService>.Instance);
     }

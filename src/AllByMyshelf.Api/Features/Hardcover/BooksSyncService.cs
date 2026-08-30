@@ -12,15 +12,19 @@ namespace AllByMyshelf.Api.Features.Hardcover;
 /// <see cref="IHostedService"/> so it can run as a background worker.
 /// </summary>
 public class BooksSyncService(
-    IOptions<HardcoverOptions> options,
+    IOptionsMonitor<HardcoverOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<BooksSyncService> logger)
     : SyncServiceBase, IBooksSyncService
 {
-    private readonly HardcoverOptions _options = options.Value;
-
     /// <inheritdoc/>
-    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken);
+    /// <remarks>
+    /// Read through <see cref="IOptionsMonitor{TOptions}.CurrentValue"/> on every call so
+    /// credentials saved via the Settings page apply without restarting the API (ABM-075).
+    /// This service is a singleton, so a captured <c>IOptions.Value</c> would stay stale.
+    /// </remarks>
+    protected override bool IsTokenConfigured =>
+        !string.IsNullOrWhiteSpace(options.CurrentValue.ApiToken);
 
     /// <inheritdoc/>
     protected override ILogger Logger => logger;

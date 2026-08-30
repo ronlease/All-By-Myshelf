@@ -11,13 +11,11 @@ namespace AllByMyshelf.Api.Features.Discogs;
 /// <see cref="IHostedService"/> so it can run as a background worker.
 /// </summary>
 public partial class SyncService(
-    IOptions<DiscogsOptions> options,
+    IOptionsMonitor<DiscogsOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<SyncService> logger)
     : SyncServiceBase, ISyncService
 {
-    private readonly DiscogsOptions _options = options.Value;
-
     private volatile int _current;
     private volatile string? _phase;
     private volatile int _retryAfterSeconds;
@@ -26,7 +24,13 @@ public partial class SyncService(
     private volatile int _total;
 
     /// <inheritdoc/>
-    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.PersonalAccessToken);
+    /// <remarks>
+    /// Read through <see cref="IOptionsMonitor{TOptions}.CurrentValue"/> on every call so
+    /// credentials saved via the Settings page apply without restarting the API (ABM-075).
+    /// This service is a singleton, so a captured <c>IOptions.Value</c> would stay stale.
+    /// </remarks>
+    protected override bool IsTokenConfigured =>
+        !string.IsNullOrWhiteSpace(options.CurrentValue.PersonalAccessToken);
 
     /// <inheritdoc/>
     protected override ILogger Logger => logger;
@@ -298,9 +302,12 @@ public partial class SyncService(
         _phase = SyncConstants.Phases.Wantlist;
         _status = SyncConstants.Statuses.SyncingWantlist;
 
+        // Snapshot once so a settings change mid-sync cannot switch accounts part-way through.
+        var username = options.CurrentValue.Username!;
+
         while (true)
         {
-            var pageData = await discogsClient.GetWantlistPageAsync(_options.Username!, wantlistPage, cancellationToken);
+            var pageData = await discogsClient.GetWantlistPageAsync(username, wantlistPage, cancellationToken);
             if (pageData?.Releases is null || pageData.Releases.Count == 0)
                 break;
 
