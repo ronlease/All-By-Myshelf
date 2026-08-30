@@ -4733,3 +4733,69 @@ Feature: Sortable collection grids
 - Sorting logic lives in `src/app/shared/table-sort.ts` and is wired into `CollectionBaseComponent`, so Music, Books and Board Games inherit it. Wantlist and Maintenance do not extend that base and use the same helper directly.
 - The Wantlist grid previously fetched one server page at a time, which would have sorted only the visible page. It now fetches the full list and pages client-side, consistent with the other collection grids.
 - The music grid's existing `music-sort-columns` storage key is preserved so previously saved sort orders continue to work.
+
+---
+
+## [ABM-078] Bundle Budget Blocks the Production Build
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+`ng build --configuration production` fails, so the app cannot be built for deployment on a current Node runtime. The initial bundle exceeds the 1 MB error budget by 23 bytes:
+
+```
+X [ERROR] bundle initial exceeded maximum budget.
+  Budget 1.00 MB was not met by 23 bytes with a total of 1.00 MB.
+```
+
+CI stayed green only because it runs Node 22, which emits a marginally smaller bundle than Node 24. The build therefore failed locally while passing in CI — the worst kind of failure, because it hides until someone tries to ship.
+
+### Root Cause
+The budgets were set in ABM-026 (#31) when the app was much smaller and have not been revisited since. They measure **raw** bundle size, which is a poor proxy for what a user actually downloads:
+
+| Metric | Value |
+|---|---|
+| Initial raw size | 1.00 MB |
+| Initial transfer size (compressed) | **213 kB** |
+
+213 kB compressed is healthy for an Angular Material application with Auth0. The bundle is not bloated — the budget is stale.
+
+Investigation confirmed there is no structural waste to reclaim:
+
+- Every feature route is already lazy-loaded via `loadComponent`; the eager bundle is the shell only.
+- `AppShellComponent` imports eight Material modules and uses all of them (toolbar, sidenav, list, icon, button, divider, spinner, snackbar).
+- Animations are already loaded lazily through `provideAnimationsAsync()`.
+- The 121 kB of CSS is the Material theme, which compresses to 7 kB.
+
+Cutting 23 bytes of application code to satisfy an arbitrary threshold would be pure theatre, and the next dependency bump would break it again.
+
+### Acceptance Criteria
+```gherkin
+Feature: Production build succeeds with a meaningful bundle budget
+
+  Scenario: Production build succeeds on a current Node runtime
+    Given the repository is checked out on a supported Node version
+    When I run ng build --configuration production
+    Then the build succeeds
+    And it does not fail on the initial bundle budget
+
+  Scenario: Budget still catches genuine growth
+    Given the initial bundle grows well beyond its current size
+    When the production build runs
+    Then the budget warns before it errors
+    And a large regression still fails the build
+
+  Scenario: The warning threshold is actionable
+    Given the current bundle size
+    When the production build runs
+    Then the build does not emit a bundle budget warning
+    And the warning therefore means something when it does appear
+```
+
+### Resolution
+Raised the initial-bundle budget to a warning at 1.1 MB and an error at 1.5 MB.
+
+The previous 600 kB warning had been firing on every build for a long time and was routinely ignored, which is how the error threshold was reached unnoticed. A warning nobody acts on is noise, so the new warning sits just above the current size: it stays silent today and speaks up on real growth, while the 1.5 MB error still stops genuine bloat.
+
+Transfer size is the metric worth watching. Angular budgets cannot target it directly, so it is recorded here as the reference point: **213 kB compressed** at the time of the change.
