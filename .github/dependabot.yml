@@ -32,6 +32,13 @@ updates:
         patterns:
           - "@angular/material"
           - "@angular/cdk"
+    ignore:
+      # Angular 22 hard-pins TypeScript: @angular/build and @angular/compiler-cli
+      # both declare a peer range of ">=6.0 <6.1", so a major TypeScript bump
+      # fails npm ci with ERESOLVE and can never go green. Remove this once an
+      # Angular release supports the next TypeScript major.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions
   - package-ecosystem: github-actions
