@@ -409,14 +409,13 @@ public class BoardGameGeekClientTests
             BaseAddress = new Uri("https://boardgamegeek.com")
         };
 
-        var options = new Mock<IOptions<BoardGameGeekOptions>>();
-        options.Setup(o => o.Value).Returns(new BoardGameGeekOptions
+        var options = new TestOptionsMonitor<BoardGameGeekOptions>(new BoardGameGeekOptions
         {
             ApiToken = apiToken ?? string.Empty,
             Username = username
         });
 
-        return new BoardGameGeekClient(httpClient, options.Object, NullLogger<BoardGameGeekClient>.Instance);
+        return new BoardGameGeekClient(httpClient, options, NullLogger<BoardGameGeekClient>.Instance);
     }
 
     private static StringContent MakeBggCollectionXml() =>

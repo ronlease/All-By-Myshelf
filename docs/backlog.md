@@ -4595,7 +4595,7 @@ Feature: Sync UI redesign with granular sync options
 
 ## [ABM-075] Hot-Reload API Configuration After Settings Change
 
-**Status:** Backlog
+**Status:** Done
 **Priority:** Low
 
 ### Business Problem
@@ -4625,6 +4625,38 @@ Feature: Hot-reload API configuration after settings change
     And I trigger a sync
     Then the sync starts successfully using the newly saved tokens
 ```
+
+### Root Cause
+`SettingsController` already called `IConfigurationRoot.Reload()` after saving, so the
+database values *were* re-read. The stale values came from how they were consumed:
+`BoardGamesSyncService`, `BooksSyncService` and `SyncService` are singletons that captured
+`IOptions<T>.Value` into a private field at construction. `IOptions<T>` is computed once for
+the lifetime of the process and never observes a reload, so those fields pinned whatever
+configuration existed at startup. `BoardGameGeekClient` had the same problem.
+
+This is what made a BoardGameGeek sync fail after saving a username: the value was in the
+database and in configuration, but `IsTokenConfigured` was still reading the startup snapshot
+and returned `TokenNotConfigured` on every attempt.
+
+### Implementation
+- The three singleton sync services take `IOptionsMonitor<T>` and read `CurrentValue` at the
+  point of use, so each `TryStartSync` sees current configuration. `RunSyncAsync` snapshots
+  `CurrentValue` once per run so a mid-sync settings change cannot switch accounts part-way.
+- `BoardGameGeekClient` moved from `IOptions<T>` to `IOptionsSnapshot<T>`, matching
+  `DiscogsClient` and `HardcoverClient`. It is resolved per scope, so the snapshot is current
+  for the life of a request or sync run.
+- `ConfigController` already used `IOptionsSnapshot<T>`, so the feature-flag scenario needed
+  no change.
+
+### Verification
+Six tests cover credentials saved *and* cleared after startup for all three integrations,
+asserting against the same running instance rather than a freshly constructed one. They were
+confirmed to fail against the previous captured-value implementation before the fix was
+restored, so they genuinely pin the behaviour rather than passing vacuously.
+
+Note: the end-to-end path could not be exercised in an automated integration test, because
+`DbConfigurationProvider` needs a real PostgreSQL connection and fails silently under the
+in-memory provider — the same limitation already recorded in `SettingsEndpointTests`.
 
 ---
 

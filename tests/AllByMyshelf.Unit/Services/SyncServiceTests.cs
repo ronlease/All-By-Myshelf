@@ -56,6 +56,20 @@
 //   Then IsSyncRunning becomes false
 //   And Progress is reset to idle
 
+//
+// Feature: Hot-reload API configuration after settings change (ABM-075)
+//
+// Scenario: Credentials saved after startup take effect without a restart
+//   Given the service started with no credentials configured
+//   And TryStartSync reports the token is not configured
+//   When credentials are saved and configuration reloads
+//   Then the same running service reports the sync can start
+//   And the API does not need to be restarted
+//
+// Scenario: Credentials cleared after startup stop taking effect
+//   Given the service started with credentials configured
+//   When the credentials are cleared and configuration reloads
+//   Then the same running service reports the token is not configured
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -69,6 +83,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
+using AllByMyshelf.Unit.TestDoubles;
 
 namespace AllByMyshelf.Unit.Services;
 
@@ -78,18 +93,66 @@ public class SyncServiceTests
 
     private static SyncService CreateService(
         string token = "test-token",
-        string username = "test-user")
-    {
-        var options = Options.Create(new DiscogsOptions
+        string username = "test-user") =>
+        CreateService(new TestOptionsMonitor<DiscogsOptions>(new DiscogsOptions
         {
             PersonalAccessToken = token,
             Username = username
-        });
+        }));
 
+    private static SyncService CreateService(TestOptionsMonitor<DiscogsOptions> options)
+    {
         var scopeFactory = new Mock<IServiceScopeFactory>();
         var logger = NullLogger<SyncService>.Instance;
 
         return new SyncService(options, scopeFactory.Object, logger);
+    }
+
+    // ── Hot-reload of credentials (ABM-075) ──────────────────────────────────
+
+    [Fact]
+    public void TryStartSync_TokenSavedAfterStartup_StartsWithoutRestart()
+    {
+        // Arrange — the API started before any Discogs token was saved
+        var options = new TestOptionsMonitor<DiscogsOptions>(new DiscogsOptions
+        {
+            PersonalAccessToken = string.Empty,
+            Username = "test-user"
+        });
+        var sut = CreateService(options);
+        sut.TryStartSync().Should().Be(SyncStartResult.TokenNotConfigured);
+
+        // Act — the Settings page saves a token and configuration reloads
+        options.Set(new DiscogsOptions
+        {
+            PersonalAccessToken = "saved-token",
+            Username = "test-user"
+        });
+
+        // Assert — the same instance picks it up, no restart required
+        sut.TryStartSync().Should().Be(SyncStartResult.Started);
+    }
+
+    [Fact]
+    public void TryStartSync_TokenClearedAfterStartup_StopsReportingConfigured()
+    {
+        // Arrange
+        var options = new TestOptionsMonitor<DiscogsOptions>(new DiscogsOptions
+        {
+            PersonalAccessToken = "saved-token",
+            Username = "test-user"
+        });
+        var sut = CreateService(options);
+
+        // Act
+        options.Set(new DiscogsOptions
+        {
+            PersonalAccessToken = string.Empty,
+            Username = "test-user"
+        });
+
+        // Assert
+        sut.TryStartSync().Should().Be(SyncStartResult.TokenNotConfigured);
     }
 
     // ── IsSyncRunning — initial state ────────────────────────────────────────
@@ -542,7 +605,7 @@ public class SyncServiceTests
         var serviceProvider = services.BuildServiceProvider();
         var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
-        var syncOptions = Options.Create(new DiscogsOptions
+        var syncOptions = new TestOptionsMonitor<DiscogsOptions>(new DiscogsOptions
         {
             PersonalAccessToken = "test-token",
             Username = "test-user"

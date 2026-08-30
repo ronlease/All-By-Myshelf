@@ -9,8 +9,10 @@ namespace AllByMyshelf.Api.Features.BoardGameGeek;
 /// Client for the BoardGameGeek XML API.
 /// Sends an Authorization: Bearer header when an API token is configured.
 /// </summary>
-public class BoardGameGeekClient(HttpClient httpClient, IOptions<BoardGameGeekOptions> options, ILogger<BoardGameGeekClient> logger)
+public class BoardGameGeekClient(HttpClient httpClient, IOptionsSnapshot<BoardGameGeekOptions> options, ILogger<BoardGameGeekClient> logger)
 {
+    // Resolved per scope, so this snapshot is current for the life of one request
+    // or sync run and picks up settings saved since startup (ABM-075).
     private readonly BoardGameGeekOptions _options = options.Value;
 
     private const int MaxRetries = 5;
