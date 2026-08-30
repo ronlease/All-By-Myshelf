@@ -10,15 +10,20 @@ namespace AllByMyshelf.Api.Features.BoardGameGeek;
 /// <see cref="IHostedService"/> so it can run as a background worker.
 /// </summary>
 public class BoardGamesSyncService(
-    IOptions<BoardGameGeekOptions> options,
+    IOptionsMonitor<BoardGameGeekOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<BoardGamesSyncService> logger)
     : SyncServiceBase, IBoardGamesSyncService
 {
-    private readonly BoardGameGeekOptions _options = options.Value;
-
     /// <inheritdoc/>
-    protected override bool IsTokenConfigured => !string.IsNullOrWhiteSpace(_options.ApiToken) && !string.IsNullOrWhiteSpace(_options.Username);
+    /// <remarks>
+    /// Read through <see cref="IOptionsMonitor{TOptions}.CurrentValue"/> on every call so
+    /// credentials saved via the Settings page apply without restarting the API (ABM-075).
+    /// This service is a singleton, so a captured <c>IOptions.Value</c> would stay stale.
+    /// </remarks>
+    protected override bool IsTokenConfigured =>
+        !string.IsNullOrWhiteSpace(options.CurrentValue.ApiToken)
+        && !string.IsNullOrWhiteSpace(options.CurrentValue.Username);
 
     /// <inheritdoc/>
     protected override ILogger Logger => logger;
@@ -31,12 +36,15 @@ public class BoardGamesSyncService(
     {
         logger.LogInformation("BoardGameGeek sync started.");
 
+        // Snapshot once so a settings change mid-sync cannot switch accounts part-way through.
+        var currentOptions = options.CurrentValue;
+
         // Resolve scoped services (DbContext, BoardGameGeekClient) from a fresh scope.
         await using var scope = scopeFactory.CreateAsyncScope();
         var boardGameGeekClient = scope.ServiceProvider.GetRequiredService<BoardGameGeekClient>();
         var boardGamesRepository = scope.ServiceProvider.GetRequiredService<IBoardGamesRepository>();
 
-        var collectionItems = await boardGameGeekClient.GetCollectionAsync(_options.Username, cancellationToken);
+        var collectionItems = await boardGameGeekClient.GetCollectionAsync(currentOptions.Username, cancellationToken);
         logger.LogInformation("Fetched {Count} board games from BoardGameGeek.", collectionItems.Count);
 
         // Batch IDs into groups of 20 for enrichment
