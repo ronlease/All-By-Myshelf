@@ -4831,3 +4831,47 @@ Raised the initial-bundle budget to a warning at 1.1 MB and an error at 1.5 MB.
 The previous 600 kB warning had been firing on every build for a long time and was routinely ignored, which is how the error threshold was reached unnoticed. A warning nobody acts on is noise, so the new warning sits just above the current size: it stays silent today and speaks up on real growth, while the 1.5 MB error still stops genuine bloat.
 
 Transfer size is the metric worth watching. Angular budgets cannot target it directly, so it is recorded here as the reference point: **213 kB compressed** at the time of the change.
+
+---
+
+## [ABM-079] Align CI and Local Node Versions
+
+**Status:** Done
+**Priority:** Medium
+
+### Business Problem
+CI pinned Node 22 while local development had moved to Node 24. The two runtimes produce slightly different bundle output, so the production build could fail on a developer machine while CI stayed green — which is exactly what happened in ABM-078, where the initial bundle exceeded its budget by 23 bytes locally and passed in CI. A green pipeline that does not reflect what a developer sees is worse than a red one, because the failure hides until someone tries to ship.
+
+### Root Cause
+Nothing recorded the expected Node version. The four npm jobs in `ci.yml` each hard-coded `node-version: "22"`, and there was no `engines` field, no `.nvmrc`, and no README statement precise enough to keep a developer on the same major. The versions drifted apart silently.
+
+### Acceptance Criteria
+```gherkin
+Feature: CI and local development share a Node version
+
+  Scenario: CI builds on the same Node major as local development
+    Given the repository defines an expected Node version
+    When the CI workflow runs any npm job
+    Then it uses that same Node major
+
+  Scenario: A developer on the wrong Node version is told
+    Given a developer has a Node version outside the supported range
+    When they install dependencies
+    Then npm reports the mismatch against the engines field
+
+  Scenario: Version managers pick the right runtime automatically
+    Given a developer uses nvm or a compatible tool
+    When they enter the repository
+    Then the tool selects the Node version from .nvmrc
+```
+
+### Resolution
+- All four npm jobs in `ci.yml` moved from Node 22 to Node 24, matching local development.
+- `engines.node` set to `^24.15.0` in the web `package.json`, so npm reports a mismatch instead of letting it pass unnoticed. The floor is Angular 22's own requirement for the 24 line.
+- Added a root `.nvmrc` pinning `24` so version managers select it automatically.
+- README prerequisite now names Node 24 and points at `.nvmrc`, replacing a range broad enough to permit the drift.
+
+Standardising on a single major is deliberate. Angular 22 also supports 22.22.3+, but allowing both majors is what let the bundle-size difference hide, so the supported set is narrowed to the one CI actually builds on.
+
+### Known Remaining Drift
+`packageManager` in the web `package.json` still reads `npm@10.9.2` while Node 24 ships npm 11. Nothing enables corepack, so the field is inert metadata today and was left alone rather than changed speculatively; it is worth either correcting or removing.
